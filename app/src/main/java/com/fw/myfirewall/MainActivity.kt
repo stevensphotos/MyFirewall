@@ -315,14 +315,14 @@ fun StatusCard(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(25.dp),
         color = color,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(12.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -432,11 +432,11 @@ fun AppListScreen(
                         .weight(1f)
                         .padding(8.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(25.dp))
                         .border(
                             width = 1.dp, 
                             color = MaterialTheme.colorScheme.outlineVariant, 
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(25.dp)
                         )
                 ) {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
