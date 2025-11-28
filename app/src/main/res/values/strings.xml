@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MyFirewall</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_applications">Sort Applications</string>
+    <string name="sort_system_apps">System apps</string>
+    <string name="sort_user_apps">User apps</string>
+    <string name="sort_internet_access">Internet access permission apps</string>
+    <string name="sort_no_internet_access">No internet access</string>
 </resources>
