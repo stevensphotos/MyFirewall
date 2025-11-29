@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -13,15 +14,16 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,7 +42,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Public
@@ -60,7 +62,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshState
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,6 +78,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -195,8 +197,8 @@ fun MyFirewallApp() {
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (AppDestinations.entries[page]) {
-                    AppDestinations.HOME -> {
-                        HomeScreen(
+                    AppDestinations.STATUS -> {
+                        StatusScreen(
                             modifier = Modifier.padding(innerPadding),
                             totalApps = apps.size,
                             blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed }
@@ -263,45 +265,85 @@ fun MyFirewallApp() {
 }
 
 @Composable
-fun HomeScreen(
+fun StatusScreen(
     modifier: Modifier = Modifier,
     totalApps: Int = 0,
     blockedApps: Int = 0
 ) {
     val allowedApps = totalApps - blockedApps
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(16.dp)
     ) {
-        // Zone 1: Total Apps
-        StatusCard(
-            title = "Total Apps",
-            count = totalApps.toString(),
-            icon = Icons.Default.Apps,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.weight(1f)
-        )
+        val isLandscape = maxWidth > maxHeight
 
-        // Zone 2: Allowed Apps
-        StatusCard(
-            title = "Allowed",
-            count = allowedApps.toString(),
-            icon = Icons.Default.CheckCircle,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            modifier = Modifier.weight(1f)
-        )
+        if (isLandscape) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Zone 1: Total Apps
+                StatusCard(
+                    title = "Total Apps",
+                    count = totalApps.toString(),
+                    icon = Icons.Default.Apps,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.weight(1f)
+                )
 
-        // Zone 3: Blocked Apps
-        StatusCard(
-            title = "Blocked",
-            count = blockedApps.toString(),
-            icon = Icons.Default.Block,
-            color = MaterialTheme.colorScheme.errorContainer,
-            modifier = Modifier.weight(1f)
-        )
+                // Zone 2: Allowed Apps
+                StatusCard(
+                    title = "Allowed",
+                    count = allowedApps.toString(),
+                    icon = Icons.Default.CheckCircle,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Zone 3: Blocked Apps
+                StatusCard(
+                    title = "Blocked",
+                    count = blockedApps.toString(),
+                    icon = Icons.Default.Block,
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Zone 1: Total Apps
+                StatusCard(
+                    title = "Total Apps",
+                    count = totalApps.toString(),
+                    icon = Icons.Default.Apps,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Zone 2: Allowed Apps
+                StatusCard(
+                    title = "Allowed",
+                    count = allowedApps.toString(),
+                    icon = Icons.Default.CheckCircle,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Zone 3: Blocked Apps
+                StatusCard(
+                    title = "Blocked",
+                    count = blockedApps.toString(),
+                    icon = Icons.Default.Block,
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
     }
 }
 
@@ -378,6 +420,8 @@ fun AppListScreen(
     }
 
     val pullRefreshState = rememberPullToRefreshState()
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     PullToRefreshBox(
         isRefreshing = isLoading,
@@ -390,108 +434,117 @@ fun AppListScreen(
                 CircularProgressIndicator()
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Row(
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .fillMaxHeight()
+                        .fillMaxWidth(if (isLandscape) 0.9f else 1f)
                 ) {
-                    AppFilter.entries.forEach { filter ->
-                        val isSelected = selectedFilters.contains(filter)
-                        Surface(
-                            shape = CircleShape,
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                            border = BorderStroke(
-                                1.dp, 
-                                if (isSelected) Color.Transparent 
-                                else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                            ),
-                            modifier = Modifier
-                                .size(48.dp)
-                                .combinedClickable(
-                                    onClick = { onFilterClick(filter) },
-                                    onLongClick = { onFilterLongClick(filter) }
-                                )
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = filter.icon,
-                                    contentDescription = filter.name,
-                                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        AppFilter.entries.forEach { filter ->
+                            val isSelected = selectedFilters.contains(filter)
+                            Surface(
+                                shape = CircleShape,
+                                color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                border = BorderStroke(
+                                    1.dp, 
+                                    if (isSelected) Color.Transparent 
+                                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                ),
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .combinedClickable(
+                                        onClick = { onFilterClick(filter) },
+                                        onLongClick = { onFilterLongClick(filter) }
+                                    )
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = filter.icon,
+                                        contentDescription = filter.name,
+                                        tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
-                }
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(25.dp))
-                        .border(
-                            width = 1.dp, 
-                            color = MaterialTheme.colorScheme.outlineVariant, 
-                            shape = RoundedCornerShape(25.dp)
-                        )
-                ) {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(filteredApps) { app ->
-                            AppItem(
-                                app = app,
-                                onWifiToggle = { 
-                                    val index = apps.indexOfFirst { it.packageName == app.packageName }
-                                    if (index != -1) {
-                                        val newApp = apps[index].copy(wifiAllowed = !apps[index].wifiAllowed)
-                                        val newApps = apps.toMutableList().apply { set(index, newApp) }
-                                        onAppsChange(newApps)
-                                        onAppUpdated(newApp)
-                                    }
-                                },
-                                onMobileToggle = {
-                                    val index = apps.indexOfFirst { it.packageName == app.packageName }
-                                    if (index != -1) {
-                                        val currentApp = apps[index]
-                                        val newState = !currentApp.mobileAllowed
-                                        val newApp = currentApp.copy(
-                                            mobileAllowed = newState,
-                                            roamingAllowed = newState 
-                                        )
-                                        val newApps = apps.toMutableList().apply { set(index, newApp) }
-                                        onAppsChange(newApps)
-                                        onAppUpdated(newApp)
-                                    }
-                                },
-                                onRoamingToggle = {
-                                    val index = apps.indexOfFirst { it.packageName == app.packageName }
-                                    if (index != -1) {
-                                        val newApp = apps[index].copy(roamingAllowed = !apps[index].roamingAllowed)
-                                        val newApps = apps.toMutableList().apply { set(index, newApp) }
-                                        onAppsChange(newApps)
-                                        onAppUpdated(newApp)
-                                    }
-                                },
-                                onToggleAll = {
-                                    val index = apps.indexOfFirst { it.packageName == app.packageName }
-                                    if (index != -1) {
-                                        val currentApp = apps[index]
-                                        val anyAllowed = currentApp.wifiAllowed || currentApp.mobileAllowed || currentApp.roamingAllowed
-                                        val newState = !anyAllowed
-                                        val newApp = currentApp.copy(
-                                            wifiAllowed = newState,
-                                            mobileAllowed = newState,
-                                            roamingAllowed = newState
-                                        )
-                                        val newApps = apps.toMutableList().apply { set(index, newApp) }
-                                        onAppsChange(newApps)
-                                        onAppUpdated(newApp)
-                                    }
-                                }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp)
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(25.dp))
+                            .border(
+                                width = 1.dp, 
+                                color = MaterialTheme.colorScheme.outlineVariant, 
+                                shape = RoundedCornerShape(25.dp)
                             )
+                    ) {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(filteredApps) { app ->
+                                AppItem(
+                                    app = app,
+                                    onWifiToggle = { 
+                                        val index = apps.indexOfFirst { it.packageName == app.packageName }
+                                        if (index != -1) {
+                                            val newApp = apps[index].copy(wifiAllowed = !apps[index].wifiAllowed)
+                                            val newApps = apps.toMutableList().apply { set(index, newApp) }
+                                            onAppsChange(newApps)
+                                            onAppUpdated(newApp)
+                                        }
+                                    },
+                                    onMobileToggle = {
+                                        val index = apps.indexOfFirst { it.packageName == app.packageName }
+                                        if (index != -1) {
+                                            val currentApp = apps[index]
+                                            val newState = !currentApp.mobileAllowed
+                                            val newApp = currentApp.copy(
+                                                mobileAllowed = newState,
+                                                roamingAllowed = newState 
+                                            )
+                                            val newApps = apps.toMutableList().apply { set(index, newApp) }
+                                            onAppsChange(newApps)
+                                            onAppUpdated(newApp)
+                                        }
+                                    },
+                                    onRoamingToggle = {
+                                        val index = apps.indexOfFirst { it.packageName == app.packageName }
+                                        if (index != -1) {
+                                            val newApp = apps[index].copy(roamingAllowed = !apps[index].roamingAllowed)
+                                            val newApps = apps.toMutableList().apply { set(index, newApp) }
+                                            onAppsChange(newApps)
+                                            onAppUpdated(newApp)
+                                        }
+                                    },
+                                    onToggleAll = {
+                                        val index = apps.indexOfFirst { it.packageName == app.packageName }
+                                        if (index != -1) {
+                                            val currentApp = apps[index]
+                                            val anyAllowed = currentApp.wifiAllowed || currentApp.mobileAllowed || currentApp.roamingAllowed
+                                            val newState = !anyAllowed
+                                            val newApp = currentApp.copy(
+                                                wifiAllowed = newState,
+                                                mobileAllowed = newState,
+                                                roamingAllowed = newState
+                                            )
+                                            val newApps = apps.toMutableList().apply { set(index, newApp) }
+                                            onAppsChange(newApps)
+                                            onAppUpdated(newApp)
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -595,7 +648,7 @@ enum class AppDestinations(
     val label: String,
     val icon: ImageVector,
 ) {
-    HOME("Home", Icons.Default.Home),
+    STATUS("Status", Icons.Default.Dashboard),
     APPLICATIONS("Applications", Icons.Default.Apps),
     RULES("Rules", Icons.Default.List),
     SETTINGS("Settings", Icons.Default.Settings),
