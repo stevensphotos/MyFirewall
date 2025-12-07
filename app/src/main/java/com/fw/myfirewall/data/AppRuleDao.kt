@@ -11,6 +11,9 @@ interface AppRuleDao {
     @Query("SELECT * FROM app_rules")
     fun getAllRules(): Flow<List<AppRule>>
 
+    @Query("SELECT * FROM app_rules")
+    suspend fun getAllRulesSync(): List<AppRule>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRule(appRule: AppRule)
 
