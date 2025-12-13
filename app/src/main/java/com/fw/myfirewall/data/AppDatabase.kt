@@ -5,9 +5,10 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [AppRule::class], version = 1)
+@Database(entities = [AppRule::class, BlockRule::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun appRuleDao(): AppRuleDao
+    abstract fun blockRuleDao(): BlockRuleDao
 
     companion object {
         @Volatile
@@ -19,7 +20,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "app_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Since we are dev and changing schema
+                .build()
                 INSTANCE = instance
                 instance
             }
