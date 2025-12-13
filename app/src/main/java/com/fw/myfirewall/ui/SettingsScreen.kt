@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.PowerSettingsNew
-import androidx.compose.material.icons.filled.VpnKey
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.PowerSettingsNew
+import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -86,7 +86,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         // VPN Service Card
         SettingsItemCard(
             title = stringResource(R.string.vpn_service_label),
-            icon = Icons.Default.VpnKey,
+            icon = Icons.Rounded.VpnKey,
             checked = MyVpnService.isServiceRunning.value,
             onCheckedChange = { checked ->
                 if (checked) {
@@ -109,7 +109,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         // Root Service Card
         SettingsItemCard(
             title = stringResource(R.string.root_service_label),
-            icon = Icons.Default.AdminPanelSettings,
+            icon = Icons.Rounded.AdminPanelSettings,
             checked = isRootEnabled.value,
             onCheckedChange = { checked ->
                 isRootEnabled.value = checked
@@ -120,7 +120,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         // Start on Boot Card
         SettingsItemCard(
             title = stringResource(R.string.start_on_boot_label),
-            icon = Icons.Default.PowerSettingsNew,
+            icon = Icons.Rounded.PowerSettingsNew,
             checked = isStartOnBootEnabled.value,
             onCheckedChange = { checked ->
                 isStartOnBootEnabled.value = checked
