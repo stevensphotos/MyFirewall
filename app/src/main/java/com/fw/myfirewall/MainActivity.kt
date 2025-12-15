@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,7 @@ import com.fw.myfirewall.ui.RulesScreen
 import com.fw.myfirewall.ui.SettingsScreen
 import com.fw.myfirewall.ui.StatusScreen
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
+import com.fw.myfirewall.viewmodel.SettingsViewModel
 import com.fw.myfirewall.viewmodel.StatusViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -49,7 +51,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MyFirewallTheme {
+            val settingsViewModel: SettingsViewModel = viewModel()
+            val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
+            
+            MyFirewallTheme(pureBlack = isPureBlackEnabled) {
                 MyFirewallApp()
             }
         }

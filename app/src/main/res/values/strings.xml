@@ -26,4 +26,6 @@
     <string name="blocked_apps_title">Blocked</string>
     <string name="blocked_urls_title">Blocked URLs</string>
     <string name="annoyances_label">Annoyances</string>
+    <string name="ui_settings_title">UI Settings</string>
+    <string name="pure_black_label">Pure Black</string>
 </resources>

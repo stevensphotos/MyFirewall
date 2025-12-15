@@ -1,7 +1,6 @@
 package com.fw.myfirewall.ui
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,12 +32,11 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,50 +44,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.fw.myfirewall.R
-import com.fw.myfirewall.data.AppDatabase
-import com.fw.myfirewall.data.BlockListConfig
-import com.fw.myfirewall.data.BlockListImporter
-import com.fw.myfirewall.data.BlockRuleCategory
+import com.fw.myfirewall.viewmodel.RulesViewModel
 import com.fw.myfirewall.worker.BlockListUpdateWorker
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 @Composable
-fun RulesScreen(modifier: Modifier = Modifier) {
+fun RulesScreen(modifier: Modifier = Modifier, viewModel: RulesViewModel = viewModel()) {
     val context = LocalContext.current
-    val sharedPrefs = remember { context.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE) }
-    val coroutineScope = rememberCoroutineScope()
     
     val showDialog = remember { mutableStateOf(false) }
-    val selectedSchedule = remember { mutableStateOf("schedule_24h") }
     
-    val isAdvertisingEnabled = remember { mutableStateOf(false) }
-    val isAnnoyancesEnabled = remember { mutableStateOf(false) }
-    val isSocialEnabled = remember { mutableStateOf(false) }
-    val isCustomEnabled = remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        selectedSchedule.value = sharedPrefs.getString("ad_blocker_schedule", "schedule_24h") ?: "schedule_24h"
-        isAdvertisingEnabled.value = sharedPrefs.getBoolean("advertising_enabled", false)
-        isAnnoyancesEnabled.value = sharedPrefs.getBoolean("annoyances_enabled", false)
-        isSocialEnabled.value = sharedPrefs.getBoolean("social_enabled", false)
-        isCustomEnabled.value = sharedPrefs.getBoolean("custom_enabled", false)
-    }
+    val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
+    val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
+    val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
+    val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
+    val selectedSchedule by viewModel.selectedSchedule.collectAsState()
 
     if (showDialog.value) {
         ScheduleDialog(
-            currentSelection = selectedSchedule.value,
+            currentSelection = selectedSchedule,
             onDismissRequest = { showDialog.value = false },
             onConfirmation = { selection ->
-                selectedSchedule.value = selection
-                sharedPrefs.edit().putString("ad_blocker_schedule", selection).apply()
+                viewModel.updateSchedule(selection)
                 showDialog.value = false
                 scheduleWorker(context, selection)
             }
@@ -138,29 +119,11 @@ fun RulesScreen(modifier: Modifier = Modifier) {
                 RulesItemRow(
                     title = stringResource(R.string.advertising_label),
                     icon = Icons.Default.Block,
-                    checked = isAdvertisingEnabled.value,
+                    checked = isAdvertisingEnabled,
                     onCheckedChange = { checked ->
-                        isAdvertisingEnabled.value = checked
-                        sharedPrefs.edit().putBoolean("advertising_enabled", checked).apply()
-                        
+                        viewModel.toggleAdvertising(checked)
                         if (checked) {
-                            scheduleWorker(context, selectedSchedule.value) // Start/Reset timer
-                            coroutineScope.launch {
-                                val count = withContext(Dispatchers.IO) {
-                                    val db = AppDatabase.getDatabase(context)
-                                    db.blockRuleDao().countByCategory(BlockRuleCategory.ADVERTISING).first()
-                                }
-                                
-                                if (count == 0) {
-                                    Toast.makeText(context, "Downloading block list...", Toast.LENGTH_SHORT).show()
-                                    val imported = BlockListImporter.importFromUrl(context, BlockListConfig.URL_ADVERTISING, BlockRuleCategory.ADVERTISING)
-                                    if (imported > 0) {
-                                        Toast.makeText(context, "Imported $imported rules", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Failed to import rules", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
+                            scheduleWorker(context, selectedSchedule)
                         }
                     }
                 )
@@ -171,29 +134,11 @@ fun RulesScreen(modifier: Modifier = Modifier) {
                 RulesItemRow(
                     title = stringResource(R.string.annoyances_label),
                     icon = Icons.Default.VisibilityOff,
-                    checked = isAnnoyancesEnabled.value,
+                    checked = isAnnoyancesEnabled,
                     onCheckedChange = { checked ->
-                        isAnnoyancesEnabled.value = checked
-                        sharedPrefs.edit().putBoolean("annoyances_enabled", checked).apply()
-                        
+                        viewModel.toggleAnnoyances(checked)
                         if (checked) {
-                            scheduleWorker(context, selectedSchedule.value) // Start/Reset timer
-                            coroutineScope.launch {
-                                val count = withContext(Dispatchers.IO) {
-                                    val db = AppDatabase.getDatabase(context)
-                                    db.blockRuleDao().countByCategory(BlockRuleCategory.ANNOYANCES).first()
-                                }
-                                
-                                if (count == 0) {
-                                    Toast.makeText(context, "Downloading block list...", Toast.LENGTH_SHORT).show()
-                                    val imported = BlockListImporter.importFromUrl(context, BlockListConfig.URL_ANNOYANCES, BlockRuleCategory.ANNOYANCES)
-                                    if (imported > 0) {
-                                        Toast.makeText(context, "Imported $imported rules", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Failed to import rules", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
+                            scheduleWorker(context, selectedSchedule)
                         }
                     }
                 )
@@ -204,29 +149,11 @@ fun RulesScreen(modifier: Modifier = Modifier) {
                 RulesItemRow(
                     title = stringResource(R.string.social_label),
                     icon = Icons.Default.Group,
-                    checked = isSocialEnabled.value,
+                    checked = isSocialEnabled,
                     onCheckedChange = { checked ->
-                        isSocialEnabled.value = checked
-                        sharedPrefs.edit().putBoolean("social_enabled", checked).apply()
-                        
+                        viewModel.toggleSocial(checked)
                         if (checked) {
-                            scheduleWorker(context, selectedSchedule.value) // Start/Reset timer
-                            coroutineScope.launch {
-                                val count = withContext(Dispatchers.IO) {
-                                    val db = AppDatabase.getDatabase(context)
-                                    db.blockRuleDao().countByCategory(BlockRuleCategory.SOCIAL_MEDIA).first()
-                                }
-                                
-                                if (count == 0) {
-                                    Toast.makeText(context, "Downloading block list...", Toast.LENGTH_SHORT).show()
-                                    val imported = BlockListImporter.importFromUrl(context, BlockListConfig.URL_SOCIAL, BlockRuleCategory.SOCIAL_MEDIA)
-                                    if (imported > 0) {
-                                        Toast.makeText(context, "Imported $imported rules", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Failed to import rules", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
+                            scheduleWorker(context, selectedSchedule)
                         }
                     }
                 )
@@ -237,10 +164,9 @@ fun RulesScreen(modifier: Modifier = Modifier) {
                 RulesItemRow(
                     title = stringResource(R.string.custom_label),
                     icon = Icons.Default.Edit,
-                    checked = isCustomEnabled.value,
+                    checked = isCustomEnabled,
                     onCheckedChange = { checked ->
-                        isCustomEnabled.value = checked
-                        sharedPrefs.edit().putBoolean("custom_enabled", checked).apply()
+                        viewModel.toggleCustom(checked)
                     }
                 )
                 
@@ -277,7 +203,7 @@ fun RulesScreen(modifier: Modifier = Modifier) {
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
-                                text = getScheduleLabel(selectedSchedule.value),
+                                text = getScheduleLabel(selectedSchedule),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

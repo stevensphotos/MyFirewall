@@ -56,6 +56,12 @@ fun StatusScreen(
     val socialCount by viewModel.socialCount.collectAsState()
     val customCount by viewModel.customCount.collectAsState()
     
+    // Collecting toggle states
+    val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
+    val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
+    val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
+    val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
+    
     // Récupération de la configuration pour adapter la taille des cartes
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -155,7 +161,7 @@ fun StatusScreen(
                     stringResource(R.string.advertising_label),
                     count = advertisingCount.toString(),
                     icon = Icons.Default.Block,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    color = if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier
                         .width(cardWidth)
                         .height(160.dp)
@@ -168,7 +174,7 @@ fun StatusScreen(
                     stringResource(R.string.annoyances_label),
                     count = annoyancesCount.toString(),
                     icon = Icons.Default.VisibilityOff,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    color = if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier
                         .width(cardWidth)
                         .height(160.dp)
@@ -181,7 +187,7 @@ fun StatusScreen(
                     stringResource(R.string.social_label),
                     count = socialCount.toString(),
                     icon = Icons.Default.Group,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    color = if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier
                         .width(cardWidth)
                         .height(160.dp)
@@ -194,7 +200,7 @@ fun StatusScreen(
                     stringResource(R.string.custom_label),
                     count = customCount.toString(),
                     icon = Icons.Default.Edit,
-                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    color = if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier
                         .width(cardWidth)
                         .height(160.dp)

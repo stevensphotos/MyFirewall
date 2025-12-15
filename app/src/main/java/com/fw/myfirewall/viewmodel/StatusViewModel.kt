@@ -1,17 +1,27 @@
 package com.fw.myfirewall.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.BlockRuleCategory
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
-
-
+import java.util.concurrent.TimeUnit
 
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).blockRuleDao()
+    private val workManager = WorkManager.getInstance(application)
+    private val sharedPrefs = application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
 
     val advertisingCount = dao.countByCategory(BlockRuleCategory.ADVERTISING)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -24,4 +34,69 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
 
     val customCount = dao.countByCategory(BlockRuleCategory.CUSTOM)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    private val _isAdvertisingEnabled = MutableStateFlow(sharedPrefs.getBoolean("advertising_enabled", false))
+    val isAdvertisingEnabled = _isAdvertisingEnabled.asStateFlow()
+
+    private val _isAnnoyancesEnabled = MutableStateFlow(sharedPrefs.getBoolean("annoyances_enabled", false))
+    val isAnnoyancesEnabled = _isAnnoyancesEnabled.asStateFlow()
+
+    private val _isSocialEnabled = MutableStateFlow(sharedPrefs.getBoolean("social_enabled", false))
+    val isSocialEnabled = _isSocialEnabled.asStateFlow()
+
+    private val _isCustomEnabled = MutableStateFlow(sharedPrefs.getBoolean("custom_enabled", false))
+    val isCustomEnabled = _isCustomEnabled.asStateFlow()
+
+    private val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        when (key) {
+            "advertising_enabled" -> _isAdvertisingEnabled.value = prefs.getBoolean(key, false)
+            "annoyances_enabled" -> _isAnnoyancesEnabled.value = prefs.getBoolean(key, false)
+            "social_enabled" -> _isSocialEnabled.value = prefs.getBoolean(key, false)
+            "custom_enabled" -> _isCustomEnabled.value = prefs.getBoolean(key, false)
+        }
+    }
+
+    init {
+        sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    // Ticker that emits every minute
+    private val ticker = flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(60_000)
+        }
+    }
+
+    val nextUpdateLabel = workManager.getWorkInfosForUniqueWorkFlow("blocklist_update")
+        .combine(ticker) { workInfos, currentTime ->
+            val info = workInfos.firstOrNull()
+            if (info != null && info.state == WorkInfo.State.ENQUEUED) {
+                val nextTime = info.nextScheduleTimeMillis
+                if (nextTime > currentTime) {
+                    val diff = nextTime - currentTime
+                    formatDuration(diff)
+                } else {
+                    "Pending..."
+                }
+            } else {
+                "Not scheduled"
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Loading...")
+
+    private fun formatDuration(millis: Long): String {
+        val hours = TimeUnit.MILLISECONDS.toHours(millis)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
+        return if (hours > 0) {
+            "${hours}h ${minutes}m"
+        } else {
+            "${minutes}m"
+        }
+    }
 }

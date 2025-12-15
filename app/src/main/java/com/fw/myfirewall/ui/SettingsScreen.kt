@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.Card
@@ -34,8 +36,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,13 +45,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.service.MyVpnService
+import com.fw.myfirewall.viewmodel.SettingsViewModel
 
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel = viewModel()) {
     val context = LocalContext.current
-    val sharedPrefs = remember { context.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE) }
     
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -61,11 +64,20 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         }
     }
     
-    val isRootEnabled = remember { mutableStateOf(false) }
-    val isStartOnBootEnabled = remember { mutableStateOf(false) }
+    val isRootEnabled by viewModel.isRootEnabled.collectAsState()
+    val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
+    val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
+    val rootCheckResult by viewModel.rootCheckResult.collectAsState()
 
-    LaunchedEffect(Unit) {
-        isStartOnBootEnabled.value = sharedPrefs.getBoolean("start_on_boot", false)
+    LaunchedEffect(rootCheckResult) {
+        rootCheckResult?.let { hasRoot ->
+            if (hasRoot) {
+                Toast.makeText(context, "Root access granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Root access not available", Toast.LENGTH_SHORT).show()
+            }
+            viewModel.resetRootCheckResult()
+        }
     }
 
     Column(
@@ -137,10 +149,9 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 SettingsItemRow(
                     title = stringResource(R.string.root_service_label),
                     icon = Icons.Rounded.AdminPanelSettings,
-                    checked = isRootEnabled.value,
+                    checked = isRootEnabled,
                     onCheckedChange = { checked ->
-                        isRootEnabled.value = checked
-                        // Logic for Root service can be added here
+                        viewModel.toggleRoot(checked)
                     }
                 )
                 
@@ -150,10 +161,44 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 SettingsItemRow(
                     title = stringResource(R.string.start_on_boot_label),
                     icon = Icons.Rounded.PowerSettingsNew,
-                    checked = isStartOnBootEnabled.value,
+                    checked = isStartOnBootEnabled,
                     onCheckedChange = { checked ->
-                        isStartOnBootEnabled.value = checked
-                        sharedPrefs.edit().putBoolean("start_on_boot", checked).apply()
+                        viewModel.toggleStartOnBoot(checked)
+                    }
+                )
+            }
+        }
+
+        // Theme Settings Card
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(32.dp),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                // UI Settings Title
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.ui_settings_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+
+                // Pure Black Toggle
+                SettingsItemRow(
+                    title = stringResource(R.string.pure_black_label),
+                    icon = Icons.Rounded.DarkMode,
+                    checked = isPureBlackEnabled,
+                    onCheckedChange = { checked ->
+                        viewModel.togglePureBlack(checked)
                     }
                 )
             }

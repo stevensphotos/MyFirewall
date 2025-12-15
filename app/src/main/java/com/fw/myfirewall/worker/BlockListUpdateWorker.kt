@@ -8,6 +8,7 @@ import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.BlockListConfig
 import com.fw.myfirewall.data.BlockListImporter
 import com.fw.myfirewall.data.BlockRuleCategory
+import com.fw.myfirewall.util.HostsGenerator
 import kotlinx.coroutines.flow.first
 
 class BlockListUpdateWorker(
@@ -42,6 +43,11 @@ class BlockListUpdateWorker(
                 Log.i("BlockListUpdateWorker", "Updating Social list")
                 BlockListImporter.importFromUrl(applicationContext, BlockListConfig.URL_SOCIAL, BlockRuleCategory.SOCIAL_MEDIA)
             }
+
+            // Regenerate hosts file after updates
+            Log.i("BlockListUpdateWorker", "Regenerating hosts file")
+            val hostsGenerator = HostsGenerator(db.blockRuleDao(), applicationContext)
+            hostsGenerator.generateHostsFile()
 
             Log.i("BlockListUpdateWorker", "Block list update completed")
             Result.success()
