@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.AppRule
 import com.fw.myfirewall.model.AppInfo
@@ -38,6 +39,7 @@ import com.fw.myfirewall.ui.RulesScreen
 import com.fw.myfirewall.ui.SettingsScreen
 import com.fw.myfirewall.ui.StatusScreen
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
+import com.fw.myfirewall.viewmodel.StatusViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -64,6 +66,8 @@ fun MyFirewallApp() {
     val context = LocalContext.current
     val database = remember { AppDatabase.getDatabase(context) }
     val dao = remember { database.appRuleDao() }
+    
+    val statusViewModel: StatusViewModel = viewModel()
 
     var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -150,7 +154,8 @@ fun MyFirewallApp() {
                         StatusScreen(
                             modifier = Modifier.padding(innerPadding),
                             totalApps = apps.size,
-                            blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed }
+                            blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed },
+                            viewModel = statusViewModel
                         )
                     }
                     AppDestinations.APPLICATIONS -> {

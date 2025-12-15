@@ -9,4 +9,21 @@
     <string name="start_on_boot_label">Start on Boot</string>
     <string name="advertising_label">Advertising</string>
     <string name="ad_blocker_label">Ad Blocker</string>
+    <string name="schedule_dialog_title">Schedule Updates</string>
+    <string name="schedule_12h">Every 12 hours</string>
+    <string name="schedule_24h">Every 24 hours</string>
+    <string name="schedule_weekly">Every week</string>
+    <string name="schedule_monthly">Every month</string>
+    <string name="configure_button">Configure</string>
+    <string name="cancel">Cancel</string>
+    <string name="Annoyances_label">Annoyances"></string>
+    <string name="social_label">Social Media</string>
+    <string name="custom_label">Custom Rules</string>
+    <string name="update_schedule_label">Update Schedule</string>
+    <string name="applications_title">Applications</string>
+    <string name="total_apps_title">Total Apps</string>
+    <string name="allowed_apps_title">Allowed</string>
+    <string name="blocked_apps_title">Blocked</string>
+    <string name="blocked_urls_title">Blocked URLs</string>
+    <string name="annoyances_label">Annoyances</string>
 </resources>

@@ -7,6 +7,7 @@ import android.net.VpnService
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,14 +16,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.VpnKey
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +71,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -75,99 +83,133 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // Section Title
-        Text(
-            text = stringResource(R.string.Function_type_title),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
+        // Main Card grouping all settings
+        Card(
 
-        // VPN Service Card
-        SettingsItemCard(
-            title = stringResource(R.string.vpn_service_label),
-            icon = Icons.Rounded.VpnKey,
-            checked = MyVpnService.isServiceRunning.value,
-            onCheckedChange = { checked ->
-                if (checked) {
-                    val intent = VpnService.prepare(context)
-                    if (intent != null) {
-                        vpnLauncher.launch(intent)
-                    } else {
-                        val serviceIntent = Intent(context, MyVpnService::class.java)
-                        serviceIntent.action = MyVpnService.ACTION_CONNECT
-                        context.startForegroundService(serviceIntent)
-                    }
-                } else {
-                    val serviceIntent = Intent(context, MyVpnService::class.java)
-                    serviceIntent.action = MyVpnService.ACTION_DISCONNECT
-                    context.startService(serviceIntent)
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(32.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                // Firewall Mode Title
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.Function_type_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
                 }
-            }
-        )
+                
+                // VPN Service Row
+                SettingsItemRow(
+                    title = stringResource(R.string.vpn_service_label),
+                    icon = Icons.Rounded.VpnKey,
+                    checked = MyVpnService.isServiceRunning.value,
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            val intent = VpnService.prepare(context)
+                            if (intent != null) {
+                                vpnLauncher.launch(intent)
+                            } else {
+                                val serviceIntent = Intent(context, MyVpnService::class.java)
+                                serviceIntent.action = MyVpnService.ACTION_CONNECT
+                                context.startForegroundService(serviceIntent)
+                            }
+                        } else {
+                            val serviceIntent = Intent(context, MyVpnService::class.java)
+                            serviceIntent.action = MyVpnService.ACTION_DISCONNECT
+                            context.startService(serviceIntent)
+                        }
+                    }
+                )
+                
+                SettingsDivider()
 
-        // Root Service Card
-        SettingsItemCard(
-            title = stringResource(R.string.root_service_label),
-            icon = Icons.Rounded.AdminPanelSettings,
-            checked = isRootEnabled.value,
-            onCheckedChange = { checked ->
-                isRootEnabled.value = checked
-                // Logic for Root service can be added here
+                // Root Service Row
+                SettingsItemRow(
+                    title = stringResource(R.string.root_service_label),
+                    icon = Icons.Rounded.AdminPanelSettings,
+                    checked = isRootEnabled.value,
+                    onCheckedChange = { checked ->
+                        isRootEnabled.value = checked
+                        // Logic for Root service can be added here
+                    }
+                )
+                
+                SettingsDivider()
+                
+                // Start on Boot Row
+                SettingsItemRow(
+                    title = stringResource(R.string.start_on_boot_label),
+                    icon = Icons.Rounded.PowerSettingsNew,
+                    checked = isStartOnBootEnabled.value,
+                    onCheckedChange = { checked ->
+                        isStartOnBootEnabled.value = checked
+                        sharedPrefs.edit().putBoolean("start_on_boot", checked).apply()
+                    }
+                )
             }
-        )
-        
-        // Start on Boot Card
-        SettingsItemCard(
-            title = stringResource(R.string.start_on_boot_label),
-            icon = Icons.Rounded.PowerSettingsNew,
-            checked = isStartOnBootEnabled.value,
-            onCheckedChange = { checked ->
-                isStartOnBootEnabled.value = checked
-                sharedPrefs.edit().putBoolean("start_on_boot", checked).apply()
-            }
-        )
+        }
     }
 }
 
 @Composable
-fun SettingsItemCard(
+fun SettingsItemRow(
     title: String,
     icon: ImageVector,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
             )
         }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
     }
+}
+
+@Composable
+fun SettingsDivider() {
+    HorizontalDivider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        thickness = 4.dp,
+        color = MaterialTheme.colorScheme.background
+    )
 }

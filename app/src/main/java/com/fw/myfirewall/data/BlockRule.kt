@@ -14,7 +14,6 @@ data class BlockRule(
 enum class BlockRuleCategory {
     ADVERTISING,
     SOCIAL_MEDIA,
-    TRACKERS,
-    MALWARE,
+    ANNOYANCES,
     CUSTOM
 }
