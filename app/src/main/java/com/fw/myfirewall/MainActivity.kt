@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -48,11 +49,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// ############################################################################
+// ACTIVITY ENTRY POINT
+// ############################################################################
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            // ############################################################################
+            // THEME AND VIEWMODEL SETUP
+            // ############################################################################
             val settingsViewModel: SettingsViewModel = viewModel()
             val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
             val themeMode by settingsViewModel.themeMode.collectAsState()
@@ -76,7 +83,16 @@ class MainActivity : ComponentActivity() {
 @PreviewScreenSizes
 @Composable
 fun MyFirewallApp() {
-    val pagerState = rememberPagerState(pageCount = { AppDestinations.entries.size })
+    // ############################################################################
+    // CORE APP STATE & VIEWMODEL INITIALIZATION
+    // ############################################################################
+    // Filter out SAVE_RULES for the pager and bottom nav
+    val pagerDestinations = remember { AppDestinations.entries.filter { it != AppDestinations.SAVE_RULES } }
+    val pagerState = rememberPagerState(pageCount = { pagerDestinations.size })
+    
+    // State to handle SaveRulesScreen overlay
+    var showSaveRulesScreen by rememberSaveable { mutableStateOf(false) }
+    
     val coroutineScope = rememberCoroutineScope()
     var selectedFilters by rememberSaveable { mutableStateOf(setOf(AppFilter.ALL)) }
 
@@ -86,6 +102,9 @@ fun MyFirewallApp() {
     
     val statusViewModel: StatusViewModel = viewModel()
 
+    // ############################################################################
+    // APPLICATION LIST DATA HANDLING
+    // ############################################################################
     var apps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var dataLoaded by rememberSaveable { mutableStateOf(false) }
@@ -139,12 +158,23 @@ fun MyFirewallApp() {
         }
     }
 
-
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEachIndexed { index, destination ->
-                // Don't show SAVE_RULES in the navigation bar
-                if (destination != AppDestinations.SAVE_RULES) {
+    // ############################################################################
+    // MAIN UI STRUCTURE
+    // ############################################################################
+    if (showSaveRulesScreen) {
+        // Overlay for SaveRulesScreen
+        BackHandler { showSaveRulesScreen = false }
+        SaveRulesScreen(
+            onBack = { showSaveRulesScreen = false }
+        )
+    } else {
+        // Main App Content with Navigation Suite
+        NavigationSuiteScaffold(
+            navigationSuiteItems = {
+                // ############################################################################
+                // BOTTOM NAVIGATION BAR ITEMS
+                // ############################################################################
+                pagerDestinations.forEachIndexed { index, destination ->
                     item(
                         icon = {
                             Icon(
@@ -162,106 +192,106 @@ fun MyFirewallApp() {
                     )
                 }
             }
-        }
-    ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-                userScrollEnabled = true
-            ) { page ->
-                when (AppDestinations.entries[page]) {
-                    AppDestinations.STATUS -> {
-                        StatusScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            totalApps = apps.size,
-                            blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed },
-                            viewModel = statusViewModel
-                        )
-                    }
-                    AppDestinations.APPLICATIONS -> {
-                        AppListScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            selectedFilters = selectedFilters,
-                            onFilterClick = { filter ->
-                                if (filter == AppFilter.ALL) {
-                                    selectedFilters = setOf(AppFilter.ALL)
-                                } else {
-                                    val current = selectedFilters.toMutableSet()
-                                    if (current.contains(AppFilter.ALL)) {
-                                        current.remove(AppFilter.ALL)
-                                    }
-                                    
-                                    if (current.contains(filter)) {
-                                        current.remove(filter)
+        ) {
+            Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                // ############################################################################
+                // HORIZONTAL PAGER FOR SCREEN CONTENT
+                // ############################################################################
+                val currentPageDestination = pagerDestinations[pagerState.currentPage]
+                val isSwipeEnabled = when (currentPageDestination) {
+                    // Disable swipe on Settings page (to prevent overscroll or conflict)
+//                    AppDestinations.SETTINGS -> false
+                    else -> true
+                }
+                
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                    userScrollEnabled = isSwipeEnabled
+                ) { page ->
+                    when (pagerDestinations[page]) {
+                        AppDestinations.STATUS -> {
+                            StatusScreen(
+                                modifier = Modifier.padding(innerPadding),
+                                totalApps = apps.size,
+                                blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed },
+                                viewModel = statusViewModel
+                            )
+                        }
+                        AppDestinations.APPLICATIONS -> {
+                            AppListScreen(
+                                modifier = Modifier.padding(innerPadding),
+                                selectedFilters = selectedFilters,
+                                onFilterClick = { filter ->
+                                    if (filter == AppFilter.ALL) {
+                                        selectedFilters = setOf(AppFilter.ALL)
                                     } else {
-                                        current.add(filter)
+                                        val current = selectedFilters.toMutableSet()
+                                        if (current.contains(AppFilter.ALL)) {
+                                            current.remove(AppFilter.ALL)
+                                        }
+                                        
+                                        if (current.contains(filter)) {
+                                            current.remove(filter)
+                                        } else {
+                                            current.add(filter)
+                                        }
+                                        
+                                        selectedFilters = if (current.isEmpty()) setOf(AppFilter.ALL) else current
                                     }
-                                    
-                                    selectedFilters = if (current.isEmpty()) setOf(AppFilter.ALL) else current
-                                }
-                            },
-                            onFilterLongClick = { filter ->
-                                if (filter != AppFilter.ALL) {
-                                    val current = selectedFilters.toMutableSet()
-                                    if (current.contains(AppFilter.ALL)) {
-                                        current.remove(AppFilter.ALL)
-                                    }
-                                    
-                                    if (current.contains(filter)) {
-                                        current.remove(filter)
+                                },
+                                onFilterLongClick = { filter ->
+                                    if (filter != AppFilter.ALL) {
+                                        val current = selectedFilters.toMutableSet()
+                                        if (current.contains(AppFilter.ALL)) {
+                                            current.remove(AppFilter.ALL)
+                                        }
+                                        
+                                        if (current.contains(filter)) {
+                                            current.remove(filter)
+                                        } else {
+                                            current.add(filter)
+                                        }
+                                        
+                                        selectedFilters = if (current.isEmpty()) setOf(AppFilter.ALL) else current
                                     } else {
-                                        current.add(filter)
+                                        // Long click on ALL resets to just ALL
+                                        selectedFilters = setOf(AppFilter.ALL)
                                     }
-                                    
-                                    selectedFilters = if (current.isEmpty()) setOf(AppFilter.ALL) else current
-                                } else {
-                                    // Long click on ALL resets to just ALL
-                                    selectedFilters = setOf(AppFilter.ALL)
+                                },
+                                apps = apps,
+                                isLoading = isLoading,
+                                onAppsChange = { newApps -> 
+                                    apps = newApps 
+                                },
+                                onAppUpdated = { app ->
+                                    updateAppRule(app)
+                                },
+                                onAppsUpdated = { updatedApps ->
+                                    updatedApps.forEach { updateAppRule(it) }
+                                },
+                                onRefresh = {
+                                    coroutineScope.launch {
+                                        loadApps()
+                                    }
                                 }
-                            },
-                            apps = apps,
-                            isLoading = isLoading,
-                            onAppsChange = { newApps -> 
-                                apps = newApps 
-                            },
-                            onAppUpdated = { app ->
-                                updateAppRule(app)
-                            },
-                            onAppsUpdated = { updatedApps ->
-                                updatedApps.forEach { updateAppRule(it) }
-                            },
-                            onRefresh = {
-                                coroutineScope.launch {
-                                    loadApps()
+                            )
+                        }
+                        AppDestinations.RULES -> {
+                            RulesScreen(
+                                modifier = Modifier.padding(innerPadding),
+                                onNavigateToSaveRules = {
+                                    showSaveRulesScreen = true
                                 }
-                            }
-                        )
-                    }
-                    AppDestinations.RULES -> {
-                        RulesScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            onNavigateToSaveRules = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(AppDestinations.SAVE_RULES.ordinal)
-                                }
-                            }
-                        )
-                    }
-                    AppDestinations.SETTINGS -> {
-                        SettingsScreen(
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                    }
-                    AppDestinations.SAVE_RULES -> {
-                        SaveRulesScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            onBack = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(AppDestinations.RULES.ordinal)
-                                }
-                            }
-                        )
+                            )
+                        }
+                        AppDestinations.SETTINGS -> {
+                            SettingsScreen(
+                                modifier = Modifier.padding(innerPadding)
+                            )
+                        }
+                        // SAVE_RULES is handled outside the pager now
+                        AppDestinations.SAVE_RULES -> { /* Should not happen in pager */ }
                     }
                 }
             }
