@@ -16,12 +16,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).blockRuleDao()
     private val workManager = WorkManager.getInstance(application)
     private val sharedPrefs = application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
+    private val statsRepository = NetworkStatsRepository(application)
 
     val advertisingCount = dao.countByCategory(BlockRuleCategory.ADVERTISING)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -47,6 +49,15 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
     private val _isCustomEnabled = MutableStateFlow(sharedPrefs.getBoolean("custom_enabled", false))
     val isCustomEnabled = _isCustomEnabled.asStateFlow()
 
+    private val _wifiUsage = MutableStateFlow(0L)
+    val wifiUsage = _wifiUsage.asStateFlow()
+
+    private val _mobileUsage = MutableStateFlow(0L)
+    val mobileUsage = _mobileUsage.asStateFlow()
+    
+    private val _hasUsagePermission = MutableStateFlow(hasUsageStatsPermission(application))
+    val hasUsagePermission = _hasUsagePermission.asStateFlow()
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
         when (key) {
             "advertising_enabled" -> _isAdvertisingEnabled.value = prefs.getBoolean(key, false)
@@ -58,6 +69,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
+        refreshNetworkStats()
     }
 
     override fun onCleared() {
@@ -98,5 +110,29 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         } else {
             "${minutes}m"
         }
+    }
+    
+    fun refreshNetworkStats() {
+        viewModelScope.launch {
+            val hasPerm = hasUsageStatsPermission(getApplication())
+            _hasUsagePermission.value = hasPerm
+            
+            if (hasPerm) {
+                _wifiUsage.value = statsRepository.getWifiDataUsage()
+                _mobileUsage.value = statsRepository.getMobileDataUsage()
+            } else {
+                _wifiUsage.value = -1L
+                _mobileUsage.value = -1L
+            }
+        }
+    }
+
+    // Fonction utilitaire pour formater en Go/Mo
+    fun formatDataSize(bytes: Long): String {
+        if (bytes < 0) return "Permission needed"
+        if (bytes == 0L) return "0 Mo"
+        val items = arrayOf("o", "Ko", "Mo", "Go", "To")
+        val i = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
+        return String.format("%.2f %s", bytes / Math.pow(1024.0, i.toDouble()), items[i])
     }
 }

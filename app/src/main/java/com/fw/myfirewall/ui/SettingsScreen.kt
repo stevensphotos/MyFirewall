@@ -517,10 +517,10 @@ fun getThemeLabel(key: String): String {
 private fun getThemeLabel(mode: Int): String {
     // These IDs are examples. Replace them with the actual string IDs from your strings.xml
     return when (mode) {
-        0 -> stringResource(R.string.theme_system_default) // e.g. "System Default"
+        0 -> stringResource(R.string.theme_system) // e.g. "System Default"
         1 -> stringResource(R.string.theme_light)          // e.g. "Light"
         2 -> stringResource(R.string.theme_dark)           // e.g. "Dark"
-        else -> stringResource(R.string.theme_system_default)
+        else -> stringResource(R.string.theme_system)
     }
 }
 
