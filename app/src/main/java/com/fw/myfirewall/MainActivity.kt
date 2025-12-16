@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -37,6 +38,7 @@ import com.fw.myfirewall.ui.AppDestinations
 import com.fw.myfirewall.ui.AppFilter
 import com.fw.myfirewall.ui.AppListScreen
 import com.fw.myfirewall.ui.RulesScreen
+import com.fw.myfirewall.ui.SaveRulesScreen
 import com.fw.myfirewall.ui.SettingsScreen
 import com.fw.myfirewall.ui.StatusScreen
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
@@ -53,8 +55,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = viewModel()
             val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
+            val themeMode by settingsViewModel.themeMode.collectAsState()
             
-            MyFirewallTheme(pureBlack = isPureBlackEnabled) {
+            val darkTheme = when(themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+            
+            MyFirewallTheme(
+                darkTheme = darkTheme,
+                pureBlack = isPureBlackEnabled
+            ) {
                 MyFirewallApp()
             }
         }
@@ -131,28 +143,32 @@ fun MyFirewallApp() {
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             AppDestinations.entries.forEachIndexed { index, destination ->
-                item(
-                    icon = {
-                        Icon(
-                            destination.icon,
-                            contentDescription = destination.label
-                        )
-                    },
-                    label = { Text(destination.label) },
-                    selected = index == pagerState.currentPage,
-                    onClick = {
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(index)
+                // Don't show SAVE_RULES in the navigation bar
+                if (destination != AppDestinations.SAVE_RULES) {
+                    item(
+                        icon = {
+                            Icon(
+                                destination.icon,
+                                contentDescription = destination.label
+                            )
+                        },
+                        label = { Text(destination.label) },
+                        selected = index == pagerState.currentPage,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = true
             ) { page ->
                 when (AppDestinations.entries[page]) {
                     AppDestinations.STATUS -> {
@@ -224,12 +240,27 @@ fun MyFirewallApp() {
                     }
                     AppDestinations.RULES -> {
                         RulesScreen(
-                            modifier = Modifier.padding(innerPadding)
+                            modifier = Modifier.padding(innerPadding),
+                            onNavigateToSaveRules = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(AppDestinations.SAVE_RULES.ordinal)
+                                }
+                            }
                         )
                     }
                     AppDestinations.SETTINGS -> {
                         SettingsScreen(
                             modifier = Modifier.padding(innerPadding)
+                        )
+                    }
+                    AppDestinations.SAVE_RULES -> {
+                        SaveRulesScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            onBack = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(AppDestinations.RULES.ordinal)
+                                }
+                            }
                         )
                     }
                 }

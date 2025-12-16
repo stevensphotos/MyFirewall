@@ -26,6 +26,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _isPureBlackEnabled = MutableStateFlow(false)
     val isPureBlackEnabled: StateFlow<Boolean> = _isPureBlackEnabled.asStateFlow()
+    
+    private val _themeMode = MutableStateFlow("system") // system, light, dark
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
     private val _rootCheckResult = MutableStateFlow<Boolean?>(null)
     val rootCheckResult: StateFlow<Boolean?> = _rootCheckResult.asStateFlow()
@@ -37,6 +40,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isStartOnBootEnabled.value = sharedPrefs.getBoolean("start_on_boot", false)
         _isRootEnabled.value = sharedPrefs.getBoolean("root_enabled", false)
         _isPureBlackEnabled.value = sharedPrefs.getBoolean("pure_black_enabled", false)
+        _themeMode.value = sharedPrefs.getString("theme_mode", "system") ?: "system"
     }
 
     fun toggleStartOnBoot(enabled: Boolean) {
@@ -45,8 +49,30 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun togglePureBlack(enabled: Boolean) {
+        // Just toggle the preference. The UI logic (enable/disable) is handled in the UI if needed,
+        // but here we just store the intent.
+        // Wait, if we toggle it ON, we should check if we are in dark mode?
+        // The prompt says: "if theme is darkcolorscheme and pure black toggle is ON then apply... else keep active theme"
+        // This logic is mostly view/theme application logic, but maybe the prompt implies we shouldn't even allow enabling it if not dark?
+        // Or that enabling it should only take effect if dark.
+        // MyFirewallTheme already handles "pureBlack" parameter.
+        // If pureBlack is true, MyFirewallTheme applies pure black scheme.
+        // But MyFirewallTheme logic I wrote earlier:
+        // when { pureBlack ... -> ... }
+        // This applies pure black regardless of darkTheme flag if pureBlack is true!
+        // The user wants: "if theme is darkcolorscheme and pure black toggle is ON then apply pure black... else keep active theme"
+        // So pure black should ONLY apply if dark mode is active.
+        
+        // This logic belongs in MyFirewallTheme or MainActivity where we decide what to pass to MyFirewallTheme.
+        // But here I'm updating the ViewModel state.
+        
         _isPureBlackEnabled.value = enabled
         sharedPrefs.edit().putBoolean("pure_black_enabled", enabled).apply()
+    }
+    
+    fun setThemeMode(mode: String) {
+        _themeMode.value = mode
+        sharedPrefs.edit().putString("theme_mode", mode).apply()
     }
 
     fun toggleRoot(enabled: Boolean) {

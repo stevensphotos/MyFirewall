@@ -45,7 +45,8 @@ fun MyFirewallTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        pureBlack && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        // Pure Black only applies if Dark Theme is active
+        pureBlack && darkTheme && dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             dynamicDarkColorScheme(context).copy(
                 background = Color.Black,
@@ -56,7 +57,8 @@ fun MyFirewallTheme(
                 onSurfaceVariant = Color.White
             )
         }
-        pureBlack -> PureBlackColorScheme
+        pureBlack && darkTheme -> PureBlackColorScheme
+        
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

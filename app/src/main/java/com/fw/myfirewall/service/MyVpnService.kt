@@ -68,8 +68,8 @@ class MyVpnService : VpnService() {
             )
 
             val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("MyFirewall is running")
-                .setContentText("Traffic is being filtered")
+                .setContentTitle(getString(R.string.notification_title))
+                .setContentText(getString(R.string.notification_content))
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -145,7 +145,7 @@ class MyVpnService : VpnService() {
                 Log.i("MyVpnService", "Updating VPN config. Wifi: $isWifi, Mobile: $isMobile")
 
                 val builder = Builder()
-                builder.setSession("MyFirewall")
+                builder.setSession(getString(R.string.vpn_session_name))
                 builder.addAddress("10.0.0.2", 32)
                 builder.addRoute("0.0.0.0", 0)
                 builder.setMtu(1500)
@@ -224,7 +224,7 @@ class MyVpnService : VpnService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(
                 CHANNEL_ID,
-                "MyFirewall VPN Service",
+                getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)

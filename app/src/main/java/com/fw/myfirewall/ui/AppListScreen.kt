@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fw.myfirewall.model.AppInfo
@@ -125,6 +126,9 @@ fun AppListScreen(
                         .fillMaxHeight()
                         .fillMaxWidth(if (isLandscape) 0.9f else 1f)
                 ) {
+                    // ############################################################################
+                    // FILTER SECTION
+                    // ############################################################################
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -169,6 +173,9 @@ fun AppListScreen(
                         }
                     }
 
+                    // ############################################################################
+                    // APP LIST SECTION
+                    // ############################################################################
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -251,6 +258,9 @@ fun AppListScreen(
     }
 }
 
+// ############################################################################
+// APP ITEM COMPOSABLE
+// ############################################################################
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppItem(
@@ -296,7 +306,7 @@ fun AppItem(
             Row {
                 Icon(
                     imageVector = if (app.wifiAllowed) Icons.Default.Wifi else Icons.Default.WifiOff,
-                    contentDescription = "Wi-Fi",
+                    contentDescription = stringResource(R.string.wifi_content_description),
                     tint = if (app.wifiAllowed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
@@ -304,7 +314,7 @@ fun AppItem(
                 )
                 Icon(
                     imageVector = if (app.mobileAllowed) Icons.Default.SignalCellularAlt else Icons.Default.SignalCellularOff,
-                    contentDescription = "Mobile Data",
+                    contentDescription = stringResource(R.string.mobile_data_content_description),
                     tint = if (app.mobileAllowed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
@@ -312,7 +322,7 @@ fun AppItem(
                 )
                 Icon(
                     imageVector = if (app.roamingAllowed) Icons.Default.Public else Icons.Default.PublicOff,
-                    contentDescription = "Roaming",
+                    contentDescription = stringResource(R.string.roaming_content_description),
                     tint = if (app.roamingAllowed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
