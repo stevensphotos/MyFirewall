@@ -1,7 +1,6 @@
 package com.fw.myfirewall.ui
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.widget.Toast
@@ -26,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.VpnKey
@@ -61,7 +61,8 @@ import com.fw.myfirewall.viewmodel.SettingsViewModel
 fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel = viewModel()) {
     val context = LocalContext.current
     val showThemeDialog = remember { mutableStateOf(false) }
-    
+    val showLanguageDialog = remember { mutableStateOf(false) }
+
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -76,6 +77,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
     val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
     val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
+    val languageCode by viewModel.languageCode.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
 
     LaunchedEffect(rootCheckResult) {
@@ -99,6 +101,17 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             }
         )
     }
+    if (showLanguageDialog.value) {
+        LanguageDialog(
+            currentSelection = languageCode,
+            onDismissRequest = { showLanguageDialog.value = false },
+            onConfirmation = { selection ->
+                viewModel.setLanguage(selection)
+                showLanguageDialog.value = false
+            }
+        )
+    }
+
 
     Column(
         modifier = modifier
@@ -261,7 +274,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
-                                text = getThemeLabel(themeMode),
+                                text = (themeMode),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -287,12 +300,60 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                     checked = isPureBlackEnabled
                 ) { checked ->
                     viewModel.togglePureBlack(checked)
+
                 }
+                SettingsDivider()}
+            // ############################################################################
+            // LANGUAGE SELECTION ROW
+            // ############################################################################
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showLanguageDialog.value = true }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.background,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Rounded.Language,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.language_settings_label),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            text = getLanguageLabel(languageCode),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Default.ArrowForwardIos,
+                    contentDescription = "Navigate",
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
+
+
         }
     }
 }
-
 // ############################################################################
 // HELPER COMPOSABLES
 // ############################################################################
@@ -400,6 +461,46 @@ fun ThemeDialog(
         confirmButton = {}
     )
 }
+@Composable
+fun LanguageDialog(
+    currentSelection: String,
+    onDismissRequest: () -> Unit,
+    onConfirmation: (String) -> Unit
+) {
+    val options = listOf(
+        "system" to R.string.language_system,
+        "en" to R.string.language_english,
+        "fr" to R.string.language_french
+    )
+
+    AlertDialog(
+        onDismissRequest = { onDismissRequest() },
+        title = { Text(text = stringResource(R.string.language_dialog_title)) },
+        text = {
+            Column {
+                options.forEach { (key, labelRes) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onConfirmation(key) }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(labelRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        RadioButton(
+                            selected = (key == currentSelection),
+                            onClick = { onConfirmation(key) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {}
+    )
 
 @Composable
 fun getThemeLabel(key: String): String {
@@ -408,5 +509,33 @@ fun getThemeLabel(key: String): String {
         "light" -> stringResource(R.string.theme_light)
         "dark" -> stringResource(R.string.theme_dark)
         else -> stringResource(R.string.theme_system)
+    }
+}
+}
+
+@Composable
+private fun getThemeLabel(mode: Int): String {
+    // These IDs are examples. Replace them with the actual string IDs from your strings.xml
+    return when (mode) {
+        0 -> stringResource(R.string.theme_system_default) // e.g. "System Default"
+        1 -> stringResource(R.string.theme_light)          // e.g. "Light"
+        2 -> stringResource(R.string.theme_dark)           // e.g. "Dark"
+        else -> stringResource(R.string.theme_system_default)
+    }
+}
+
+private fun getLanguageLabel(code: String): String {
+    return when (code) {
+        "en" -> "English"
+        "es" -> "Español"
+        "fr" -> "Français"
+        "de" -> "Deutsch"
+        "it" -> "Italiano"
+        "pt" -> "Português"
+        "ru" -> "Русский"
+        "zh" -> "中文"
+        "ja" -> "日本語"
+        "ko" -> "한국어"
+        else -> "System Default" // Or handle unknown codes appropriately
     }
 }

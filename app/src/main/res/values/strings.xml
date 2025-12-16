@@ -48,7 +48,6 @@
     <string name="theme_settings_label">Theme</string>
     <string name="theme_dialog_title">Select Theme</string>
     <string name="theme_system">Follow system</string>
-    <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="root_service_text">Use hosts file (requires Root)</string>
     <string name="start_on_boot_text">Start service automatically</string>
@@ -60,4 +59,7 @@
     <string name="language_system">System</string>
     <string name="language_english">English</string>
     <string name="language_french">Français</string>
+    <string name="theme_system_default">System Default</string>
+    <string name="theme_light">Light</string>
+
 </resources>
