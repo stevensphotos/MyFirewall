@@ -71,4 +71,16 @@
     <string name="permission_notification">Allow notifications (Required)</string>
     <string name="start_protection">Start protecting my device</string>
     <string name="permission_usage_stats">Allow usage access (Optional)</string>
+    <string name="save_rules_back_desc">Back</string>
+    <string name="export_rules_title">Export Rules</string>
+    <string name="export_rules_description">Save your current application blocking rules to a JSON file. Useful for backup or transferring to another device.</string>
+    <string name="export_button">Export</string>
+    <string name="save_rules_title">Import / Export Rules</string>
+    <string name="import_rules_title">Import Rules</string>
+    <string name="import_rules_description">Restore rules from a JSON file. This will merge with existing rules, overwriting any duplicates.</string>
+    <string name="import_button">Import</string>
+    <string name="export_success">Rules exported successfully</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="import_success">Imported %1$d rules successfully</string>
+    <string name="import_failed">Import failed: %1$s</string>
 </resources>

@@ -1,7 +1,6 @@
 package com.fw.myfirewall.ui
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +23,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.NetworkWifi
 import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -39,12 +39,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.fw.myfirewall.R
@@ -87,15 +89,16 @@ fun StatusScreen(
     val mobileUsage by viewModel.mobileUsage.collectAsState()
     val hasPermission by viewModel.hasUsagePermission.collectAsState()
     
+    // Speed stats
+    val downloadSpeed by viewModel.downloadSpeed.collectAsState()
+    val uploadSpeed by viewModel.uploadSpeed.collectAsState()
+    val speedMode by viewModel.speedMode.collectAsState()
+
     // Collecting toggle states
     val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
     val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
-    
-    // Récupération de la configuration pour adapter la taille des cartes (Optional now with Carousel)
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
 
     // Container principal scrollable verticalement pour accueillir plusieurs carousels
     Column(
@@ -111,9 +114,6 @@ fun StatusScreen(
         
         Text(
             stringResource(R.string.applications_title),
-
-
-
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -205,21 +205,20 @@ fun StatusScreen(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
+        
         val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A"
-        // Si pas de permission, mobileUsage contient le total depuis le boot (voir ViewModel)
         val mobileText = viewModel.formatDataSize(mobileUsage)
-
-// On change le label si on est en mode "Boot stats"
         val mobileLabel = if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)"
-
-// Couleur : Orange si pas de permission (mode dégradé), sinon la couleur normale
         val networkColor = if (hasPermission) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiaryContainer
 
-        val networkItems = listOf(
-            Triple(stringResource(R.string.network_wifi), wifiText, Icons.Default.NetworkWifi),
-            Triple(stringResource(R.string.network_mobile), mobileText, Icons.Default.SignalCellularAlt)
-        )
+        val speedText = "↓ ${viewModel.formatSpeed(downloadSpeed)}\n↑ ${viewModel.formatSpeed(uploadSpeed)}"
+        val speedLabel = "Speed ($speedMode)"
 
+        val networkItems = listOf(
+            Triple(speedLabel, speedText, Icons.Default.Speed),
+            Triple(stringResource(R.string.network_wifi), wifiText, Icons.Default.NetworkWifi),
+            Triple(mobileLabel, mobileText, Icons.Default.SignalCellularAlt)
+        )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { networkItems.size },
@@ -231,12 +230,21 @@ fun StatusScreen(
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { i ->
             val item = networkItems[i]
+            
+            // Adjust dynamic text size
+            val textSize = when {
+                i == 0 -> 20.sp // Speed card has 2 lines, needs smaller font
+                item.second.length > 8 -> 28.sp 
+                else -> MaterialTheme.typography.displayMedium.fontSize
+            }
+
             StatusCard(
                 title = item.first,
                 count = item.second,
                 icon = item.third,
                 color = networkColor,
-                onClick = if (!hasPermission) { { openUsageStatsSettings(context) } } else null,
+                onClick = { if (i == 0) { viewModel.toggleSpeedMode() } else if (!hasPermission) { openUsageStatsSettings(context) } },
+                countFontSize = textSize,
                 modifier = Modifier
                     .fillMaxSize()
                     .maskClip(MaterialTheme.shapes.extraLarge)
@@ -255,6 +263,7 @@ fun StatusCard(
     icon: ImageVector,
     color: Color,
     onClick: (() -> Unit)? = null,
+    countFontSize: androidx.compose.ui.unit.TextUnit = MaterialTheme.typography.displayMedium.fontSize,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -278,12 +287,17 @@ fun StatusCard(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = count,
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold
+                fontSize = countFontSize,
+                lineHeight = if (count.contains("\n")) countFontSize * 1.2 else countFontSize,
+                style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
             )
         }
     }

@@ -83,12 +83,12 @@ fun SaveRulesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Import / Export Rules") },
+                title = { Text(stringResource(R.string.save_rules_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.save_rules_back_desc)
                         )
                     }
                 }
@@ -116,13 +116,13 @@ fun SaveRulesScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Export Rules",
+                        text = stringResource(R.string.export_rules_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Save your current application blocking rules to a JSON file. Useful for backup or transferring to another device.",
+                        text = stringResource(R.string.export_rules_description),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -132,7 +132,7 @@ fun SaveRulesScreen(
                     ) {
                         Icon(Icons.Default.Download, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Export")
+                        Text(stringResource(R.string.export_button))
                     }
                 }
             }
@@ -151,13 +151,13 @@ fun SaveRulesScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Import Rules",
+                        text = stringResource(R.string.import_rules_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Restore rules from a JSON file. This will merge with existing rules, overwriting any duplicates.",
+                        text = stringResource(R.string.import_rules_description),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -167,7 +167,7 @@ fun SaveRulesScreen(
                     ) {
                         Icon(Icons.Default.Upload, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Import")
+                        Text(stringResource(R.string.import_button))
                     }
                 }
             }
@@ -187,11 +187,11 @@ private suspend fun exportRules(context: Context, db: AppDatabase, uri: Uri) {
             }
             
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Rules exported successfully", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.export_failed, e.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -222,11 +222,11 @@ private suspend fun importRules(context: Context, db: AppDatabase, uri: Uri) {
             }
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Imported ${rules.size} rules successfully", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.import_success, rules.size), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Import failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.import_failed, e.message), Toast.LENGTH_SHORT).show()
             }
         }
     }

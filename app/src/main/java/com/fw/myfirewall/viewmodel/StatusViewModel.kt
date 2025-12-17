@@ -10,6 +10,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.BlockRuleCategory
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,8 +18,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).blockRuleDao()
     private val workManager = WorkManager.getInstance(application)
@@ -58,6 +61,17 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
     private val _hasUsagePermission = MutableStateFlow(hasUsageStatsPermission(application))
     val hasUsagePermission = _hasUsagePermission.asStateFlow()
 
+    private val _downloadSpeed = MutableStateFlow(0L)
+    val downloadSpeed = _downloadSpeed.asStateFlow()
+
+    private val _uploadSpeed = MutableStateFlow(0L)
+    val uploadSpeed = _uploadSpeed.asStateFlow()
+
+    private val _speedMode = MutableStateFlow("Total") // "Total", "Wi-Fi", "Mobile"
+    val speedMode = _speedMode.asStateFlow()
+
+    private var speedUpdateJob: Job? = null
+
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
         when (key) {
             "advertising_enabled" -> _isAdvertisingEnabled.value = prefs.getBoolean(key, false)
@@ -70,11 +84,67 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
     init {
         sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
         refreshNetworkStats()
+        startSpeedMonitoring()
+    }
+
+    private fun startSpeedMonitoring() {
+        speedUpdateJob?.cancel()
+        speedUpdateJob = viewModelScope.launch {
+            var lastTotalRx = TrafficStats.getTotalRxBytes()
+            var lastTotalTx = TrafficStats.getTotalTxBytes()
+            var lastMobileRx = TrafficStats.getMobileRxBytes()
+            var lastMobileTx = TrafficStats.getMobileTxBytes()
+
+            while (isActive) {
+                delay(1000)
+                val curTotalRx = TrafficStats.getTotalRxBytes()
+                val curTotalTx = TrafficStats.getTotalTxBytes()
+                val curMobileRx = TrafficStats.getMobileRxBytes()
+                val curMobileTx = TrafficStats.getMobileTxBytes()
+
+                val diffTotalRx = if (lastTotalRx >= 0) curTotalRx - lastTotalRx else 0
+                val diffTotalTx = if (lastTotalTx >= 0) curTotalTx - lastTotalTx else 0
+                val diffMobileRx = if (lastMobileRx >= 0) curMobileRx - lastMobileRx else 0
+                val diffMobileTx = if (lastMobileTx >= 0) curMobileTx - lastMobileTx else 0
+
+                val diffWifiRx = (diffTotalRx - diffMobileRx).coerceAtLeast(0)
+                val diffWifiTx = (diffTotalTx - diffMobileTx).coerceAtLeast(0)
+
+                when (_speedMode.value) {
+                    "Total" -> {
+                        _downloadSpeed.value = diffTotalRx.coerceAtLeast(0)
+                        _uploadSpeed.value = diffTotalTx.coerceAtLeast(0)
+                    }
+                    "Wi-Fi" -> {
+                        _downloadSpeed.value = diffWifiRx
+                        _uploadSpeed.value = diffWifiTx
+                    }
+                    "Mobile" -> {
+                        _downloadSpeed.value = diffMobileRx.coerceAtLeast(0)
+                        _uploadSpeed.value = diffMobileTx.coerceAtLeast(0)
+                    }
+                }
+
+                lastTotalRx = curTotalRx
+                lastTotalTx = curTotalTx
+                lastMobileRx = curMobileRx
+                lastMobileTx = curMobileTx
+            }
+        }
+    }
+
+    fun toggleSpeedMode() {
+        _speedMode.value = when (_speedMode.value) {
+            "Total" -> "Wi-Fi"
+            "Wi-Fi" -> "Mobile"
+            else -> "Total"
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
         sharedPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+        speedUpdateJob?.cancel()
     }
 
     // Ticker that emits every minute
@@ -112,42 +182,34 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-
-
-// ...
-
     fun refreshNetworkStats() {
         viewModelScope.launch {
             if (hasUsageStatsPermission(getApplication())) {
-                // Cas normal : Permission accordée, on prend les stats mensuelles
                 _wifiUsage.value = statsRepository.getWifiDataUsage()
                 _mobileUsage.value = statsRepository.getMobileDataUsage()
                 _hasUsagePermission.value = true
             } else {
-                // Cas Fallback : Pas de permission, on prend les stats depuis le boot (TrafficStats)
-                // TrafficStats ne sépare pas facilement Wifi/Mobile sans UID,
-                // donc on met tout dans "Mobile" ou on affiche un total global.
-                // Pour l'exemple, on met tout dans Mobile pour l'affichage :
                 val totalBoot = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
-
-                _wifiUsage.value = 0 // On ne peut pas savoir
+                _wifiUsage.value = 0 
                 _mobileUsage.value = totalBoot
-
                 _hasUsagePermission.value = false
             }
         }
     }
 
     fun getBootDataUsage(): Long {
-        // Returns total bytes (Mobile + Wifi) since boot
         return TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
     }
-    // Fonction utilitaire pour formater en Go/Mo
+
     fun formatDataSize(bytes: Long): String {
-        if (bytes < 0) return "Permission needed"
-        if (bytes == 0L) return "0 Mo"
-        val items = arrayOf("o", "Ko", "Mo", "Go", "To")
+        if (bytes < 0) return "N/A"
+        if (bytes == 0L) return "0 B"
+        val items = arrayOf("B", "KB", "MB", "GB", "TB")
         val i = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
         return String.format("%.2f %s", bytes / Math.pow(1024.0, i.toDouble()), items[i])
+    }
+    
+    fun formatSpeed(bytesPerSec: Long): String {
+        return formatDataSize(bytesPerSec) + "/s"
     }
 }
