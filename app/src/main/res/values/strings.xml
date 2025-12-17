@@ -3,6 +3,7 @@
     <string name="settings_title">Settings</string>
     <string name="rules_title">Rules</string>
     <string name="vpn_service_label">VPN Service</string>
+    <string name="status_title">Status</string>
     <string name="vpn_service_text">Applications are filtered</string>
     <string name="Function_type_title">Firewall mode</string>
     <string name="filter_msg">Filter: %1$s</string>
@@ -18,6 +19,7 @@
     <string name="schedule_monthly">Every month</string>
     <string name="configure_button">Configure</string>
     <string name="cancel">Cancel</string>
+    <string name="status_label">Status</string>
     <string name="Annoyances_label">Annoyances"></string>
     <string name="social_label">Social Media</string>
     <string name="custom_label">Custom Rules</string>
@@ -64,4 +66,5 @@
     <string name="network_wifi">Wi-Fi</string>
     <string name="network_mobile">Mobile Data</string>
     <string name="permission_required">Permission needed</string>
+
 </resources>

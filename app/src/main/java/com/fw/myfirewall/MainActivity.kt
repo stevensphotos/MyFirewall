@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.graphics.drawable.toBitmap
@@ -48,6 +49,7 @@ import com.fw.myfirewall.viewmodel.StatusViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.res.stringResource
 
 // ############################################################################
 // ACTIVITY ENTRY POINT
@@ -179,10 +181,10 @@ fun MyFirewallApp() {
                         icon = {
                             Icon(
                                 destination.icon,
-                                contentDescription = destination.label
+                                contentDescription = destination.name
                             )
                         },
-                        label = { Text(destination.label) },
+                        label = { Text(text = stringResource(id = destination.labelRes)) },
                         selected = index == pagerState.currentPage,
                         onClick = {
                             coroutineScope.launch {
