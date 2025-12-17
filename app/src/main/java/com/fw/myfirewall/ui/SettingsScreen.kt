@@ -106,11 +106,24 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             currentSelection = languageCode,
             onDismissRequest = { showLanguageDialog.value = false },
             onConfirmation = { selection ->
+                // 1. Sauvegarder la préférence dans le ViewModel (existant)
                 viewModel.setLanguage(selection)
+
+                // 2. Appliquer immédiatement la nouvelle langue via LanguageManager
+                // Cela reconfigure les ressources de l'activité en cours
+                com.fw.myfirewall.util.LanguageManager.setLocale(context, selection)
+
+                // 3. Optionnel : Recharger l'activité pour forcer le rafraîchissement complet de l'UI
+                // (Souvent nécessaire car certains textes Compose ne se rafraîchissent pas instantanément)
+                if (context is Activity) {
+                    context.recreate()
+                }
+
                 showLanguageDialog.value = false
             }
         )
     }
+
 
 
     Column(
