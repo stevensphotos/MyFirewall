@@ -3,6 +3,7 @@ package com.fw.myfirewall.viewmodel
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.TrafficStats
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
-
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = AppDatabase.getDatabase(application).blockRuleDao()
     private val workManager = WorkManager.getInstance(application)
@@ -111,22 +111,37 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
             "${minutes}m"
         }
     }
-    
+
+
+
+// ...
+
     fun refreshNetworkStats() {
         viewModelScope.launch {
-            val hasPerm = hasUsageStatsPermission(getApplication())
-            _hasUsagePermission.value = hasPerm
-            
-            if (hasPerm) {
+            if (hasUsageStatsPermission(getApplication())) {
+                // Cas normal : Permission accordée, on prend les stats mensuelles
                 _wifiUsage.value = statsRepository.getWifiDataUsage()
                 _mobileUsage.value = statsRepository.getMobileDataUsage()
+                _hasUsagePermission.value = true
             } else {
-                _wifiUsage.value = -1L
-                _mobileUsage.value = -1L
+                // Cas Fallback : Pas de permission, on prend les stats depuis le boot (TrafficStats)
+                // TrafficStats ne sépare pas facilement Wifi/Mobile sans UID,
+                // donc on met tout dans "Mobile" ou on affiche un total global.
+                // Pour l'exemple, on met tout dans Mobile pour l'affichage :
+                val totalBoot = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
+
+                _wifiUsage.value = 0 // On ne peut pas savoir
+                _mobileUsage.value = totalBoot
+
+                _hasUsagePermission.value = false
             }
         }
     }
 
+    fun getBootDataUsage(): Long {
+        // Returns total bytes (Mobile + Wifi) since boot
+        return TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
+    }
     // Fonction utilitaire pour formater en Go/Mo
     fun formatDataSize(bytes: Long): String {
         if (bytes < 0) return "Permission needed"

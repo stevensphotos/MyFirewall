@@ -67,4 +67,9 @@
         <string name="network_wifi">Wi-Fi</string>
         <string name="network_mobile">Données mobiles</string>
         <string name="permission_required">Permission requise</string>
+        <string name="welcome_title">Bienvenue sur MyFirewall</string>
+        <string name="onboarding_disclaimer">Cette application utilise un VPN local pour filtrer votre trafic internet directement sur votre appareil. \n\nAucune donnée personnelle n\'est envoyée vers un serveur externe. Vous gardez le contrôle total.</string>
+        <string name="permission_notification">Autoriser les notifications (Requis)</string>
+        <string name="start_protection">Commencer à protéger mon appareil</string>
+    <string name="permission_usage_stats">Autoriser les statistiques d\'utilisation (optionnel)</string>
 </resources>

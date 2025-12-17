@@ -1,6 +1,7 @@
 package com.fw.myfirewall.ui
 
-import android.content.res.Configuration
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -111,6 +111,9 @@ fun StatusScreen(
         
         Text(
             stringResource(R.string.applications_title),
+
+
+
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -202,15 +205,21 @@ fun StatusScreen(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
+        val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A"
+        // Si pas de permission, mobileUsage contient le total depuis le boot (voir ViewModel)
+        val mobileText = viewModel.formatDataSize(mobileUsage)
 
-        val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else stringResource(R.string.permission_required)
-        val mobileText = if (hasPermission) viewModel.formatDataSize(mobileUsage) else stringResource(R.string.permission_required)
-        val networkColor = if (hasPermission) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.errorContainer
+// On change le label si on est en mode "Boot stats"
+        val mobileLabel = if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)"
+
+// Couleur : Orange si pas de permission (mode dégradé), sinon la couleur normale
+        val networkColor = if (hasPermission) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiaryContainer
 
         val networkItems = listOf(
             Triple(stringResource(R.string.network_wifi), wifiText, Icons.Default.NetworkWifi),
             Triple(stringResource(R.string.network_mobile), mobileText, Icons.Default.SignalCellularAlt)
         )
+
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { networkItems.size },

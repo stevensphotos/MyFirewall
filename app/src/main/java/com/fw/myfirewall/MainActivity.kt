@@ -9,10 +9,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,9 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.graphics.drawable.toBitmap
@@ -50,6 +52,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
+import com.fw.myfirewall.data.UserPreferences
+import com.fw.myfirewall.ui.OnboardingScreen
 
 // ############################################################################
 // ACTIVITY ENTRY POINT
@@ -58,6 +62,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Initialisation des préférences
+        val userPreferences = UserPreferences(applicationContext)
+
         setContent {
             // ############################################################################
             // THEME AND VIEWMODEL SETUP
@@ -65,18 +72,45 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = viewModel()
             val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
             val themeMode by settingsViewModel.themeMode.collectAsState()
-            
-            val darkTheme = when(themeMode) {
+
+            val darkTheme = when (themeMode) {
                 "light" -> false
                 "dark" -> true
                 else -> isSystemInDarkTheme()
             }
-            
+
             MyFirewallTheme(
                 darkTheme = darkTheme,
                 pureBlack = isPureBlackEnabled
             ) {
-                MyFirewallApp()
+                val isFirstLaunch by userPreferences.isFirstLaunch.collectAsState(initial = null)
+                val scope = rememberCoroutineScope()
+
+                // Fix: Handle true, false, AND null
+                when (isFirstLaunch) {
+                    true -> {
+                        // AFFICHER L'ONBOARDING
+                        OnboardingScreen(
+                            onOnboardingFinished = {
+                                scope.launch {
+                                    userPreferences.completeOnboarding()
+                                }
+                            }
+                        )
+                    }
+
+                    false -> {
+                        // AFFICHER L'APP PRINCIPALE
+                        MyFirewallApp()
+                    }
+
+                    null -> {
+                        // STATE IS LOADING (waiting for DataStore)
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                }
             }
         }
     }
@@ -89,19 +123,20 @@ fun MyFirewallApp() {
     // CORE APP STATE & VIEWMODEL INITIALIZATION
     // ############################################################################
     // Filter out SAVE_RULES for the pager and bottom nav
-    val pagerDestinations = remember { AppDestinations.entries.filter { it != AppDestinations.SAVE_RULES } }
+    val pagerDestinations =
+        remember { AppDestinations.entries.filter { it != AppDestinations.SAVE_RULES } }
     val pagerState = rememberPagerState(pageCount = { pagerDestinations.size })
-    
+
     // State to handle SaveRulesScreen overlay
     var showSaveRulesScreen by rememberSaveable { mutableStateOf(false) }
-    
+
     val coroutineScope = rememberCoroutineScope()
     var selectedFilters by rememberSaveable { mutableStateOf(setOf(AppFilter.ALL)) }
 
     val context = LocalContext.current
     val database = remember { AppDatabase.getDatabase(context) }
     val dao = remember { database.appRuleDao() }
-    
+
     val statusViewModel: StatusViewModel = viewModel()
 
     // ############################################################################
@@ -123,14 +158,24 @@ fun MyFirewallApp() {
                         val label = pm.getApplicationLabel(it).toString()
                         val icon = pm.getApplicationIcon(it).toBitmap().asImageBitmap()
                         val isSystem = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                        val hasInternet = packageInfo.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
-                        
+                        val hasInternet =
+                            packageInfo.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
+
                         val savedRule = dao.getRule(packageInfo.packageName)
                         val wifiAllowed = savedRule?.wifiAllowed ?: true
                         val mobileAllowed = savedRule?.mobileAllowed ?: true
                         val roamingAllowed = savedRule?.roamingAllowed ?: true
 
-                        AppInfo(label, packageInfo.packageName, icon, isSystem, hasInternet, wifiAllowed, mobileAllowed, roamingAllowed)
+                        AppInfo(
+                            label,
+                            packageInfo.packageName,
+                            icon,
+                            isSystem,
+                            hasInternet,
+                            wifiAllowed,
+                            mobileAllowed,
+                            roamingAllowed
+                        )
                     }
                 }
                 .sortedBy { it.name }
@@ -205,7 +250,7 @@ fun MyFirewallApp() {
 //                    AppDestinations.SETTINGS -> false
                     else -> true
                 }
-                
+
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize(),
@@ -220,6 +265,7 @@ fun MyFirewallApp() {
                                 viewModel = statusViewModel
                             )
                         }
+
                         AppDestinations.APPLICATIONS -> {
                             AppListScreen(
                                 modifier = Modifier.padding(innerPadding),
@@ -232,14 +278,15 @@ fun MyFirewallApp() {
                                         if (current.contains(AppFilter.ALL)) {
                                             current.remove(AppFilter.ALL)
                                         }
-                                        
+
                                         if (current.contains(filter)) {
                                             current.remove(filter)
                                         } else {
                                             current.add(filter)
                                         }
-                                        
-                                        selectedFilters = if (current.isEmpty()) setOf(AppFilter.ALL) else current
+
+                                        selectedFilters =
+                                            if (current.isEmpty()) setOf(AppFilter.ALL) else current
                                     }
                                 },
                                 onFilterLongClick = { filter ->
@@ -248,14 +295,15 @@ fun MyFirewallApp() {
                                         if (current.contains(AppFilter.ALL)) {
                                             current.remove(AppFilter.ALL)
                                         }
-                                        
+
                                         if (current.contains(filter)) {
                                             current.remove(filter)
                                         } else {
                                             current.add(filter)
                                         }
-                                        
-                                        selectedFilters = if (current.isEmpty()) setOf(AppFilter.ALL) else current
+
+                                        selectedFilters =
+                                            if (current.isEmpty()) setOf(AppFilter.ALL) else current
                                     } else {
                                         // Long click on ALL resets to just ALL
                                         selectedFilters = setOf(AppFilter.ALL)
@@ -263,8 +311,8 @@ fun MyFirewallApp() {
                                 },
                                 apps = apps,
                                 isLoading = isLoading,
-                                onAppsChange = { newApps -> 
-                                    apps = newApps 
+                                onAppsChange = { newApps ->
+                                    apps = newApps
                                 },
                                 onAppUpdated = { app ->
                                     updateAppRule(app)
@@ -279,6 +327,7 @@ fun MyFirewallApp() {
                                 }
                             )
                         }
+
                         AppDestinations.RULES -> {
                             RulesScreen(
                                 modifier = Modifier.padding(innerPadding),
@@ -287,13 +336,15 @@ fun MyFirewallApp() {
                                 }
                             )
                         }
+
                         AppDestinations.SETTINGS -> {
                             SettingsScreen(
                                 modifier = Modifier.padding(innerPadding)
                             )
                         }
                         // SAVE_RULES is handled outside the pager now
-                        AppDestinations.SAVE_RULES -> { /* Should not happen in pager */ }
+                        AppDestinations.SAVE_RULES -> { /* Should not happen in pager */
+                        }
                     }
                 }
             }
