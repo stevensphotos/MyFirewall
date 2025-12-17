@@ -27,6 +27,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isPureBlackEnabled = MutableStateFlow(false)
     val isPureBlackEnabled: StateFlow<Boolean> = _isPureBlackEnabled.asStateFlow()
     
+    private val _isDynamicColorEnabled = MutableStateFlow(true)
+    val isDynamicColorEnabled: StateFlow<Boolean> = _isDynamicColorEnabled.asStateFlow()
+    
     private val _themeMode = MutableStateFlow("system") // system, light, dark
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
@@ -43,6 +46,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isStartOnBootEnabled.value = sharedPrefs.getBoolean("start_on_boot", false)
         _isRootEnabled.value = sharedPrefs.getBoolean("root_enabled", false)
         _isPureBlackEnabled.value = sharedPrefs.getBoolean("pure_black_enabled", false)
+        _isDynamicColorEnabled.value = sharedPrefs.getBoolean("dynamic_color_enabled", true)
         _themeMode.value = sharedPrefs.getString("theme_mode", "system") ?: "system"
         _languageCode.value = sharedPrefs.getString("language_code", "system") ?: "system"
     }
@@ -55,6 +59,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun togglePureBlack(enabled: Boolean) {
         _isPureBlackEnabled.value = enabled
         sharedPrefs.edit().putBoolean("pure_black_enabled", enabled).apply()
+    }
+    
+    fun toggleDynamicColor(enabled: Boolean) {
+        _isDynamicColorEnabled.value = enabled
+        sharedPrefs.edit().putBoolean("dynamic_color_enabled", enabled).apply()
     }
     
     fun setThemeMode(mode: String) {

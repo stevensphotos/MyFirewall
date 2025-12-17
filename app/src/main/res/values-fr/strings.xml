@@ -53,10 +53,10 @@
         <string name="theme_system">Suivre le système</string>
         <string name="theme_light">Clair</string>
         <string name="theme_dark">Sombre</string>
-        <string name="root_service_text">Utiliser le fichier hosts (nécessite Root)</string>
+        <string name="root_service_text">Utiliser le fichier hosts</string>
         <string name="start_on_boot_text">Lancer le service automatiquement</string>
         <string name="rules_management_title">Gestion des règles</string>
-        <string name="export_rules_label">Règles de blocage des applications</string>
+        <string name="export_rules_label">Règles de blocage du pare-feu</string>
         <string name="export_rules_desc">Exporter / Importer les règles</string>
         <string name="language_settings_label">Langue</string>
         <string name="language_dialog_title">Sélectionner la langue</string>
@@ -71,5 +71,20 @@
         <string name="onboarding_disclaimer">Cette application utilise un VPN local pour filtrer votre trafic internet directement sur votre appareil. \n\nAucune donnée personnelle n\'est envoyée vers un serveur externe. Vous gardez le contrôle total.</string>
         <string name="permission_notification">Autoriser les notifications (Requis)</string>
         <string name="start_protection">Commencer à protéger mon appareil</string>
-    <string name="permission_usage_stats">Autoriser les statistiques d\'utilisation (optionnel)</string>
+        <string name="permission_usage_stats">Autoriser l\'accès à l\'utilisation (Optionnel)</string>
+        <string name="save_rules_back_desc">Retour</string>
+        <string name="export_rules_title">Exporter les règles</string>
+        <string name="export_rules_description">Sauvegardez vos règles de blocage actuelles dans un fichier JSON. Utile pour la sauvegarde ou le transfert vers un autre appareil.</string>
+        <string name="export_button">Exporter</string>
+        <string name="save_rules_title">Importer / Exporter les règles</string>
+        <string name="import_rules_title">Importer des règles</string>
+        <string name="import_rules_description">Restaurer les règles à partir d\'un fichier JSON. Cela fusionnera avec les règles existantes, en écrasant les doublons éventuels.</string>
+        <string name="import_button">Importer</string>
+        <string name="export_success">Règles exportées avec succès</string>
+        <string name="export_failed">Échec de l\'exportation : %1$s</string>
+        <string name="import_success">%1$d règles importées avec succès</string>
+        <string name="import_failed">Échec de l\'importation : %1$s</string>
+        <string name="dynamic_color_label">Couleurs dynamiques</string>
+        <string name="dynamic_color_text">Utiliser les couleurs du système</string>
+        <string name="network_speed_label">Débit (%1$s)</string>
 </resources>

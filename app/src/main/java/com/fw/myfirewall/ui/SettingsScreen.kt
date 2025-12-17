@@ -7,44 +7,17 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForwardIos
-import androidx.compose.material.icons.rounded.AdminPanelSettings
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.Language
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.PowerSettingsNew
-import androidx.compose.material.icons.rounded.VpnKey
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -55,10 +28,39 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.service.MyVpnService
+import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
+
 
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel = viewModel()) {
+    val settingsViewModel: SettingsViewModel = viewModel
+    val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
+    val themeMode by settingsViewModel.themeMode.collectAsState()
+    val isDynamicColorEnabled by settingsViewModel.isDynamicColorEnabled.collectAsState()
+
+    val darkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
+
+    MyFirewallTheme(
+        darkTheme = darkTheme,
+        pureBlack = isPureBlackEnabled,
+        dynamicColor = isDynamicColorEnabled
+    ) {
+        Surface(
+            modifier = modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            SettingsContent(viewModel = settingsViewModel)
+        }
+    }
+}
+
+@Composable
+fun SettingsContent(viewModel: SettingsViewModel) {
     val context = LocalContext.current
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
@@ -76,6 +78,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
     val isRootEnabled by viewModel.isRootEnabled.collectAsState()
     val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
     val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
+    val isDynamicColorEnabled by viewModel.isDynamicColorEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val languageCode by viewModel.languageCode.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
@@ -106,36 +109,20 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             currentSelection = languageCode,
             onDismissRequest = { showLanguageDialog.value = false },
             onConfirmation = { selection ->
-                // 1. Sauvegarder la préférence dans le ViewModel (existant)
                 viewModel.setLanguage(selection)
-
-                // 2. Appliquer immédiatement la nouvelle langue via LanguageManager
-                // Cela reconfigure les ressources de l'activité en cours
                 com.fw.myfirewall.util.LanguageManager.setLocale(context, selection)
-
-                // 3. Optionnel : Recharger l'activité pour forcer le rafraîchissement complet de l'UI
-                // (Souvent nécessaire car certains textes Compose ne se rafraîchissent pas instantanément)
-                if (context is Activity) {
-                    context.recreate()
-                }
-
                 showLanguageDialog.value = false
             }
         )
     }
 
-
-
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ############################################################################
-        // TITLE SECTION
-        // ############################################################################
         Text(
             text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
@@ -143,9 +130,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        // ############################################################################
-        // MAIN SETTINGS CARD (VPN, ROOT, BOOT)
-        // ############################################################################
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -155,13 +139,9 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             shape = RoundedCornerShape(32.dp),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // ############################################################################
-                // FIREWALL MODE TITLE
-                // ############################################################################
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.Function_type_title),
@@ -171,9 +151,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                     )
                 }
                 
-                // ############################################################################
-                // VPN SERVICE ROW
-                // ############################################################################
                 SettingsItemRow(
                     title = stringResource(R.string.vpn_service_label),
                     description = stringResource(R.string.vpn_service_text),
@@ -199,9 +176,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 
                 SettingsDivider()
 
-                // ############################################################################
-                // ROOT SERVICE ROW
-                // ############################################################################
                 SettingsItemRow(
                     title = stringResource(R.string.root_service_label),
                     description = stringResource(R.string.root_service_text),
@@ -213,9 +187,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 
                 SettingsDivider()
                 
-                // ############################################################################
-                // START ON BOOT ROW
-                // ############################################################################
                 SettingsItemRow(
                     title = stringResource(R.string.start_on_boot_label),
                     description = stringResource(R.string.start_on_boot_text),
@@ -227,9 +198,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             }
         }
 
-        // ############################################################################
-        // UI SETTINGS CARD
-        // ############################################################################
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -242,9 +210,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // ############################################################################
-                // UI SETTINGS TITLE
-                // ############################################################################
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.ui_settings_title),
@@ -254,9 +219,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                     )
                 }
 
-                // ############################################################################
-                // THEME SELECTION ROW
-                // ############################################################################
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -287,7 +249,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
-                                text = (themeMode),
+                                text = getThemeLabel(themeMode),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -303,9 +265,17 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 
                 SettingsDivider()
 
-                // ############################################################################
-                // PURE BLACK TOGGLE ROW
-                // ############################################################################
+                SettingsItemRow(
+                    title = stringResource(R.string.dynamic_color_label),
+                    description = stringResource(R.string.dynamic_color_text),
+                    icon = Icons.Rounded.AutoFixHigh,
+                    checked = isDynamicColorEnabled
+                ) { checked ->
+                    viewModel.toggleDynamicColor(checked)
+                }
+
+                SettingsDivider()
+
                 SettingsItemRow(
                     title = stringResource(R.string.pure_black_label),
                     description = stringResource(R.string.pure_black_text),
@@ -313,63 +283,58 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
                     checked = isPureBlackEnabled
                 ) { checked ->
                     viewModel.togglePureBlack(checked)
-
                 }
-                SettingsDivider()}
-            // ############################################################################
-            // LANGUAGE SELECTION ROW
-            // ############################################################################
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showLanguageDialog.value = true }
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.background,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Language,
-                                contentDescription = null,
-                                modifier = Modifier.size(22.dp),
-                                tint = MaterialTheme.colorScheme.primary
+
+                SettingsDivider()
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showLanguageDialog.value = true }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.background,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Language,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.language_settings_label),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = getLanguageLabel(languageCode),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = stringResource(R.string.language_settings_label),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = getLanguageLabel(languageCode),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.ArrowForwardIos,
+                        contentDescription = "Navigate",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Icon(
-                    imageVector = Icons.Default.ArrowForwardIos,
-                    contentDescription = "Navigate",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-
-
         }
     }
 }
-// ############################################################################
-// HELPER COMPOSABLES
-// ############################################################################
+
 @Composable
 fun SettingsItemRow(
     title: String,
@@ -428,8 +393,8 @@ fun SettingsDivider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        thickness = 4.dp,
-        color = MaterialTheme.colorScheme.background
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 }
 
@@ -471,9 +436,14 @@ fun ThemeDialog(
                 }
             }
         },
-        confirmButton = {}
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
     )
 }
+
 @Composable
 fun LanguageDialog(
     currentSelection: String,
@@ -512,27 +482,19 @@ fun LanguageDialog(
                 }
             }
         },
-        confirmButton = {}
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
     )
+}
 
 @Composable
-fun getThemeLabel(key: String): String {
+private fun getThemeLabel(key: String): String {
     return when(key) {
-        "system" -> stringResource(R.string.theme_system)
         "light" -> stringResource(R.string.theme_light)
         "dark" -> stringResource(R.string.theme_dark)
-        else -> stringResource(R.string.theme_system)
-    }
-}
-}
-
-@Composable
-private fun getThemeLabel(mode: Int): String {
-    // These IDs are examples. Replace them with the actual string IDs from your strings.xml
-    return when (mode) {
-        0 -> stringResource(R.string.theme_system) // e.g. "System Default"
-        1 -> stringResource(R.string.theme_light)          // e.g. "Light"
-        2 -> stringResource(R.string.theme_dark)           // e.g. "Dark"
         else -> stringResource(R.string.theme_system)
     }
 }
@@ -540,15 +502,7 @@ private fun getThemeLabel(mode: Int): String {
 private fun getLanguageLabel(code: String): String {
     return when (code) {
         "en" -> "English"
-        "es" -> "Español"
         "fr" -> "Français"
-        "de" -> "Deutsch"
-        "it" -> "Italiano"
-        "pt" -> "Português"
-        "ru" -> "Русский"
-        "zh" -> "中文"
-        "ja" -> "日本語"
-        "ko" -> "한국어"
-        else -> "System Default" // Or handle unknown codes appropriately
+        else -> "System Default"
     }
 }

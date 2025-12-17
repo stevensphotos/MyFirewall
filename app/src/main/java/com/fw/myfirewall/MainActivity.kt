@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.AppRule
@@ -60,8 +61,12 @@ import com.fw.myfirewall.ui.OnboardingScreen
 // ############################################################################
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Handle the splash screen transition
+        val splashScreen = installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
         // Initialisation des préférences
         val userPreferences = UserPreferences(applicationContext)
 
@@ -72,6 +77,7 @@ class MainActivity : ComponentActivity() {
             val settingsViewModel: SettingsViewModel = viewModel()
             val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
             val themeMode by settingsViewModel.themeMode.collectAsState()
+            val isDynamicColorEnabled by settingsViewModel.isDynamicColorEnabled.collectAsState()
 
             val darkTheme = when (themeMode) {
                 "light" -> false
@@ -81,10 +87,14 @@ class MainActivity : ComponentActivity() {
 
             MyFirewallTheme(
                 darkTheme = darkTheme,
-                pureBlack = isPureBlackEnabled
+                pureBlack = isPureBlackEnabled,
+                dynamicColor = isDynamicColorEnabled
             ) {
                 val isFirstLaunch by userPreferences.isFirstLaunch.collectAsState(initial = null)
                 val scope = rememberCoroutineScope()
+
+                // Keep splash screen visible until we know if it's first launch or not
+                splashScreen.setKeepOnScreenCondition { isFirstLaunch == null }
 
                 // Fix: Handle true, false, AND null
                 when (isFirstLaunch) {

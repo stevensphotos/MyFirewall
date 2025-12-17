@@ -55,7 +55,7 @@
     <string name="root_service_text">Use hosts file (requires Root)</string>
     <string name="start_on_boot_text">Start service automatically</string>
     <string name="rules_management_title">Rules Management</string>
-    <string name="export_rules_label">Applications blocking rules</string>
+    <string name="export_rules_label">Firewall blocking rules</string>
     <string name="export_rules_desc">Export / Import Rules</string>
     <string name="language_settings_label">Language</string>
     <string name="language_dialog_title">Select Language</string>
@@ -83,4 +83,7 @@
     <string name="export_failed">Export failed: %1$s</string>
     <string name="import_success">Imported %1$d rules successfully</string>
     <string name="import_failed">Import failed: %1$s</string>
+    <string name="dynamic_color_label">Dynamic Color</string>
+    <string name="dynamic_color_text">Use system colors (Android 12+)</string>
+    <string name="network_speed_label">Speed (%1$s)</string>
 </resources>

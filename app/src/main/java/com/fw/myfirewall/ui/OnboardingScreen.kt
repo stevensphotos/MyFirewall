@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Security
@@ -33,12 +31,39 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
+import com.fw.myfirewall.ui.theme.MyFirewallTheme
+import com.fw.myfirewall.viewmodel.SettingsViewModel
 import com.fw.myfirewall.viewmodel.hasUsageStatsPermission
 import com.fw.myfirewall.viewmodel.openUsageStatsSettings
 
 @Composable
 fun OnboardingScreen(
+    onOnboardingFinished: () -> Unit
+) {
+    val settingsViewModel: SettingsViewModel = viewModel()
+    val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
+    val themeMode by settingsViewModel.themeMode.collectAsState()
+    val isDynamicColorEnabled by settingsViewModel.isDynamicColorEnabled.collectAsState()
+
+    val darkTheme = when (themeMode) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    }
+
+    MyFirewallTheme(
+        darkTheme = darkTheme,
+        pureBlack = isPureBlackEnabled,
+        dynamicColor = isDynamicColorEnabled
+    ) {
+        OnboardingContent(onOnboardingFinished = onOnboardingFinished)
+    }
+}
+
+@Composable
+fun OnboardingContent(
     onOnboardingFinished: () -> Unit
 ) {
     val context = LocalContext.current
@@ -57,7 +82,6 @@ fun OnboardingScreen(
         ) 
     }
 
-    // Renamed variable to avoid shadowing function name
     var isUsageStatsGranted by remember { mutableStateOf(hasUsageStatsPermission(context)) }
 
     // Update permissions on resume
@@ -85,81 +109,85 @@ fun OnboardingScreen(
         onResult = { hasNotificationPermission = it }
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        // 1. Icône et Titre
-        Icon(
-            imageVector = Icons.Default.Security,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = stringResource(R.string.welcome_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 2. Disclaimer
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // 1. Icône et Titre
+            Icon(
+                imageVector = Icons.Default.Security,
+                contentDescription = null,
+                modifier = Modifier.size(80.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
             Text(
-                text = stringResource(R.string.onboarding_disclaimer),
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp)
+                text = stringResource(R.string.welcome_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Boutons de Permissions (Exemple Notification)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-            OutlinedButton(
-                onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                modifier = Modifier.fillMaxWidth()
+            // 2. Disclaimer
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             ) {
-                Text(stringResource(R.string.permission_notification))
+                Text(
+                    text = stringResource(R.string.onboarding_disclaimer),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
 
-        // USAGE STATISTIC PERMISSION
-        if (!isUsageStatsGranted) {
-            OutlinedButton(
-                onClick = { openUsageStatsSettings(context) },
-                modifier = Modifier.fillMaxWidth()
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // 3. Boutons de Permissions (Exemple Notification)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                OutlinedButton(
+                    onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.permission_notification))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // USAGE STATISTIC PERMISSION
+            if (!isUsageStatsGranted) {
+                OutlinedButton(
+                    onClick = { openUsageStatsSettings(context) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.permission_usage_stats))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 4. Bouton Final
+            Button(
+                onClick = onOnboardingFinished,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(stringResource(R.string.permission_usage_stats))
+                Text(stringResource(R.string.start_protection))
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Default.CheckCircle, contentDescription = null)
             }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // 4. Bouton Final
-        Button(
-            onClick = onOnboardingFinished,
-            modifier = Modifier.fillMaxWidth(),
-            // On peut désactiver le bouton tant que les perms critiques ne sont pas là
-            // enabled = hasNotificationPermission
-        ) {
-            Text(stringResource(R.string.start_protection))
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(Icons.Default.CheckCircle, contentDescription = null)
         }
     }
 }

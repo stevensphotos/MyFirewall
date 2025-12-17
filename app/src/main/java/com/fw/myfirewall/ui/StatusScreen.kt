@@ -212,7 +212,7 @@ fun StatusScreen(
         val networkColor = if (hasPermission) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiaryContainer
 
         val speedText = "↓ ${viewModel.formatSpeed(downloadSpeed)}\n↑ ${viewModel.formatSpeed(uploadSpeed)}"
-        val speedLabel = "Speed ($speedMode)"
+        val speedLabel = stringResource(R.string.network_speed_label, speedMode)
 
         val networkItems = listOf(
             Triple(speedLabel, speedText, Icons.Default.Speed),
@@ -243,7 +243,13 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third,
                 color = networkColor,
-                onClick = { if (i == 0) { viewModel.toggleSpeedMode() } else if (!hasPermission) { openUsageStatsSettings(context) } },
+                onClick = {
+                    if (i == 0) {
+                        viewModel.toggleSpeedMode()
+                    } else if (!hasPermission) {
+                        openUsageStatsSettings(context)
+                    }
+                },
                 countFontSize = textSize,
                 modifier = Modifier
                     .fillMaxSize()

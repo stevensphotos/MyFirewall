@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.fw.myfirewall"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.fw.myfirewall"
@@ -59,6 +57,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.core.splashscreen)
     
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     
@@ -69,4 +68,12 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+
+dependencies {
+    // ... other existing dependencies
+
+    // Add this here instead
+    implementation("com.google.android.material:material:1.12.0")
 }
