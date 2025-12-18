@@ -2,9 +2,9 @@
     <string name="app_name">MyFirewall</string>
     <string name="settings_title">Settings</string>
     <string name="rules_title">Rules</string>
-    <string name="status_title">Status</string>
+    <string name="status_title" translatable="false">Status</string>
     <string name="vpn_service_text">work with VPN Service</string>
-    <string name="Function_type_title">Firewall mode for rooted devices</string>
+    <string name="Function_type_title">Firewall and Url filtering</string>
     <string name="filter_msg">Filter: %1$s</string>
     <string name="root_service_label">URL Filter</string>
     <string name="start_on_boot_label">Start on Boot</string>
