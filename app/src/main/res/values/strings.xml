@@ -88,7 +88,6 @@
     <string name="vpn_service_label">Applications filter</string>
     <string name="permission_root">Grant Root Access (Optional)</string>
     <string name="root_disclaimer_onboarding">Root access allows for more advanced URL filtering via the system hosts file. This is optional but recommended for better blocking.</string>
-    
     <string name="settings_about_title">About MyFirewall</string>
     <string name="settings_about_description">MyFirewall is a privacy-focused open source application designed to give you full control over your device\'s network traffic. Using local VPN and hosts-based filtering, it ensures your data remains on your device while blocking unwanted connections.</string>
     <string name="ok">OK</string>
@@ -98,4 +97,7 @@
     <string name="tweak_ui_scaling">UI Scaling Factor</string>
     <string name="reset_button">Reset</string>
     <string name="layout_density_label">Layout Density</string>
+    <string name="certificate_authenticity_title">Certificate of Authenticity</string>
+
+
 </resources>

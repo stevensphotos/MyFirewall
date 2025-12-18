@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,6 +42,7 @@ import com.fw.myfirewall.service.MyVpnService
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
 import java.security.MessageDigest
+import androidx.compose.ui.text.style.TextAlign
 
 /**
  * SettingsScreen Composable:
@@ -496,7 +496,7 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
         }
     }
     val signature = remember { getAppSignature(context) }
-
+    val officialSignature = "63:DE:21:77:79:9A:FC:94:E3:12:E3:10:52:B0:5B:99:17:35:33:26:EF:18:8C:A8:DA:7F:6E:4A:A2:5D:88:E8"
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = {
@@ -514,25 +514,38 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     text = stringResource(R.string.settings_about_description),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Justify
+
                 )
 
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
                 // AUTHENTICITY CERTIFICATE SECTION
+                val isAuthentic = signature.replace(":", "")
+                    .lowercase() == officialSignature
+                        .replace(":", "")
+                        .lowercase()
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Certificate of Authenticity",
+                        text = stringResource(R.string.certificate_authenticity_title),
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
+                        // Le titre change de couleur selon l'authenticité
+                        color = if (isAuthentic) MaterialTheme.colorScheme.primary else
+                            MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold,
+
                     )
 
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            // La carte devient très légèrement teintée
+                            containerColor = if (isAuthentic)
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                            else
+                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(22.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(12.dp),
