@@ -151,7 +151,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 viewModel.setLanguage(selection)
                 com.fw.myfirewall.util.LanguageManager.setLocale(context, selection)
                 if (context is Activity) {
-                    context.recreate()
+//                    context.recreate()
                 }
                 showLanguageDialog.value = false
             }
@@ -171,12 +171,22 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ROW: HEADER SECTION (Icon on left, Title next to it)
+        // ROW: HEADER SECTION (Title on left, Icon on right)
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // About Dialog Trigger (Question Mark)
+            // 1. LE TITRE (À GAUCHE)
+            Text(
+                text = stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            // 2. LE SPACER (PREND TOUT L'ESPACE DISPONIBLE)
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 3. L'ICÔNE D'AIDE (À DROITE)
             IconButton(
                 onClick = { showAboutDialog.value = true },
                 modifier = Modifier.size(48.dp)
@@ -187,12 +197,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
         }
 
         // ----------------------------------------------------------------------------
