@@ -86,4 +86,5 @@
     <string name="dynamic_color_text">Use system colors (Android 12+)</string>
     <string name="network_speed_label">Speed (%1$s)</string>
     <string name="vpn_service_label">Applications filter</string>
+    <string name="permission_root">Grant Root Access (Optional)</string>
 </resources>

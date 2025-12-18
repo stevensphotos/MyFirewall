@@ -3,6 +3,7 @@ package com.fw.myfirewall.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -10,6 +11,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,7 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,6 +45,7 @@ import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
 import com.fw.myfirewall.viewmodel.hasUsageStatsPermission
 import com.fw.myfirewall.viewmodel.openUsageStatsSettings
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun OnboardingScreen(
@@ -65,13 +67,17 @@ fun OnboardingScreen(
         pureBlack = isPureBlackEnabled,
         dynamicColor = isDynamicColorEnabled
     ) {
-        OnboardingContent(onOnboardingFinished = onOnboardingFinished)
+        OnboardingContent(
+            onOnboardingFinished = onOnboardingFinished,
+            viewModel = settingsViewModel
+        )
     }
 }
 
 @Composable
 fun OnboardingContent(
-    onOnboardingFinished: () -> Unit
+    onOnboardingFinished: () -> Unit,
+    viewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -90,12 +96,28 @@ fun OnboardingContent(
     }
 
     var isUsageStatsGranted by remember { mutableStateOf(hasUsageStatsPermission(context)) }
+    val isRootEnabled by viewModel.isRootEnabled.collectAsState()
+    val isRootPossible by viewModel.isRootPossible.collectAsState()
+    val rootCheckResult by viewModel.rootCheckResult.collectAsState()
+
+    // Handle root check feedback
+    LaunchedEffect(rootCheckResult) {
+        rootCheckResult?.let { hasRoot ->
+            if (hasRoot) {
+                Toast.makeText(context, context.getString(R.string.root_access_granted), Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, context.getString(R.string.root_access_not_available), Toast.LENGTH_SHORT).show()
+            }
+            viewModel.resetRootCheckResult()
+        }
+    }
 
     // Update permissions on resume
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 isUsageStatsGranted = hasUsageStatsPermission(context)
+                viewModel.refreshRootStatus()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     hasNotificationPermission = ContextCompat.checkSelfPermission(
                         context,
@@ -120,14 +142,13 @@ fun OnboardingContent(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        // UNE SEULE Column principale avec statusBarsPadding
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top // On commence en haut
+            verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
@@ -143,8 +164,8 @@ fun OnboardingContent(
                         painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(120.dp) // Taille cohérente (inférieure à 120)
-                            .clip(CircleShape) // This clips the adaptive icon background into a circle
+                            .size(120.dp)
+                            .clip(CircleShape)
                     )
                 }
             }
@@ -180,24 +201,58 @@ fun OnboardingContent(
             Spacer(modifier = Modifier.height(32.dp))
 
             // 3. Boutons de Permissions
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                OutlinedButton(
-                    onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.permission_notification))
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                    OutlinedButton(
+                        onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.permission_notification))
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
-            if (!isUsageStatsGranted) {
-                OutlinedButton(
-                    onClick = { openUsageStatsSettings(context) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.permission_usage_stats))
+                if (!isUsageStatsGranted) {
+                    OutlinedButton(
+                        onClick = { openUsageStatsSettings(context) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.permission_usage_stats))
+                    }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+
+                // ROOT PERMISSION BUTTON
+                if (isRootPossible && !isRootEnabled) {
+                    OutlinedButton(
+                        onClick = { viewModel.toggleRoot(enabled = true) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.permission_root))
+                    }
+                } else if (isRootEnabled) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.root_access_granted),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
 
             // Pousse le bouton vers le bas
@@ -225,7 +280,6 @@ fun OnboardingContent(
 @Composable
 fun OnboardingPreviewLight() {
     MyFirewallTheme(darkTheme = false) {
-        // On utilise OnboardingContent pour éviter de gérer le ViewModel dans la Preview
         OnboardingContent(onOnboardingFinished = {})
     }
 }

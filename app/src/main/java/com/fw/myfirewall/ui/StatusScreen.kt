@@ -246,8 +246,8 @@ fun StatusScreen(
                 onClick = {
                     if (i == 0) {
                         viewModel.toggleSpeedMode()
-                    } else if (!hasPermission) {
-                        openUsageStatsSettings(context)
+//                    } else if (!hasPermission) {
+//                        openUsageStatsSettings(context)
                     }
                 },
                 countFontSize = textSize,

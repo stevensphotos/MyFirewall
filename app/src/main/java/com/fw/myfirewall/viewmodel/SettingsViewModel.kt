@@ -39,6 +39,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _rootCheckResult = MutableStateFlow<Boolean?>(null)
     val rootCheckResult: StateFlow<Boolean?> = _rootCheckResult.asStateFlow()
 
+    private val _isRootPossible = MutableStateFlow(RootUtils.isDeviceRooted())
+    val isRootPossible: StateFlow<Boolean> = _isRootPossible.asStateFlow()
+
     init {
         val db = AppDatabase.getDatabase(application)
         hostsGenerator = HostsGenerator(db.blockRuleDao(), application)
@@ -49,6 +52,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isDynamicColorEnabled.value = sharedPrefs.getBoolean("dynamic_color_enabled", true)
         _themeMode.value = sharedPrefs.getString("theme_mode", "system") ?: "system"
         _languageCode.value = sharedPrefs.getString("language_code", "system") ?: "system"
+        
+        // Verify root status on init if it was previously enabled
+        val rootEnabled = sharedPrefs.getBoolean("root_enabled", false)
+        if (rootEnabled) {
+            checkRoot(manualToggle = false)
+        }
     }
 
     fun toggleStartOnBoot(enabled: Boolean) {
@@ -78,32 +87,37 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun toggleRoot(enabled: Boolean) {
         if (enabled) {
-            checkRoot()
+            checkRoot(manualToggle = true)
         } else {
             _isRootEnabled.value = false
             sharedPrefs.edit().putBoolean("root_enabled", false).apply()
         }
     }
 
-    private fun checkRoot() {
+    private fun checkRoot(manualToggle: Boolean) {
         viewModelScope.launch {
             val hasRoot = withContext(Dispatchers.IO) {
-                RootUtils.isDeviceRooted() && RootUtils.isRootAvailable()
+                RootUtils.isRootAvailable()
             }
-            _rootCheckResult.value = hasRoot
+            
+            if (manualToggle) {
+                _rootCheckResult.value = hasRoot
+            }
+            
+            _isRootEnabled.value = hasRoot
+            sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
+            
             if (hasRoot) {
-                _isRootEnabled.value = true
-                sharedPrefs.edit().putBoolean("root_enabled", true).apply()
-                // Regenerate hosts file when root is enabled
                 hostsGenerator.generateHostsFile()
-            } else {
-                _isRootEnabled.value = false
-                sharedPrefs.edit().putBoolean("root_enabled", false).apply()
             }
         }
     }
     
     fun resetRootCheckResult() {
         _rootCheckResult.value = null
+    }
+    
+    fun refreshRootStatus() {
+        _isRootPossible.value = RootUtils.isDeviceRooted()
     }
 }
