@@ -4,14 +4,14 @@
     <!-- Base App Theme -->
     <style name="Theme.MyFirewall" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your theme here -->
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
+<!--        <item name="android:windowTranslucentStatus">true</item>-->
+<!--        <item name="android:windowTranslucentNavigation">true</item>-->
     </style>
 
     <!-- Splash Screen Theme -->
     <style name="Theme.MyFirewall.Starting" parent="Theme.SplashScreen">
         <!-- The background color of the splash screen -->
-        <item name="windowSplashScreenBackground">#0B1323</item>
+        <item name="windowSplashScreenBackground">#FFFFFF</item>
 
         <!-- The icon to display -->
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
