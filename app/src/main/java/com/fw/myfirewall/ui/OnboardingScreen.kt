@@ -5,8 +5,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Security
@@ -24,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -69,7 +74,7 @@ fun OnboardingContent(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var hasNotificationPermission by remember { 
+    var hasNotificationPermission by remember {
         mutableStateOf(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 ContextCompat.checkSelfPermission(
@@ -79,7 +84,7 @@ fun OnboardingContent(
             } else {
                 true
             }
-        ) 
+        )
     }
 
     var isUsageStatsGranted by remember { mutableStateOf(hasUsageStatsPermission(context)) }
@@ -121,72 +126,100 @@ fun OnboardingContent(
             verticalArrangement = Arrangement.Center
         ) {
             // 1. Icône et Titre
-            Icon(
-                imageVector = Icons.Default.Security,
-                contentDescription = null,
-                modifier = Modifier.size(80.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = stringResource(R.string.welcome_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 2. Disclaimer
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                // Changed to Top for better spacing with the app icon
+                verticalArrangement = Arrangement.Top
             ) {
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // ############################################################################
+                // 1. APPLICATION ICON (Fixed Crash)
+                // ############################################################################
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(120.dp),
+                    shadowElevation = 4.dp
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        // Use Image instead of Icon for mipmaps to prevent crashes
+                        Image(
+                            // Utilisez foreground si c'est un vecteur simple,
+                            // mais la solution AndroidView ci-dessus est la SEULE garantie sans crash.
+                            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                            contentDescription = null,
+                            modifier = Modifier.size(220.dp)
+                        )
+
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
                 Text(
-                    text = stringResource(R.string.onboarding_disclaimer),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.welcome_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
                 )
-            }
 
-            Spacer(modifier = Modifier.height(32.dp))
 
-            // 3. Boutons de Permissions (Exemple Notification)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                OutlinedButton(
-                    onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                    modifier = Modifier.fillMaxWidth()
+                // 2. Disclaimer
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 ) {
-                    Text(stringResource(R.string.permission_notification))
+                    Text(
+                        text = stringResource(R.string.onboarding_disclaimer),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
-            // USAGE STATISTIC PERMISSION
-            if (!isUsageStatsGranted) {
-                OutlinedButton(
-                    onClick = { openUsageStatsSettings(context) },
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 3. Boutons de Permissions (Exemple Notification)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                    OutlinedButton(
+                        onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.permission_notification))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // USAGE STATISTIC PERMISSION
+                if (!isUsageStatsGranted) {
+                    OutlinedButton(
+                        onClick = { openUsageStatsSettings(context) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.permission_usage_stats))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // 4. Bouton Final
+                Button(
+                    onClick = onOnboardingFinished,
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.permission_usage_stats))
+                    Text(stringResource(R.string.start_protection))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(Icons.Default.CheckCircle, contentDescription = null)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 4. Bouton Final
-            Button(
-                onClick = onOnboardingFinished,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.start_protection))
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.Default.CheckCircle, contentDescription = null)
             }
         }
     }
