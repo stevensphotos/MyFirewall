@@ -4,7 +4,7 @@
     <string name="rules_title">Rules</string>
     <string name="status_title" translatable="false">Status</string>
     <string name="vpn_service_text">work with VPN Service</string>
-    <string name="Function_type_title">Firewall and Url filtering</string>
+    <string name="Function_type_title">Firewall and URL filtering</string>
     <string name="filter_msg">Filter: %1$s</string>
     <string name="root_service_label">URL Filter</string>
     <string name="start_on_boot_label">Start on Boot</string>
