@@ -150,7 +150,7 @@ fun OnboardingContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 1. APPLICATION ICON
             Surface(
@@ -185,17 +185,16 @@ fun OnboardingContent(
             // 2. Disclaimer
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(25.dp)
             ) {
                 Text(
                     text = stringResource(R.string.onboarding_disclaimer),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    color = MaterialTheme.colorScheme.onSecondaryContainer)
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -220,6 +219,26 @@ fun OnboardingContent(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(stringResource(R.string.permission_usage_stats))
+                    }
+                }
+
+                if (isRootPossible && !isRootEnabled) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(25.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.root_disclaimer_onboarding),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(12.dp)
+                        )
                     }
                 }
 
