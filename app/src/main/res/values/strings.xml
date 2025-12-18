@@ -66,7 +66,7 @@
     <string name="network_mobile">Mobile Data</string>
     <string name="permission_required">Permission needed</string>
     <string name="welcome_title">Welcome to MyFirewall</string>
-    <string name="onboarding_disclaimer">This app uses a local VPN to filter your internet traffic directly on your device. \n\nNo personal data is sent to an external server. You retain full control.</string>
+    <string name="onboarding_disclaimer">This app uses a local VPN to filter your internet traffic directly on your device.   No personal data is sent to an external server. You retain full control.</string>
     <string name="permission_notification">Allow notifications (Required)</string>
     <string name="start_protection">Start protecting my device</string>
     <string name="permission_usage_stats">Allow usage access (Optional)</string>

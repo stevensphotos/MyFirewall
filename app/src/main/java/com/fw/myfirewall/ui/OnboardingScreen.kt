@@ -19,13 +19,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Security
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -118,109 +120,128 @@ fun OnboardingContent(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
+        // UNE SEULE Column principale avec statusBarsPadding
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top // On commence en haut
         ) {
-            // 1. Icône et Titre
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                // Changed to Top for better spacing with the app icon
-                verticalArrangement = Arrangement.Top
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // 1. APPLICATION ICON
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(120.dp),
+                shadowElevation = 4.dp
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
-
-                // ############################################################################
-                // 1. APPLICATION ICON (Fixed Crash)
-                // ############################################################################
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(120.dp),
-                    shadowElevation = 4.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        // Use Image instead of Icon for mipmaps to prevent crashes
-                        Image(
-                            // Utilisez foreground si c'est un vecteur simple,
-                            // mais la solution AndroidView ci-dessus est la SEULE garantie sans crash.
-                            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-                            contentDescription = null,
-                            modifier = Modifier.size(220.dp)
-                        )
-
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text(
-                    text = stringResource(R.string.welcome_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
-                )
-
-
-                // 2. Disclaimer
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                Box(contentAlignment = Alignment.Center) {
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(120.dp) // Taille cohérente (inférieure à 120)
+                            .clip(CircleShape) // This clips the adaptive icon background into a circle
                     )
-                ) {
-                    Text(
-                        text = stringResource(R.string.onboarding_disclaimer),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // 3. Boutons de Permissions (Exemple Notification)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
-                    OutlinedButton(
-                        onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.permission_notification))
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // USAGE STATISTIC PERMISSION
-                if (!isUsageStatsGranted) {
-                    OutlinedButton(
-                        onClick = { openUsageStatsSettings(context) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.permission_usage_stats))
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // 4. Bouton Final
-                Button(
-                    onClick = onOnboardingFinished,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(stringResource(R.string.start_protection))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(Icons.Default.CheckCircle, contentDescription = null)
                 }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = stringResource(R.string.welcome_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // 2. Disclaimer
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.onboarding_disclaimer),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // 3. Boutons de Permissions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+                OutlinedButton(
+                    onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.permission_notification))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (!isUsageStatsGranted) {
+                OutlinedButton(
+                    onClick = { openUsageStatsSettings(context) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.permission_usage_stats))
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Pousse le bouton vers le bas
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 4. Bouton Final
+            Button(
+                onClick = onOnboardingFinished,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            ) {
+                Text(stringResource(R.string.start_protection))
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Default.CheckCircle, contentDescription = null)
+            }
         }
+    }
+}
+
+// ############################################################################
+// PREVIEWS
+// ############################################################################
+@Preview(showBackground = true, name = "Onboarding - Light Mode")
+@Composable
+fun OnboardingPreviewLight() {
+    MyFirewallTheme(darkTheme = false) {
+        // On utilise OnboardingContent pour éviter de gérer le ViewModel dans la Preview
+        OnboardingContent(onOnboardingFinished = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Onboarding - Dark Mode")
+@Composable
+fun OnboardingPreviewDark() {
+    MyFirewallTheme(darkTheme = true) {
+        OnboardingContent(onOnboardingFinished = {})
+    }
+}
+
+@Preview(showBackground = true, name = "Onboarding - Pure Black")
+@Composable
+fun OnboardingPreviewPureBlack() {
+    MyFirewallTheme(darkTheme = true, pureBlack = true) {
+        OnboardingContent(onOnboardingFinished = {})
     }
 }
