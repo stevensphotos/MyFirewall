@@ -1,11 +1,16 @@
 package com.fw.myfirewall.ui
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -15,35 +20,40 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.service.MyVpnService
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
+import java.security.MessageDigest
 
 /**
- * SettingsScreen Composable: 
+ * SettingsScreen Composable:
  * Acts as the top-level container for the settings UI.
- * It observes global states (Theme, Dark Mode, Pure Black) from the ViewModel
- * and wraps the content in the custom MyFirewallTheme to ensure immediate UI updates.
  */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel = viewModel()) {
     val settingsViewModel: SettingsViewModel = viewModel
-    
+
     // ############################################################################
     // 1. STATE OBSERVATION
-    // Collect settings flows from ViewModel as Compose state
     // ############################################################################
     val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
     val themeMode by settingsViewModel.themeMode.collectAsState()
@@ -51,7 +61,6 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 
     // ############################################################################
     // 2. THEME CALCULATION
-    // Determine light vs dark theme based on the user's preference or system setting
     // ############################################################################
     val darkTheme = when (themeMode) {
         "light" -> false
@@ -59,13 +68,11 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
         else -> isSystemInDarkTheme()
     }
 
-    // Apply the theme wrapper to propagate changes instantly to all children
     MyFirewallTheme(
         darkTheme = darkTheme,
         pureBlack = isPureBlackEnabled,
         dynamicColor = isDynamicColorEnabled
     ) {
-        // Surface provides the primary background color for the screen
         Surface(
             modifier = modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
@@ -77,35 +84,32 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 
 /**
  * SettingsContent Composable:
- * Handles the actual layout, cards, and individual rows.
- * Includes interaction logic for permissions, dialogs, and navigation.
+ * Handles layout, category cards, and the new comprehensive tweaking section.
  */
 @Composable
 fun SettingsContent(viewModel: SettingsViewModel) {
     val context = LocalContext.current
-    
+
     // ############################################################################
-    // 3. UI LOCAL STATES (Dialog Visibility)
+    // 3. UI LOCAL STATES
     // ############################################################################
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
+    val showAboutDialog = remember { mutableStateOf(false) }
 
     // ############################################################################
     // 4. PERMISSION HANDLERS
-    // Setup activity result launcher for system VPN permission requests
     // ############################################################################
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            // Permission granted by user, start service in Connect mode
             val intent = Intent(context, MyVpnService::class.java)
             intent.action = MyVpnService.ACTION_CONNECT
             context.startForegroundService(intent)
         }
     }
-    
-    // Collection of state for row switches and values
+
     val isRootEnabled by viewModel.isRootEnabled.collectAsState()
     val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
     val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
@@ -114,10 +118,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
     val languageCode by viewModel.languageCode.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
 
-    // ############################################################################
-    // 5. ASYNCHRONOUS FEEDBACK (Root Checks)
-    // Listen for root verification results triggered by ViewModel
-    // ############################################################################
+    // Feedback for root check
     LaunchedEffect(rootCheckResult) {
         rootCheckResult?.let { hasRoot ->
             if (hasRoot) {
@@ -125,14 +126,12 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             } else {
                 Toast.makeText(context, context.getString(R.string.root_access_not_available), Toast.LENGTH_SHORT).show()
             }
-            // Clear the result once processed
             viewModel.resetRootCheckResult()
         }
     }
 
     // ############################################################################
-    // 6. DIALOG RENDERING
-    // Conditionally show selection popups
+    // 5. DIALOG RENDERING
     // ############################################################################
     if (showThemeDialog.value) {
         ThemeDialog(
@@ -150,9 +149,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             onDismissRequest = { showLanguageDialog.value = false },
             onConfirmation = { selection ->
                 viewModel.setLanguage(selection)
-                // Locale update logic via LanguageManager
                 com.fw.myfirewall.util.LanguageManager.setLocale(context, selection)
-                // Recreate activity to apply changes to non-composable parts
                 if (context is Activity) {
                     context.recreate()
                 }
@@ -160,9 +157,12 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             }
         )
     }
+    if (showAboutDialog.value) {
+        AboutDialog(onDismissRequest = { showAboutDialog.value = false })
+    }
 
     // ############################################################################
-    // 7. SCREEN LAYOUT (Vertical Scroll)
+    // 6. MAIN LAYOUT
     // ############################################################################
     Column(
         modifier = Modifier
@@ -171,16 +171,32 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+        // ROW: HEADER SECTION (Icon on left, Title next to it)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // About Dialog Trigger (Question Mark)
+            IconButton(
+                onClick = { showAboutDialog.value = true },
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.HelpOutline,
+                    contentDescription = "About",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.settings_title),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         // ----------------------------------------------------------------------------
         // CARD: FIREWALL ENGINE
-        // Functional core components (VPN, URL Filter, Start on Boot)
         // ----------------------------------------------------------------------------
         Card(
             colors = CardDefaults.cardColors(
@@ -194,7 +210,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // Header Label for Engine section
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.Function_type_title),
@@ -203,8 +218,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
-                
-                // ITEM: Applications Filter (VPN based)
+
                 SettingsItemRow(
                     title = stringResource(R.string.vpn_service_label),
                     description = stringResource(R.string.vpn_service_text),
@@ -212,17 +226,15 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     checked = MyVpnService.isServiceRunning.value,
                     onCheckedChange = { checked ->
                         if (checked) {
-                            // Check for system VPN permission
                             val intent = VpnService.prepare(context)
                             if (intent != null) {
                                 vpnLauncher.launch(intent)
                             } else {
                                 val serviceIntent = Intent(context, MyVpnService::class.java)
                                 serviceIntent.action = MyVpnService.ACTION_CONNECT
-                                context.startForegroundService(serviceIntent)
+                                context.startForegroundService(intent)
                             }
                         } else {
-                            // Disconnect service
                             val serviceIntent = Intent(context, MyVpnService::class.java)
                             serviceIntent.action = MyVpnService.ACTION_DISCONNECT
                             context.startService(serviceIntent)
@@ -232,20 +244,17 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
 
-                // ITEM: URL Filter (Root based)
                 SettingsItemRow(
                     title = stringResource(R.string.root_service_label),
                     description = stringResource(R.string.root_service_text),
                     icon = Icons.Rounded.AdminPanelSettings,
                     checked = isRootEnabled
                 ) { checked ->
-                    // Logic: The ViewModel handles root check before allowing state change
                     viewModel.toggleRoot(checked)
                 }
 
                 SettingsDivider()
-                
-                // ITEM: Boot Start
+
                 SettingsItemRow(
                     title = stringResource(R.string.start_on_boot_label),
                     description = stringResource(R.string.start_on_boot_text),
@@ -259,7 +268,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
         // ----------------------------------------------------------------------------
         // CARD: USER INTERFACE
-        // Visual customisation (Theme, Color Mode, Language)
         // ----------------------------------------------------------------------------
         Card(
             colors = CardDefaults.cardColors(
@@ -273,7 +281,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // Header Label for UI section
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.ui_settings_title),
@@ -283,7 +290,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     )
                 }
 
-                // ITEM: Theme Mode Selector
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -300,7 +306,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Palette, 
+                                    imageVector = Icons.Rounded.Palette,
                                     contentDescription = null,
                                     modifier = Modifier.size(22.dp),
                                     tint = MaterialTheme.colorScheme.primary
@@ -322,7 +328,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     }
                     Icon(
                         imageVector = Icons.Default.ArrowForwardIos,
-                        contentDescription = "Configure",
+                        contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -330,7 +336,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
 
-                // ITEM: Dynamic Color (Material You) Toggle
                 SettingsItemRow(
                     title = stringResource(R.string.dynamic_color_label),
                     description = stringResource(R.string.dynamic_color_text),
@@ -342,7 +347,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
 
-                // ITEM: Pure Black Toggle (AMOLED)
                 SettingsItemRow(
                     title = stringResource(R.string.pure_black_label),
                     description = stringResource(R.string.pure_black_text),
@@ -354,7 +358,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
 
-                // ITEM: Language Selector
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -393,7 +396,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     }
                     Icon(
                         imageVector = Icons.Default.ArrowForwardIos,
-                        contentDescription = "Navigate",
+                        contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -407,10 +410,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 // HELPER COMPOSABLES
 // ############################################################################
 
-/**
- * SettingsItemRow: Standardised row layout for settings containing
- * an icon, title, description, and an interactive Switch.
- */
 @Composable
 fun SettingsItemRow(
     title: String,
@@ -463,9 +462,6 @@ fun SettingsItemRow(
     }
 }
 
-/**
- * SettingsDivider: Standard horizontal line separating items in cards.
- */
 @Composable
 fun SettingsDivider() {
     HorizontalDivider(
@@ -478,8 +474,173 @@ fun SettingsDivider() {
 }
 
 /**
- * ThemeDialog: Popup window allowing users to choose light, dark, or system default.
+ * AboutDialog: Comprehensive "About" section with Authenticity Certificate.
  */
+@Composable
+fun AboutDialog(onDismissRequest: () -> Unit) {
+    val context = LocalContext.current
+    val packageInfo = remember {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+    val signature = remember { getAppSignature(context) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Verified,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(text = stringResource(R.string.settings_about_title))
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = stringResource(R.string.settings_about_description),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+                // AUTHENTICITY CERTIFICATE SECTION
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Certificate of Authenticity",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            CertificateRow(label = "Package", value = context.packageName)
+                            CertificateRow(label = "Version", value = packageInfo?.versionName ?: "Unknown")
+                            val buildCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                packageInfo?.longVersionCode?.toString()
+                            } else {
+                                @Suppress("DEPRECATION")
+                                packageInfo?.versionCode?.toString()
+                            }
+                            CertificateRow(label = "Build", value = buildCode ?: "Unknown")
+
+                            Spacer(Modifier.height(4.dp))
+
+                            Text(
+                                text = "SHA-256 Fingerprint",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Surface(
+                                color = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(4.dp),
+                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                            ) {
+                                Text(
+                                    text = signature,
+                                    modifier = Modifier.padding(6.dp),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 10.sp
+                                    ),
+                                    lineHeight = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(R.string.ok))
+            }
+        },
+        shape = RoundedCornerShape(28.dp)
+    )
+}
+
+@Composable
+private fun CertificateRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/**
+ * Extracts the app's SHA-256 signature fingerprint.
+ */
+private fun getAppSignature(context: Context): String {
+    return try {
+        val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNATURES
+            )
+        }
+
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            packageInfo.signingInfo?.signingCertificateHistory
+        } else {
+            @Suppress("DEPRECATION")
+            packageInfo.signatures
+        }
+
+        val md = MessageDigest.getInstance("SHA-256")
+        val signatureBytes = signatures?.get(0)?.toByteArray()
+        if (signatureBytes != null) {
+            val digest = md.digest(signatureBytes)
+            digest.joinToString(":") { "%02X".format(it) }
+        } else {
+            "Signature unavailable"
+        }
+    } catch (e: Exception) {
+        "Signature unavailable"
+    }
+}
+
 @Composable
 fun ThemeDialog(
     currentSelection: String,
@@ -491,7 +652,7 @@ fun ThemeDialog(
         "light" to R.string.theme_light,
         "dark" to R.string.theme_dark
     )
-    
+
     AlertDialog(
         onDismissRequest = { onDismissRequest() },
         title = { Text(text = stringResource(R.string.theme_dialog_title)) },
@@ -526,9 +687,6 @@ fun ThemeDialog(
     )
 }
 
-/**
- * LanguageDialog: Popup window for localization preference selection.
- */
 @Composable
 fun LanguageDialog(
     currentSelection: String,
@@ -575,9 +733,6 @@ fun LanguageDialog(
     )
 }
 
-/**
- * Maps preference keys to localized UI labels for the Theme picker.
- */
 @Composable
 private fun getThemeLabel(key: String): String {
     return when(key) {
@@ -587,9 +742,6 @@ private fun getThemeLabel(key: String): String {
     }
 }
 
-/**
- * Maps internal language codes to human-readable names.
- */
 private fun getLanguageLabel(code: String): String {
     return when (code) {
         "en" -> "English"
