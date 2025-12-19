@@ -12,9 +12,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
-import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -25,14 +25,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,13 +63,12 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
         modifier = Modifier
-            .fillMaxWidth(0.95f) // Utilise 95% de la largeur de l'écran
-            .padding(vertical = 96.dp), // Optionnel : marge haut/bas
-        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            .fillMaxWidth(0.95f)
+            .padding(vertical = 48.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
                 Text(text = stringResource(R.string.ok))
-
             }
         },
         text = {
@@ -120,18 +115,20 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
                 // 4. CERTIFICATE SECTION
+                val statusColor = if (isAuthentic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 Text(
                     text = stringResource(R.string.certificate_authenticity_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
-                    color = if (isAuthentic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    color = statusColor // Utilisation de la variable de couleur
                 )
 
                 Surface(
                     color = Color.Transparent,
                     shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    // Optionnel : Vous pouvez aussi colorer la bordure pour plus de cohérence
+                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
@@ -139,7 +136,8 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp
+                            fontSize = 11.sp,
+                            color = statusColor // <--- APPLIQUE LA COULEUR ICI
                         ),
                         lineHeight = 16.sp,
                         textAlign = TextAlign.Center
@@ -174,7 +172,7 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 // 6. LINKS SECTION
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     LinkRow(icon = Icons.Rounded.Code, label = stringResource(R.string.about_github)) {}
                     LinkRow(icon = Icons.Rounded.HelpOutline, label = stringResource(R.string.about_help)) {}
@@ -201,36 +199,44 @@ private fun LinkRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
-            .padding(vertical = 4.dp),
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(shape = CircleShape,
-            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onSurface),
-            modifier = Modifier.size(22.dp),
-
-
-            ) {
+        // Left Icon
+        Surface(
+            shape = CircleShape,
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
+            modifier = Modifier.size(32.dp),
+            color = Color.Transparent
+        ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
+        
         Spacer(Modifier.width(16.dp))
+        
+        // Description
         Text(
-            text = buildAnnotatedString {
-                append(label)
-                append(" ")
-                withStyle(style = SpanStyle(fontStyle = FontStyle.Italic, fontWeight = FontWeight.Bold)) {
-                    append("link")
-                }
-            },
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f)
+        )
+        
+        // Right Arrow
+        Icon(
+            imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
 }
