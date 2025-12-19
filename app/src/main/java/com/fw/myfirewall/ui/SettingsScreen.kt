@@ -1,7 +1,6 @@
 package com.fw.myfirewall.ui
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.widget.Toast

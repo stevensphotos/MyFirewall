@@ -205,21 +205,12 @@ private fun LinkRow(icon: ImageVector, label: String, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Left Icon
-        Surface(
-            shape = CircleShape,
-            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
-            modifier = Modifier.size(32.dp),
-            color = Color.Transparent
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
         
         Spacer(Modifier.width(16.dp))
         
