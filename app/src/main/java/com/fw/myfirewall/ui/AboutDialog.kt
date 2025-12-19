@@ -14,10 +14,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -58,15 +60,20 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
     }
     
     val signature = remember { getAppSignature(context) }
-    val officialSignature = "63:DE:21:77:79:9A:FC:94:E3:12:E3:10:52:B0:5B:99:17:35:33:26:EF:18:8C:A8:DA:7F:6E:4A:A2:5D:88:E7"
+    val officialSignature = "63:DE:21:77:79:9A:FC:94:E3:12:E3:10:52:B0:5B:99:17:35:33:26:EF:18:8C:A8:DA:7F:6E:4A:A2:5D:88:E8"
     val isAuthentic = signature.replace(":", "")
         .equals(officialSignature.replace(":", ""), ignoreCase = true)
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        modifier = Modifier
+            .fillMaxWidth(0.95f) // Utilise 95% de la largeur de l'écran
+            .padding(vertical = 96.dp), // Optionnel : marge haut/bas
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
                 Text(text = stringResource(R.string.ok))
+
             }
         },
         text = {
@@ -81,12 +88,14 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(80.dp)
+                    modifier = Modifier.size(64.dp)
                 ) {
                     Image(
                         painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                         contentDescription = null,
-                        modifier = Modifier.padding(8.dp)
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
                     )
                 }
 
@@ -196,12 +205,12 @@ private fun LinkRow(icon: ImageVector, label: String, onClick: () -> Unit) {
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Surface(
-            shape = CircleShape,
+        Surface(shape = CircleShape,
             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onSurface),
-            modifier = Modifier.size(36.dp),
-            color = Color.Transparent
-        ) {
+            modifier = Modifier.size(22.dp),
+
+
+            ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
