@@ -4,25 +4,33 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Verified
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +39,7 @@ import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import java.security.MessageDigest
 
 /**
- * AboutDialog: Comprehensive "About" section with Authenticity Certificate.
+ * AboutDialog: Comprehensive "About" section matching the provided layout.
  */
 @Composable
 fun AboutDialog(onDismissRequest: () -> Unit) {
@@ -49,31 +57,46 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
         }
     }
     val signature = remember { getAppSignature(context) }
-    val officialSignature = "63:DE:21:77:79:9A:FC:94:E3:12:E3:10:52:B0:5B:99:17:35:33:26:EF:18:8C:A8:DA:7F:6E:4A:A2:5D:88:E8"
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Verified,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(text = stringResource(R.string.settings_about_title))
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(text = stringResource(R.string.ok))
             }
         },
         text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // 1. APP ICON
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(80.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+
+                // 2. TITLE
+                Text(
+                    text = stringResource(R.string.settings_about_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                // 3. DESCRIPTION
                 Text(
                     text = stringResource(R.string.settings_about_description),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
                     style = MaterialTheme.typography.bodyMedium.copy(
                         hyphens = Hyphens.Auto
                     ),
@@ -81,93 +104,70 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                     lineHeight = 20.sp
                 )
 
-                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
 
-                // AUTHENTICITY CERTIFICATE SECTION
-                val isAuthentic = signature.replace(":", "")
-                    .equals(officialSignature.replace(":", ""), ignoreCase = true)
-                
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // 4. CERTIFICATE SECTION
+                Text(
+                    text = stringResource(R.string.certificate_authenticity_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                Surface(
+                    color = Color.Transparent,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
-                        text = stringResource(R.string.certificate_authenticity_title),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (isAuthentic) MaterialTheme.colorScheme.primary else
-                            MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Bold,
-                    )
-
-                    // SHA-256 Fingerprint
-                    Text(
-                        text = stringResource(R.string.SHA_256_Fingerprint),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Text(
-                            text = signature,
-                            modifier = Modifier.padding(8.dp),
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 10.sp
-                            ),
-                            lineHeight = 14.sp
-                        )
-                    }
-
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isAuthentic)
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-                            else
-                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+                        text = signature,
+                        modifier = Modifier.padding(16.dp),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp
                         ),
-                        shape = RoundedCornerShape(22.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            CertificateRow(label = "Package", value = context.packageName)
-                            CertificateRow(label = "Version", value = packageInfo?.versionName ?: "Unknown")
-                            val buildCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                packageInfo?.longVersionCode?.toString()
-                            } else {
-                                @Suppress("DEPRECATION")
-                                packageInfo?.versionCode?.toString()
-                            }
-                            CertificateRow(label = "Build", value = buildCode ?: "Unknown")
-
-                            Spacer(Modifier.height(4.dp))
-
-                            // Links Section
-                            CertificateRow(
-                                label = stringResource(R.string.about_github),
-                                value = "GitHub"
-
-                            )
-                            CertificateRow(
-                                label = stringResource(R.string.about_help),
-                                value = "Help"
-                            )
-                        }
-                    }
+                        lineHeight = 16.sp,
+                        textAlign = TextAlign.Center
+                    )
                 }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(text = stringResource(R.string.ok))
+
+                Text(
+                    text = stringResource(R.string.SHA_256_Fingerprint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                // 5. BUILD INFO
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    BuildInfoRow(label = "Package", value = context.packageName)
+                    BuildInfoRow(label = "Version", value = packageInfo?.versionName ?: "Unknown")
+                    val buildCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        packageInfo?.longVersionCode?.toString()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageInfo?.versionCode?.toString()
+                    }
+                    BuildInfoRow(label = "Build", value = buildCode ?: "Unknown")
+                }
+
+                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+                // 6. LINKS SECTION
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    LinkRow(icon = Icons.Rounded.Code, label = stringResource(R.string.about_github)) {}
+                    LinkRow(icon = Icons.Rounded.HelpOutline, label = stringResource(R.string.about_help)) {}
+                    LinkRow(icon = Icons.Rounded.BugReport, label = stringResource(R.string.about_bugs)) {}
+                    LinkRow(icon = Icons.Rounded.Feedback, label = stringResource(R.string.about_bugs)) {}
+                    LinkRow(icon = Icons.Rounded.Description, label = stringResource(R.string.about_licence)) {}
+                }
             }
         },
         shape = RoundedCornerShape(28.dp)
@@ -175,24 +175,49 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
 }
 
 @Composable
-private fun CertificateRow(label: String, value: String) {
+private fun BuildInfoRow(label: String, value: String) {
+    Text(
+        text = "$label: $value",
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Medium
+    )
+}
+
+@Composable
+private fun LinkRow(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Surface(
+            shape = CircleShape,
+            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onSurface),
+            modifier = Modifier.size(36.dp),
+            color = Color.Transparent
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+        Spacer(Modifier.width(16.dp))
         Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            text = buildAnnotatedString {
+                append(label)
+                append(" ")
+                withStyle(style = SpanStyle(fontStyle = FontStyle.Italic, fontWeight = FontWeight.Bold)) {
+                    append("link")
+                }
+            },
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
     }
 }
@@ -232,7 +257,6 @@ private fun getAppSignature(context: Context): String {
     }
 }
 
-
 @Preview(showBackground = true)
 @Composable
 fun AboutDialogPreview() {
@@ -242,4 +266,3 @@ fun AboutDialogPreview() {
         }
     }
 }
-

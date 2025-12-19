@@ -99,8 +99,10 @@
     <string name="layout_density_label">Layout Density</string>
     <string name="certificate_authenticity_title">Certificate of Authenticity</string>
     <string name="SHA_256_Fingerprint">SHA-256 Fingerprint</string>
-    <string name="about_github">Source code on GitHub</string>
+    <string name="about_github">Source code</string>
     <string name="about_help">Help</string>
+    <string name="about_bugs">Bugs</string>
+    <string name="about_licence">Licence</string>
 
 
 </resources>
