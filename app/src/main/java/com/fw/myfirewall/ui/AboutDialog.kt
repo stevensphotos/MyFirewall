@@ -39,7 +39,7 @@ import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import java.security.MessageDigest
 
 /**
- * AboutDialog: Comprehensive "About" section matching the provided layout.
+ * AboutDialog: Comprehensive "About" section matching the provided layout while preserving authenticity logic.
  */
 @Composable
 fun AboutDialog(onDismissRequest: () -> Unit) {
@@ -56,7 +56,11 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
             null
         }
     }
+    
     val signature = remember { getAppSignature(context) }
+    val officialSignature = "63:DE:21:77:79:9A:FC:94:E3:12:E3:10:52:B0:5B:99:17:35:33:26:EF:18:8C:A8:DA:7F:6E:4A:A2:5D:88:E7"
+    val isAuthentic = signature.replace(":", "")
+        .equals(officialSignature.replace(":", ""), ignoreCase = true)
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -111,7 +115,8 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                     text = stringResource(R.string.certificate_authenticity_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = if (isAuthentic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                 )
 
                 Surface(
@@ -165,7 +170,6 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                     LinkRow(icon = Icons.Rounded.Code, label = stringResource(R.string.about_github)) {}
                     LinkRow(icon = Icons.Rounded.HelpOutline, label = stringResource(R.string.about_help)) {}
                     LinkRow(icon = Icons.Rounded.BugReport, label = stringResource(R.string.about_bugs)) {}
-                    LinkRow(icon = Icons.Rounded.Feedback, label = stringResource(R.string.about_bugs)) {}
                     LinkRow(icon = Icons.Rounded.Description, label = stringResource(R.string.about_licence)) {}
                 }
             }
