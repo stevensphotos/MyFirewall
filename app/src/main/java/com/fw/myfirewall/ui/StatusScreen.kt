@@ -51,7 +51,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.fw.myfirewall.R
 import com.fw.myfirewall.viewmodel.StatusViewModel
-import com.fw.myfirewall.viewmodel.openUsageStatsSettings
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
