@@ -154,6 +154,7 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                             CertificateRow(
                                 label = stringResource(R.string.about_github),
                                 value = "GitHub"
+
                             )
                             CertificateRow(
                                 label = stringResource(R.string.about_help),
@@ -232,13 +233,13 @@ private fun getAppSignature(context: Context): String {
 }
 
 
-//@Preview(showBackground = true)
-//@Composable
-//fun AboutDialogPreview() {
-//    MyFirewallTheme {
-//        Box(modifier = Modifier.padding(16.dp)) {
-//            AboutDialog(onDismissRequest = {})
-//        }
-//    }
-//}
+@Preview(showBackground = true)
+@Composable
+fun AboutDialogPreview() {
+    MyFirewallTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            AboutDialog(onDismissRequest = {})
+        }
+    }
+}
 
