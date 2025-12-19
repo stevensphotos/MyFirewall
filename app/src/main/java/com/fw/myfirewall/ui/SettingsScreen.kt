@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,7 +40,6 @@ import com.fw.myfirewall.service.MyVpnService
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
 import java.security.MessageDigest
-import androidx.compose.ui.text.style.TextAlign
 
 /**
  * SettingsScreen Composable:
@@ -510,9 +511,15 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     text = stringResource(R.string.settings_about_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Justify
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp), // Ajoute de la marge interne pour rétrécir le texte
 
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        hyphens = Hyphens.Auto
+                    ),
+                    textAlign = TextAlign.Justify,
+                    lineHeight = 20.sp // Un interligne légèrement plus aéré
                 )
 
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
@@ -525,13 +532,44 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = stringResource(R.string.certificate_authenticity_title),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp), // Ajoute de la marge interne pour rétrécir le texte
+
                         style = MaterialTheme.typography.labelLarge,
                         // Le titre change de couleur selon l'authenticité
                         color = if (isAuthentic) MaterialTheme.colorScheme.primary else
                             MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold,
-
                     )
+
+                    // Affichage du Fingerprint
+                    Text(
+                        text = stringResource(R.string.SHA_256_Fingerprint),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp), // Ajoute de la marge interne pour rétrécir le texte
+
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                    ) {
+                        Text(
+                            text = signature,
+                            modifier = Modifier.padding(6.dp),
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 10.sp
+                            ),
+                            lineHeight = 14.sp
+                        )
+                    }
+                    // Fin Affichage du Fingerprint
 
                     Card(
                         colors = CardDefaults.cardColors(
@@ -558,27 +596,17 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                             CertificateRow(label = "Build", value = buildCode ?: "Unknown")
 
                             Spacer(Modifier.height(4.dp))
-
-                            Text(
-                                text = "SHA-256 Fingerprint",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Spacer(Modifier.height(4.dp))// GitHub Link
+                            CertificateRow(
+                                label = stringResource(R.string.about_github),
+                                value = "GitHub" // Link will be added here: // https://github.com/...
                             )
-                            Surface(
-                                color = MaterialTheme.colorScheme.surface,
-                                shape = RoundedCornerShape(4.dp),
-                                border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
-                            ) {
-                                Text(
-                                    text = signature,
-                                    modifier = Modifier.padding(6.dp),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        fontFamily = FontFamily.Monospace,
-                                        fontSize = 10.sp
-                                    ),
-                                    lineHeight = 14.sp
-                                )
-                            }
+
+// Help Link
+                            CertificateRow(
+                                label = stringResource(R.string.about_help),
+                                value = "Help" // Link will be added here: // https://...
+                            )
                         }
                     }
                 }
