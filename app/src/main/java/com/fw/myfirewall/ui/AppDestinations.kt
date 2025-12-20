@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
@@ -18,5 +19,6 @@ enum class AppDestinations(
     APPLICATIONS(R.string.applications_title, Icons.Default.Apps),
     RULES(R.string.rules_title, Icons.Default.List),
     SETTINGS(R.string.settings_title, Icons.Default.Settings),
-    SAVE_RULES(R.string.export_rules_label, Icons.Default.Save)
+    SAVE_RULES(R.string.export_rules_label, Icons.Default.Save),
+    CUSTOM_RULES(R.string.custom_rules_title, Icons.Default.EditNote)
 }

@@ -72,7 +72,7 @@ dependencies {
 
 
 dependencies {
-    // ... other existing dependencies
+    implementation(libs.androidx.compose.foundation)// ... other existing dependencies
 
     // Add this here instead
     implementation("com.google.android.material:material:1.12.0")

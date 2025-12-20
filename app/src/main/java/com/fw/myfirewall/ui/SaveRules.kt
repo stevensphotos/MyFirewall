@@ -47,6 +47,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,16 +83,22 @@ fun SaveRulesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.save_rules_title)) },
+            TopAppBar(title = {
+                Text(
+                    text = stringResource(R.string.save_rules_title),
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack, // Modification ici
                             contentDescription = stringResource(R.string.save_rules_back_desc)
                         )
                     }
                 }
+
             )
         }
     ) { innerPadding ->

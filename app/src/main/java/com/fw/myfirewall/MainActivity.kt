@@ -46,6 +46,7 @@ import com.fw.myfirewall.ui.AppFilter
 import com.fw.myfirewall.ui.AppListScreen
 import com.fw.myfirewall.ui.RulesScreen
 import com.fw.myfirewall.ui.SaveRulesScreen
+import com.fw.myfirewall.ui.CustomRulesScreen
 import com.fw.myfirewall.ui.SettingsScreen
 import com.fw.myfirewall.ui.StatusScreen
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
@@ -135,22 +136,13 @@ class MainActivity : ComponentActivity() {
         // ############################################################################
         // CORE APP STATE & VIEWMODEL INITIALIZATION
         // ############################################################################
-        // Filter out SAVE_RULES for the pager and bottom nav
-// In MainActivity.kt inside MyFirewallApp()
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            // This tells Scaffold NOT to force its own insets,
-            // allowing the background to reach the very top    contentWindowInsets = WindowInsets(0, 0, 0, 0)
-        ) { innerPadding ->
-            // Your HorizontalPager or Screens here
-        }
-
         val pagerDestinations =
-            remember { AppDestinations.entries.filter { it != AppDestinations.SAVE_RULES } }
+            remember { AppDestinations.entries.filter { it != AppDestinations.SAVE_RULES && it != AppDestinations.CUSTOM_RULES } }
         val pagerState = rememberPagerState(pageCount = { pagerDestinations.size })
 
-        // State to handle SaveRulesScreen overlay
+        // State to handle screen overlays
         var showSaveRulesScreen by rememberSaveable { mutableStateOf(false) }
+        var showCustomRulesScreen by rememberSaveable { mutableStateOf(false) }
 
         val coroutineScope = rememberCoroutineScope()
         var selectedFilters by rememberSaveable { mutableStateOf(setOf(AppFilter.ALL)) }
@@ -236,6 +228,19 @@ class MainActivity : ComponentActivity() {
             SaveRulesScreen(
                 onBack = { showSaveRulesScreen = false }
             )
+        } else if (showCustomRulesScreen) {
+            // Overlay for CustomRulesScreen
+            BackHandler { showCustomRulesScreen = false }
+            CustomRulesScreen(
+                onNavigateToSaveRules = {
+                    showCustomRulesScreen = false
+                    showSaveRulesScreen = true
+                },
+                onBack = {
+                    showCustomRulesScreen = false
+                }
+            )
+
         } else {
             // Main App Content with Navigation Suite
             NavigationSuiteScaffold(
@@ -355,6 +360,9 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.padding(innerPadding),
                                     onNavigateToSaveRules = {
                                         showSaveRulesScreen = true
+                                    },
+                                    onNavigateToCustomRules = {
+                                        showCustomRulesScreen = true
                                     }
                                 )
                             }
@@ -364,9 +372,9 @@ class MainActivity : ComponentActivity() {
                                     modifier = Modifier.padding(innerPadding)
                                 )
                             }
-                            // SAVE_RULES is handled outside the pager now
-                            AppDestinations.SAVE_RULES -> { /* Should not happen in pager */
-                            }
+                            // Handled outside pager
+                            AppDestinations.SAVE_RULES -> {}
+                            AppDestinations.CUSTOM_RULES -> {}
                         }
                     }
                 }

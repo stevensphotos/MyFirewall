@@ -57,7 +57,8 @@ import java.util.concurrent.TimeUnit
 fun RulesScreen(
     modifier: Modifier = Modifier, 
     viewModel: RulesViewModel = viewModel(),
-    onNavigateToSaveRules: () -> Unit = {}
+    onNavigateToSaveRules: () -> Unit = {},
+    onNavigateToCustomRules: () -> Unit = {}
 ) {
     val context = LocalContext.current
     
@@ -242,7 +243,12 @@ fun RulesScreen(
         // ############################################################################
         // RULES MANAGEMENT CARD (Migrated UI)
         // ############################################################################
-        RulesManagementCard(onNavigateToSaveRules = onNavigateToSaveRules)
+        RulesManagementCard(
+            onNavigateToSaveRules = onNavigateToSaveRules,
+            onNavigateToCustomRules = onNavigateToCustomRules
+        )
+
+
     }
 }
 
