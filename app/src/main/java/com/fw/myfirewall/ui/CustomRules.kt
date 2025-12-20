@@ -74,10 +74,6 @@ fun CustomRulesScreen(
             title = {
                 Text(
                     text = stringResource(R.string.custom_rules_title),
-                    // Applique le gras ici
-                    fontWeight = FontWeight.Bold,
-                    // Optionnel : Vous pouvez aussi spécifier le style Typography pour la cohérence
-                    style = MaterialTheme.typography.titleLarge
                 )
             },
             navigationIcon = {
@@ -139,6 +135,7 @@ fun CustomRulesScreen(
                     onClick = { /* Apply rules logic */ },
                     modifier = Modifier.weight(1f),
                     enabled = !isError && rulesText.isNotEmpty()
+
                 ) {
                     Text(stringResource(R.string.apply_button))
                 }
@@ -160,7 +157,7 @@ fun CustomRulesScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(0.95f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
@@ -168,8 +165,7 @@ fun CustomRulesScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.export_rules_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(

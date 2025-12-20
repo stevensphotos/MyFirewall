@@ -55,7 +55,6 @@ fun RulesManagementCard(
                 Text(
                     text = stringResource(R.string.rules_management_title),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
             }
@@ -119,7 +118,7 @@ private fun RulesNavigationRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyMedium
             )
             Text(
                 text = description,

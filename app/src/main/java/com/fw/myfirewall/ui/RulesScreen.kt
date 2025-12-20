@@ -94,9 +94,11 @@ fun RulesScreen(
         // ############################################################################
         Text(
             text = stringResource(R.string.rules_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp) // Aligne le texte avec le bord des cartes
+                .padding(top = 8.dp, bottom = 16.dp)
         )
 
         // ############################################################################
@@ -121,7 +123,6 @@ fun RulesScreen(
                     Text(
                         text = stringResource(R.string.advertising_title),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }

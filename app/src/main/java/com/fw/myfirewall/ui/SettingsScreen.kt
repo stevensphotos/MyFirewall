@@ -162,12 +162,17 @@ fun SettingsContent(viewModel: SettingsViewModel) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
+
         ) {
             // 1. LE TITRE (À GAUCHE)
             Text(
                 text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp) // Aligne le texte avec le bord des cartes
+                    .padding(top = 8.dp, bottom = 16.dp)
+
             )
 
             // 2. LE SPACER (PREND TOUT L'ESPACE DISPONIBLE)
@@ -205,7 +210,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     Text(
                         text = stringResource(R.string.Function_type_title),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
@@ -276,7 +280,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     Text(
                         text = stringResource(R.string.ui_settings_title),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }

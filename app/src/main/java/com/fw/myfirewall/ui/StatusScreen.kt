@@ -114,7 +114,6 @@ fun StatusScreen(
         Text(
             stringResource(R.string.applications_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
@@ -157,7 +156,6 @@ fun StatusScreen(
         Text(
             stringResource(R.string.blocked_urls_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
 
@@ -201,7 +199,6 @@ fun StatusScreen(
         Text(
             stringResource(R.string.network_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
         

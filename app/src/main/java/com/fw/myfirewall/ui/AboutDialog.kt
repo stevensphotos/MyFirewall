@@ -97,8 +97,7 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 // 2. TITLE
                 Text(
                     text = stringResource(R.string.settings_about_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center
                 )
 
@@ -119,7 +118,6 @@ fun AboutDialog(onDismissRequest: () -> Unit) {
                 Text(
                     text = stringResource(R.string.certificate_authenticity_title),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     color = statusColor // Utilisation de la variable de couleur
                 )
