@@ -7,6 +7,9 @@
     <string name="Function_type_title">Firewall and Url filtering</string>
     <string name="filter_msg">Filter: %1$s</string>
     <string name="root_service_label">URL Filter</string>
+    <string name="url_filter_label">URL Filter</string>
+    <string name="url_filter_desc">URL Filter VPN based</string>
+
     <string name="start_on_boot_label">Start on Boot</string>
     <string name="advertising_label">Advertising</string>
     <string name="advertising_title">Block lists</string>

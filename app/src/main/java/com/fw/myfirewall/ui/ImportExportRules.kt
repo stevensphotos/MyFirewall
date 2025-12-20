@@ -69,11 +69,9 @@ fun RulesManagementCard(
             )
 
             // DIVIDER
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-            )
+            ExpRulesDivider()
+
+
 
             // 2. EXPORT RULES ROW
             RulesNavigationRow(
@@ -134,4 +132,15 @@ private fun RulesNavigationRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
+}
+@Composable
+fun ExpRulesDivider() {
+    HorizontalDivider(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        thickness = 4.dp,
+        color = MaterialTheme.colorScheme.background
+
+    )
 }

@@ -15,6 +15,23 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+    private val _isUrlFilterEnabled = MutableStateFlow(false)
+    val isUrlFilterEnabled: StateFlow<Boolean> = _isUrlFilterEnabled.asStateFlow()
+    fun toggleUrlFilter(enabled: Boolean) {
+        viewModelScope.launch {
+            // Save to DataStore/Prefs here
+            _isUrlFilterEnabled.value = enabled
+
+            // Trigger logic to start/stop the actual URL filtering engine
+            if (enabled) {
+                // startUrlFilter()
+            } else {
+                // stopUrlFilter()
+            }
+        }
+    }
+
+
     private val sharedPrefs = application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val hostsGenerator: HostsGenerator
 

@@ -21,6 +21,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -101,10 +102,12 @@ fun SettingsContent(viewModel: SettingsViewModel) {
     val isRootEnabled by viewModel.isRootEnabled.collectAsState()
     val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
     val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
+    val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
     val isDynamicColorEnabled by viewModel.isDynamicColorEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val languageCode by viewModel.languageCode.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
+    val isRootPossible by viewModel.isRootPossible.collectAsState()
 
     // Feedback for root check
     LaunchedEffect(rootCheckResult) {
@@ -210,7 +213,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
-
+                // APPLICATION FILTER
                 SettingsItemRow(
                     title = stringResource(R.string.vpn_service_label),
                     description = stringResource(R.string.vpn_service_text),
@@ -236,11 +239,44 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
 
+                // URL FILTER
+                SettingsItemRow(
+                    title = stringResource(R.string.url_filter_label),
+                    description=  stringResource (R.string.url_filter_desc),
+                    icon = Icons.Rounded.FilterAlt,
+                    checked = isUrlFilterEnabled,
+                    onCheckedChange = { checked ->
+                        viewModel.toggleUrlFilter(checked)
+                    }
+                )
+
+                SettingsDivider()
+
+                //       URL FILTER ROOT
+
+                // Determine label color based on root availability
+                val labelColor = if (isRootPossible)
+                    MaterialTheme.colorScheme.onSurface
+                else
+                    MaterialTheme.colorScheme.error
+
+                // Determine icon and color based on root availability
+                val statusColor = if (isRootPossible)
+                    MaterialTheme.colorScheme.onSurface
+                else
+                    MaterialTheme.colorScheme.error
+
+                val statusIcon = if (isRootPossible)
+                    Icons.Rounded.AdminPanelSettings
+                else
+                    Icons.Rounded.ErrorOutline
+
                 SettingsItemRow(
                     title = stringResource(R.string.root_service_label),
                     description = stringResource(R.string.root_service_text),
                     icon = Icons.Rounded.AdminPanelSettings,
-                    checked = isRootEnabled
+                    checked = isRootEnabled,
+                    titleColor = labelColor
                 ) { checked ->
                     viewModel.toggleRoot(checked)
                 }
@@ -407,6 +443,7 @@ fun SettingsItemRow(
     description: String? = null,
     icon: ImageVector,
     checked: Boolean,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
@@ -435,7 +472,8 @@ fun SettingsItemRow(
             Column {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = titleColor
                 )
                 if (description != null) {
                     Text(
@@ -459,8 +497,8 @@ fun SettingsDivider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        thickness = 1.dp,
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        thickness = 4.dp,
+        color = MaterialTheme.colorScheme.background
     )
 }
 
