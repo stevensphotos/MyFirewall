@@ -237,7 +237,9 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
 
-                // URL FILTER
+                //**********************************
+                //********** URL FILTER ************
+                //**********************************
                 SettingsItemRow(
                     title = stringResource(R.string.url_filter_label),
                     description=  stringResource (R.string.url_filter_desc),
@@ -249,8 +251,9 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 )
 
                 SettingsDivider()
-
-                //       URL FILTER ROOT
+                //**********************************
+                //******* URL FILTER ROOT*******
+                //**********************************
 
                 // Dynamically determine icon and label color based on root availability
                 val rootStatusIcon = if (isRootPossible) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Block
@@ -259,6 +262,8 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     stringResource(R.string.root_service_label)
                 else
                     "${stringResource(R.string.root_service_label)} (${stringResource(R.string.not_available)})"
+
+
 
                 SettingsItemRow(
                     title = rootLabelText,
@@ -273,6 +278,9 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
 
                 SettingsDivider()
+                //**********************************
+                //********** START ON BOOT *********
+                //**********************************
 
                 SettingsItemRow(
                     title = stringResource(R.string.start_on_boot_label),
