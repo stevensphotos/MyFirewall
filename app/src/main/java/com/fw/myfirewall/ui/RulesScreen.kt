@@ -17,10 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -132,7 +135,7 @@ fun RulesScreen(
                 // ############################################################################
                 RulesItemRow(
                     title = stringResource(R.string.advertising_label),
-                    icon = Icons.Default.Block,
+                    icon = Icons.Default.AdsClick,
                     checked = isAdvertisingEnabled,
                     onCheckedChange = { checked ->
                         viewModel.toggleAdvertising(checked)
@@ -211,7 +214,7 @@ fun RulesScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Default.Block, 
+                                    imageVector = Icons.Default.Update,
                                     contentDescription = null,
                                     modifier = Modifier.size(22.dp),
                                     tint = MaterialTheme.colorScheme.primary
@@ -232,7 +235,7 @@ fun RulesScreen(
                         }
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = "Configure",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
