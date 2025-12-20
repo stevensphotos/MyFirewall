@@ -227,7 +227,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                             } else {
                                 val serviceIntent = Intent(context, MyVpnService::class.java)
                                 serviceIntent.action = MyVpnService.ACTION_CONNECT
-                                context.startForegroundService(intent)
+                                context.startForegroundService(serviceIntent)
                             }
                         } else {
                             val serviceIntent = Intent(context, MyVpnService::class.java)

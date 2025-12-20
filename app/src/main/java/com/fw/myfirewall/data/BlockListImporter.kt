@@ -31,20 +31,9 @@ object BlockListImporter {
 
                     var line: String? = reader.readLine()
                     while (line != null) {
-                        val trimmedLine = line.trim()
-                        if (trimmedLine.isNotEmpty() && !trimmedLine.startsWith("#")) {
-                            // Basic parsing: Assuming one domain per line or hosts file format
-                            // If hosts file format: 0.0.0.0 domain.com
-                            val parts = trimmedLine.split("\\s+".toRegex())
-                            val domain = if (parts.size >= 2 && (parts[0] == "0.0.0.0" || parts[0] == "127.0.0.1")) {
-                                parts[1]
-                            } else {
-                                parts[0]
-                            }
-
-                            if (domain.isNotEmpty()) {
-                                rules.add(BlockRule(domain = domain, category = category))
-                            }
+                        val domain = parseLine(line)
+                        if (domain != null) {
+                            rules.add(BlockRule(domain = domain, category = category))
                         }
                         
                         // Batch insert every 1000 rules to manage memory
@@ -73,5 +62,48 @@ object BlockListImporter {
             }
             count
         }
+    }
+
+    suspend fun importFromText(context: Context, text: String, category: BlockRuleCategory): Int {
+        return withContext(Dispatchers.IO) {
+            val db = AppDatabase.getDatabase(context)
+            db.blockRuleDao().deleteByCategory(category)
+            
+            val lines = text.split("\n")
+            val rules = mutableListOf<BlockRule>()
+            var count = 0
+
+            for (line in lines) {
+                val domain = parseLine(line)
+                if (domain != null) {
+                    rules.add(BlockRule(domain = domain, category = category))
+                }
+
+                if (rules.size >= 500) {
+                    db.blockRuleDao().insertBlockRules(rules)
+                    count += rules.size
+                    rules.clear()
+                }
+            }
+
+            if (rules.isNotEmpty()) {
+                db.blockRuleDao().insertBlockRules(rules)
+                count += rules.size
+            }
+            count
+        }
+    }
+
+    private fun parseLine(line: String): String? {
+        val trimmedLine = line.trim()
+        if (trimmedLine.isEmpty() || trimmedLine.startsWith("#")) return null
+
+        val parts = trimmedLine.split("\\s+".toRegex())
+        val domain = if (parts.size >= 2 && (parts[0] == "0.0.0.0" || parts[0] == "127.0.0.1")) {
+            parts[1]
+        } else {
+            parts[0]
+        }
+        return if (domain.isNotEmpty()) domain else null
     }
 }

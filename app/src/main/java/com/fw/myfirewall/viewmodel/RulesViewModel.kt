@@ -32,10 +32,10 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isSocialEnabled = MutableStateFlow(false)
     val isSocialEnabled: StateFlow<Boolean> = _isSocialEnabled.asStateFlow()
-    
+
     private val _isCustomEnabled = MutableStateFlow(false)
     val isCustomEnabled: StateFlow<Boolean> = _isCustomEnabled.asStateFlow()
-    
+
     private val _selectedSchedule = MutableStateFlow("schedule_24h")
     val selectedSchedule: StateFlow<String> = _selectedSchedule.asStateFlow()
 
@@ -44,8 +44,21 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         _isAnnoyancesEnabled.value = sharedPrefs.getBoolean("annoyances_enabled", false)
         _isSocialEnabled.value = sharedPrefs.getBoolean("social_enabled", false)
         _isCustomEnabled.value = sharedPrefs.getBoolean("custom_enabled", false)
-        _selectedSchedule.value = sharedPrefs.getString("ad_blocker_schedule", "schedule_24h") ?: "schedule_24h"
+        _selectedSchedule.value =
+            sharedPrefs.getString("ad_blocker_schedule", "schedule_24h") ?: "schedule_24h"
     }
+
+    fun clearAllCustomRules() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                // Supprime la catégorie CUSTOM de la base de données
+                database.blockRuleDao().deleteByCategory(BlockRuleCategory.CUSTOM)
+                // Régénère le fichier hosts (vide ou sans ces règles)
+                hostsGenerator.generateHostsFile()
+            }
+        }
+    }
+
 
     fun toggleAdvertising(enabled: Boolean) {
         _isAdvertisingEnabled.value = enabled
@@ -68,9 +81,34 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleCustom(enabled: Boolean) {
         _isCustomEnabled.value = enabled
         sharedPrefs.edit().putBoolean("custom_enabled", enabled).apply()
-        // Custom rules might not need downloading but still need hosts generation
         viewModelScope.launch {
             hostsGenerator.generateHostsFile()
+        }
+    }
+
+    fun applyCustomRules(rulesText: String) {
+        viewModelScope.launch {
+            val count = withContext(Dispatchers.IO) {
+                BlockListImporter.importFromText(context, rulesText, BlockRuleCategory.CUSTOM)
+            }
+            if (count > 0) {
+                Toast.makeText(context, "Applied $count custom rules", Toast.LENGTH_SHORT).show()
+                // Auto-enable custom rules if rules were added
+                if (!_isCustomEnabled.value) {
+                    toggleCustom(true)
+                } else {
+                    hostsGenerator.generateHostsFile()
+                }
+            } else {
+                Toast.makeText(context, "No valid rules found to apply", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    suspend fun getCurrentCustomRules(): String {
+        return withContext(Dispatchers.IO) {
+            val rules = database.blockRuleDao().getBlockRulesByCategory(BlockRuleCategory.CUSTOM).first()
+            rules.joinToString("\n") { it.domain }
         }
     }
     
@@ -82,7 +120,6 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     private fun handleRuleToggle(enabled: Boolean, category: BlockRuleCategory, url: String) {
         viewModelScope.launch {
             if (enabled) {
-                // Check if rules exist
                 val count = withContext(Dispatchers.IO) {
                     database.blockRuleDao().countByCategory(category).first()
                 }
@@ -99,8 +136,6 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
-            
-            // Generate hosts file after toggle change (and potential download)
             hostsGenerator.generateHostsFile()
         }
     }
