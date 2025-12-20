@@ -5,13 +5,16 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,14 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.viewmodel.RulesViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import  androidx.compose.material.icons.filled.Refresh
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomRulesScreen(
@@ -128,10 +133,11 @@ fun CustomRulesScreen(
                     }
                 },
                 isError = isError,
-                // Shrink to 5 lines if text is present, stay at 10 if empty
                 minLines = if (rulesText.isEmpty()) 10 else 5,
                 maxLines = 15
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // ############################################################################
             // BUTTONS SECTION
@@ -140,6 +146,7 @@ fun CustomRulesScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // APPLY BUTTON
                 Button(
                     onClick = { 
                         viewModel.applyCustomRules(rulesText)
@@ -150,11 +157,46 @@ fun CustomRulesScreen(
                     Text(stringResource(R.string.apply_button))
                 }
 
-                OutlinedButton(
-                    onClick = { rulesText = "" },
-                    modifier = Modifier.weight(1f)
+                // SPLIT CLEAR BUTTON
+                var expanded by remember { mutableStateOf(false) }
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(stringResource(R.string.clear_button))
+                    // Part 1: Clear text field
+                    OutlinedButton(
+                        onClick = { rulesText = "" },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) {
+                        Text(stringResource(R.string.clear_button))
+                    }
+                    
+                    // Part 2: Dropdown for more options
+                    OutlinedButton(
+                        onClick = { expanded = true },
+                        modifier = Modifier
+                            .width(48.dp)
+                            .offset(x = (-1).dp), // Overlap border
+                        shape = RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Clear applied rules") },
+                                onClick = {
+                                    viewModel.clearAllCustomRules()
+                                    expanded = false
+                                    Toast.makeText(context, "All applied custom rules cleared", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -197,14 +239,25 @@ fun CustomRulesScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // In CustomRules.kt
+            // ############################################################################
+            // IMPORT APPLIED RULES CARD
+            // ############################################################################
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = stringResource(R.string.import_applied_rules_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Text(text = stringResource(R.string.import_applied_rules_description), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = stringResource(R.string.import_applied_rules_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = stringResource(R.string.import_applied_rules_description),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             scope.launch {
@@ -220,16 +273,11 @@ fun CustomRulesScreen(
                         modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text("Load")
                     }
                 }
             }
-
-            // RulesManagementCard is commented as per request
-//            RulesManagementCard(
-//                onNavigateToSaveRules = onNavigateToSaveRules,
-//                onNavigateToCustomRules = { /* Already here */ }
-//            )
         }
     }
 }

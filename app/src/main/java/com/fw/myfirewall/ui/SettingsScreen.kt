@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -162,17 +163,15 @@ fun SettingsContent(viewModel: SettingsViewModel) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
-
         ) {
             // 1. LE TITRE (À GAUCHE)
             Text(
                 text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp) // Aligne le texte avec le bord des cartes
+                    .padding(horizontal = 4.dp)
                     .padding(top = 8.dp, bottom = 16.dp)
-
             )
 
             // 2. LE SPACER (PREND TOUT L'ESPACE DISPONIBLE)
@@ -184,7 +183,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.HelpOutline,
+                    imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
                     contentDescription = "About",
                     tint = MaterialTheme.colorScheme.primary
                 )
