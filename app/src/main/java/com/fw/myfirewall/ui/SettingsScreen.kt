@@ -14,8 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
-import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
@@ -346,7 +345,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                         }
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -414,7 +413,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                         }
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
