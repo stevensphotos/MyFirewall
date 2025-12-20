@@ -164,20 +164,17 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. LE TITRE (À GAUCHE)
+            // 1. LE TITRE
             Text(
                 text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
+                    .weight(1f) // Prend tout l'espace restant, poussant l'icône à droite
                     .padding(horizontal = 4.dp)
                     .padding(top = 8.dp, bottom = 16.dp)
             )
 
-            // 2. LE SPACER (PREND TOUT L'ESPACE DISPONIBLE)
-            Spacer(modifier = Modifier.weight(1f))
-
-            // 3. L'ICÔNE D'AIDE (À DROITE)
+            // 2. L'ICÔNE D'AIDE
             IconButton(
                 onClick = { showAboutDialog.value = true },
                 modifier = Modifier.size(48.dp)
@@ -189,6 +186,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 )
             }
         }
+
 
         // ----------------------------------------------------------------------------
         // CARD: FIREWALL ENGINE
