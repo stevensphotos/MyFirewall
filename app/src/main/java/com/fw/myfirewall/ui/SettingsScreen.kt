@@ -32,7 +32,6 @@ import com.fw.myfirewall.R
 import com.fw.myfirewall.service.MyVpnService
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
-
 /**
  * SettingsScreen Composable:
  * Acts as the top-level container for the settings UI.
@@ -254,32 +253,25 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 //       URL FILTER ROOT
 
-                // Determine label color based on root availability
-                val labelColor = if (isRootPossible)
-                    MaterialTheme.colorScheme.onSurface
+                // Dynamically determine icon and label color based on root availability
+                val rootStatusIcon = if (isRootPossible) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Block
+                val rootStatusColor = if (isRootPossible) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
+                val rootLabelText = if (isRootPossible)
+                    stringResource(R.string.root_service_label)
                 else
-                    MaterialTheme.colorScheme.error
-
-                // Determine icon and color based on root availability
-                val statusColor = if (isRootPossible)
-                    MaterialTheme.colorScheme.onSurface
-                else
-                    MaterialTheme.colorScheme.error
-
-                val statusIcon = if (isRootPossible)
-                    Icons.Rounded.AdminPanelSettings
-                else
-                    Icons.Rounded.ErrorOutline
+                    "${stringResource(R.string.root_service_label)} (${stringResource(R.string.not_available)})"
 
                 SettingsItemRow(
-                    title = stringResource(R.string.root_service_label),
+                    title = rootLabelText,
                     description = stringResource(R.string.root_service_text),
-                    icon = Icons.Rounded.AdminPanelSettings,
+                    icon = rootStatusIcon,
                     checked = isRootEnabled,
-                    titleColor = labelColor
+                    titleColor = rootStatusColor
                 ) { checked ->
                     viewModel.toggleRoot(checked)
                 }
+
+
 
                 SettingsDivider()
 

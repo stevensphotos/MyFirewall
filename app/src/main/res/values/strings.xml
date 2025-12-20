@@ -9,7 +9,6 @@
     <string name="root_service_label">URL Filter</string>
     <string name="url_filter_label">URL Filter</string>
     <string name="url_filter_desc">URL Filter VPN based</string>
-
     <string name="start_on_boot_label">Start on Boot</string>
     <string name="advertising_label">Advertising</string>
     <string name="advertising_title">Block lists</string>
@@ -37,6 +36,8 @@
     <string name="pure_black_text">Use pure black in dark mode</string>
     <string name="root_access_granted">Root access granted</string>
     <string name="root_access_not_available">Root access not available</string>
+    <string name="not_available">Not available</string>
+    <string name="dynamic_color_label">Dynamic Color</string>
     <string name="wifi_content_description">Wi-Fi</string>
     <string name="mobile_data_content_description">Mobile Data</string>
     <string name="roaming_content_description">Roaming</string>
@@ -85,7 +86,6 @@
     <string name="export_failed">Export failed: %1$s</string>
     <string name="import_success">Imported %1$d rules successfully</string>
     <string name="import_failed">Import failed: %1$s</string>
-    <string name="dynamic_color_label">Dynamic Color</string>
     <string name="dynamic_color_text">Use system colors (Android 12+)</string>
     <string name="network_speed_label">Speed (%1$s)</string>
     <string name="vpn_service_label">Applications filter</string>
