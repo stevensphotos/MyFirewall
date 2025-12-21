@@ -19,6 +19,30 @@ class HostsGenerator(
         private const val TAG = "HostsGenerator"
     }
 
+    /**
+     * Génère un fichier hosts contenant uniquement le localhost (purge).
+     * Cette fonction est utile pour désactiver proprement le filtrage Root.
+     */
+    suspend fun generateDefaultHostsFile() {
+        // On vérifie quand même le root avant d'agir
+        if (!RootUtils.isDeviceRooted() || !RootUtils.isRootAvailable()) return
+
+        withContext(Dispatchers.IO) {
+            try {
+                val hostsContent = StringBuilder()
+                hostsContent.append("127.0.0.1 localhost\n")
+                hostsContent.append("::1 localhost\n\n")
+
+                // On écrit directement le contenu par défaut
+                writeToRootFile(hostsContent.toString())
+                Log.d("HostsGenerator", "Default hosts file generated (purged)")
+            } catch (e: Exception) {
+                Log.e("HostsGenerator", "Error purging hosts file", e)
+            }
+        }
+    }
+
+
     suspend fun generateHostsFile() {
         if (!RootUtils.isDeviceRooted() || !RootUtils.isRootAvailable()) {
             Log.d(TAG, "Root not available, skipping hosts generation")

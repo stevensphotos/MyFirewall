@@ -238,7 +238,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 SettingsDivider()
 
                 //**********************************
-                //********** URL FILTER ************
+                //********** URL FILTER VPN ********
                 //**********************************
                 SettingsItemRow(
                     title = stringResource(R.string.url_filter_label),
@@ -252,7 +252,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
                 SettingsDivider()
                 //**********************************
-                //******* URL FILTER ROOT*******
+                //******* URL FILTER ROOT *******
                 //**********************************
 
                 // Dynamically determine icon and label color based on root availability

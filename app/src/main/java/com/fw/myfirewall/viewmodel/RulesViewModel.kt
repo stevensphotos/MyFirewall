@@ -2,6 +2,7 @@ package com.fw.myfirewall.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -39,6 +40,16 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedSchedule = MutableStateFlow("schedule_24h")
     val selectedSchedule: StateFlow<String> = _selectedSchedule.asStateFlow()
 
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+        when (key) {
+            "advertising_enabled" -> _isAdvertisingEnabled.value = prefs.getBoolean(key, false)
+            "annoyances_enabled" -> _isAnnoyancesEnabled.value = prefs.getBoolean(key, false)
+            "social_enabled" -> _isSocialEnabled.value = prefs.getBoolean(key, false)
+            "custom_enabled" -> _isCustomEnabled.value = prefs.getBoolean(key, false)
+            "ad_blocker_schedule" -> _selectedSchedule.value = prefs.getString(key, "schedule_24h") ?: "schedule_24h"
+        }
+    }
+
     init {
         _isAdvertisingEnabled.value = sharedPrefs.getBoolean("advertising_enabled", false)
         _isAnnoyancesEnabled.value = sharedPrefs.getBoolean("annoyances_enabled", false)
@@ -46,14 +57,14 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         _isCustomEnabled.value = sharedPrefs.getBoolean("custom_enabled", false)
         _selectedSchedule.value =
             sharedPrefs.getString("ad_blocker_schedule", "schedule_24h") ?: "schedule_24h"
+            
+        sharedPrefs.registerOnSharedPreferenceChangeListener(prefListener)
     }
 
     fun clearAllCustomRules() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                // Supprime la catégorie CUSTOM de la base de données
                 database.blockRuleDao().deleteByCategory(BlockRuleCategory.CUSTOM)
-                // Régénère le fichier hosts (vide ou sans ces règles)
                 hostsGenerator.generateHostsFile()
             }
         }
@@ -93,7 +104,6 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (count > 0) {
                 Toast.makeText(context, "Applied $count custom rules", Toast.LENGTH_SHORT).show()
-                // Auto-enable custom rules if rules were added
                 if (!_isCustomEnabled.value) {
                     toggleCustom(true)
                 } else {
@@ -138,5 +148,10 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
             }
             hostsGenerator.generateHostsFile()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        sharedPrefs.unregisterOnSharedPreferenceChangeListener(prefListener)
     }
 }
