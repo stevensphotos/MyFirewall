@@ -161,6 +161,7 @@ class MyVpnService : VpnService() {
                     rules.forEach { rule ->
                         if (rule.isEnabled) {
                             newBlockedDomains.add(rule.domain)
+                            blockedDomains.add(rule.domain.lowercase().trim())
                         }
                     }
 
