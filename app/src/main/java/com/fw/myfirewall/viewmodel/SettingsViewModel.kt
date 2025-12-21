@@ -96,42 +96,51 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Active le filtrage via VPN.
      * Si le mode ROOT était actif, il est purgé avant.
      */
-    fun toggleUrlFilter(enabled: Boolean) {
-        viewModelScope.launch {
-            if (enabled) {
-                // Étape 1 : Si le mode Root est actif, on doit le purger d'abord
-                if (_isRootEnabled.value) {
-                    withContext(Dispatchers.IO) {
-                        // Désactivation synchrone de toutes les règles liées au Root
-                        sharedPrefs.edit().apply {
-                            putBoolean("advertising_enabled", false)
-                            putBoolean("annoyances_enabled", false)
-                            putBoolean("social_enabled", false)
-                            putBoolean("custom_enabled", false)
-                            putBoolean("root_enabled", false)
-                        }.commit()
 
-                        // Étape 2 : Purge physique du fichier Hosts (Reset vers localhost)
-                        hostsGenerator.generateDefaultHostsFile()
-                    }
-                    _isRootEnabled.value = false
-                }
+    /**
+     * Cette fonction centrale décide si le VPN doit tourner ou s'arrêter
+     */
+    private fun syncVpnServiceState() {
+        val isAppFilterActive =
+            sharedPrefs.getBoolean("app_filter_enabled", false) // Votre toggle existant
+        val isUrlFilterActive = _isUrlFilterEnabled.value
 
-                // Étape 3 : Activation du moteur VPN
-                withContext(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("url_filter_enabled", true).commit()
-                }
-                _isUrlFilterEnabled.value = true
+        val intent = Intent(getApplication(), MyVpnService::class.java)
 
-            } else {
-                // Désactivation simple du VPN
-                withContext(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("url_filter_enabled", false).commit()
-                }
-                _isUrlFilterEnabled.value = false
-            }
+        if (isAppFilterActive || isUrlFilterActive) {
+            // Au moins un filtre est actif -> On lance/maintient le VPN
+            intent.action = MyVpnService.ACTION_CONNECT
+            getApplication<Application>().startForegroundService(intent)
+        } else {
+            // Les deux sont éteints -> On coupe tout
+            intent.action = MyVpnService.ACTION_DISCONNECT
+            getApplication<Application>().startService(intent)
         }
     }
+
+    fun toggleUrlFilter(enabled: Boolean) {
+        viewModelScope.launch {
+            // 1. Gérer l'exclusion avec le ROOT (toujours nécessaire)
+            if (enabled && _isRootEnabled.value) {
+                withContext(Dispatchers.IO) {
+                    sharedPrefs.edit().putBoolean("root_enabled", false).commit()
+                    hostsGenerator.generateDefaultHostsFile()
+                }
+                _isRootEnabled.value = false
+            }
+
+            // 2. Mettre à jour la préférence URL Filter
+            _isUrlFilterEnabled.value = enabled
+            withContext(Dispatchers.IO) {
+                sharedPrefs.edit().putBoolean("url_filter_enabled", enabled).commit()
+            }
+
+            // 3. Synchroniser le service (Démarrer ou Arrêter selon l'état global)
+            syncVpnServiceState()
+        }
+    }
+
+
 
     /**
      * Active le filtrage via Root (Iptables/Hosts).
