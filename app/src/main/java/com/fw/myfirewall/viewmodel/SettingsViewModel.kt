@@ -96,6 +96,15 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * Active le filtrage via VPN.
      * Si le mode ROOT était actif, il est purgé avant.
      */
+    /**
+     * Notifie le service VPN que les règles de filtrage ont changé.
+     */
+    private fun notifyVpnRulesChanged() {
+        val intent = Intent(getApplication(), MyVpnService::class.java)
+        intent.action = "com.fw.myfirewall.ACTION_RELOAD_RULES"
+        getApplication<Application>().startService(intent)
+    }
+
 
     /**
      * Cette fonction centrale décide si le VPN doit tourner ou s'arrêter
@@ -137,6 +146,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
             // 3. Synchroniser le service (Démarrer ou Arrêter selon l'état global)
             syncVpnServiceState()
+            if (enabled) {
+                notifyVpnRulesChanged()
+            }
         }
     }
 

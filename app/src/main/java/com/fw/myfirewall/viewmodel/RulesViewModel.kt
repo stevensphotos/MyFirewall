@@ -64,11 +64,22 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     fun clearAllCustomRules() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
+                //1. Supprime les règles de la base de données
                 database.blockRuleDao().deleteByCategory(BlockRuleCategory.CUSTOM)
-                hostsGenerator.generateHostsFile()
+
+                // 2. Met à jour les filtres avec une liste vide pour purger
+                // Cela va vider le fichier hosts (Root) et notifier le VPN
+                hostsGenerator.updateAllFilters(
+                    category = BlockRuleCategory.CUSTOM,
+                    domains = emptyList()
+                )
             }
+            // Optionnel : On peut notifier l'UI si nécessaire
+            _isCustomEnabled.value = false
+            sharedPrefs.edit().putBoolean("custom_enabled", false).apply()
         }
     }
+
 
 
     fun toggleAdvertising(enabled: Boolean) {

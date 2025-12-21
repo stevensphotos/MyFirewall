@@ -10,7 +10,10 @@ import kotlinx.coroutines.flow.Flow
 interface BlockRuleDao {
     @Query("SELECT * FROM block_rules")
     fun getAllBlockRules(): Flow<List<BlockRule>>
-    
+
+    @Query("SELECT * FROM block_rules")
+    fun getAllRulesSync(): List<BlockRule>
+
     @Query("SELECT * FROM block_rules WHERE category = :category")
     fun getBlockRulesByCategory(category: BlockRuleCategory): Flow<List<BlockRule>>
 
@@ -33,7 +36,5 @@ interface BlockRuleDao {
     fun countByCategory(category: BlockRuleCategory): Flow<Int>
 
     @Query("DELETE FROM block_rules WHERE category = :category")
-    suspend  fun deleteRulesByCategory(category: BlockRuleCategory)
-
-
+    suspend fun deleteRulesByCategory(category: BlockRuleCategory)
 }
