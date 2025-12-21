@@ -2,10 +2,12 @@ package com.fw.myfirewall.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fw.myfirewall.data.AppDatabase
+import com.fw.myfirewall.service.MyVpnService
 import com.fw.myfirewall.util.HostsGenerator
 import com.fw.myfirewall.util.RootUtils
 import kotlinx.coroutines.Dispatchers
@@ -16,15 +18,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-    private val sharedPrefs = application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
+    private val sharedPrefs =
+        application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val hostsGenerator: HostsGenerator
 
+    // --- ÉTATS DES FILTRES ---
     private val _isUrlFilterEnabled = MutableStateFlow(false)
     val isUrlFilterEnabled: StateFlow<Boolean> = _isUrlFilterEnabled.asStateFlow()
 
     private val _isRootEnabled = MutableStateFlow(false)
     val isRootEnabled: StateFlow<Boolean> = _isRootEnabled.asStateFlow()
 
+    // --- ÉTATS SYSTÈME ---
     private val _isStartOnBootEnabled = MutableStateFlow(false)
     val isStartOnBootEnabled: StateFlow<Boolean> = _isStartOnBootEnabled.asStateFlow()
 
@@ -34,12 +39,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isDynamicColorEnabled = MutableStateFlow(true)
     val isDynamicColorEnabled: StateFlow<Boolean> = _isDynamicColorEnabled.asStateFlow()
 
-    private val _themeMode = MutableStateFlow("system") // system, light, dark
+    private val _themeMode = MutableStateFlow("system")
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
-    private val _languageCode = MutableStateFlow("system") // system, en, fr
+    private val _languageCode = MutableStateFlow("system")
     val languageCode: StateFlow<String> = _languageCode.asStateFlow()
 
+    // --- ÉTATS ROOT ---
     private val _rootCheckResult = MutableStateFlow<Boolean?>(null)
     val rootCheckResult: StateFlow<Boolean?> = _rootCheckResult.asStateFlow()
 
@@ -53,7 +59,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 "root_enabled" -> _isRootEnabled.value = prefs.getBoolean(key, false)
                 "start_on_boot" -> _isStartOnBootEnabled.value = prefs.getBoolean(key, false)
                 "pure_black_enabled" -> _isPureBlackEnabled.value = prefs.getBoolean(key, false)
-                "dynamic_color_enabled" -> _isDynamicColorEnabled.value = prefs.getBoolean(key, true)
+                "dynamic_color_enabled" -> _isDynamicColorEnabled.value =
+                    prefs.getBoolean(key, true)
+
                 "theme_mode" -> _themeMode.value = prefs.getString(key, "system") ?: "system"
                 "language_code" -> _languageCode.value = prefs.getString(key, "system") ?: "system"
             }
@@ -64,9 +72,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         val db = AppDatabase.getDatabase(application)
         hostsGenerator = HostsGenerator(db.blockRuleDao(), application)
 
+        // Initialisation des valeurs depuis les SharedPreferences
         _isUrlFilterEnabled.value = sharedPrefs.getBoolean("url_filter_enabled", false)
-        _isStartOnBootEnabled.value = sharedPrefs.getBoolean("start_on_boot", false)
         _isRootEnabled.value = sharedPrefs.getBoolean("root_enabled", false)
+        _isStartOnBootEnabled.value = sharedPrefs.getBoolean("start_on_boot", false)
         _isPureBlackEnabled.value = sharedPrefs.getBoolean("pure_black_enabled", false)
         _isDynamicColorEnabled.value = sharedPrefs.getBoolean("dynamic_color_enabled", true)
         _themeMode.value = sharedPrefs.getString("theme_mode", "system") ?: "system"
@@ -74,24 +83,27 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefListener)
 
-        // Verify root status on init if it was previously enabled
-        val rootEnabled = sharedPrefs.getBoolean("root_enabled", false)
-        if (rootEnabled) {
+        if (_isRootEnabled.value) {
             checkRoot(manualToggle = false)
         }
     }
 
+    // ############################################################################
+    // LOGIQUE DE COMMUTATION DES FILTRES (MUTUELLE EXCLUSIVE)
+    // ############################################################################
+
+    /**
+     * Active le filtrage via VPN.
+     * Si le mode ROOT était actif, il est purgé avant.
+     */
     fun toggleUrlFilter(enabled: Boolean) {
         viewModelScope.launch {
             if (enabled) {
                 // Étape 1 : Si le mode Root est actif, on doit le purger d'abord
                 if (_isRootEnabled.value) {
-
-                    // On utilise withContext(Dispatchers.IO) pour bloquer la coroutine
-                    // jusqu'à ce que l'écriture disque ET la génération du fichier soient finies.
                     withContext(Dispatchers.IO) {
-                        // a) On écrit les préférences de désactivation de façon synchrone (.commit())
-                        val success = sharedPrefs.edit().apply {
+                        // Désactivation synchrone de toutes les règles liées au Root
+                        sharedPrefs.edit().apply {
                             putBoolean("advertising_enabled", false)
                             putBoolean("annoyances_enabled", false)
                             putBoolean("social_enabled", false)
@@ -99,27 +111,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             putBoolean("root_enabled", false)
                         }.commit()
 
-                        if (success) {
-                            // b) On génère le fichier Hosts maintenant que les prefs sont à false
-                            // Cette fonction doit être bloquante (suspendue)
-                            hostsGenerator.generateDefaultHostsFile()
-                        }
+                        // Étape 2 : Purge physique du fichier Hosts (Reset vers localhost)
+                        hostsGenerator.generateDefaultHostsFile()
                     }
-
-                    // Étape 2 : Mettre à jour l'état UI seulement après la purge physique
                     _isRootEnabled.value = false
                 }
 
-                // Étape 3 : Activer enfin le filtre VPN
-                // On utilise commit() ici aussi pour garantir que le service VPN
-                // lira la bonne valeur s'il démarre instantanément
+                // Étape 3 : Activation du moteur VPN
                 withContext(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("url_filter_enabled", true).commit()
                 }
                 _isUrlFilterEnabled.value = true
 
             } else {
-                // Désactivation simple
+                // Désactivation simple du VPN
                 withContext(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("url_filter_enabled", false).commit()
                 }
@@ -128,6 +133,67 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Active le filtrage via Root (Iptables/Hosts).
+     * Si le mode VPN était actif, il est coupé.
+     */
+    fun toggleRoot(enabled: Boolean) {
+        viewModelScope.launch {
+            if (enabled) {
+                // Étape 1 : Si le VPN est actif, on le coupe physiquement
+                if (_isUrlFilterEnabled.value) {
+                    // a) Mise à jour des préférences (Synchrone)
+                    withContext(Dispatchers.IO) {
+                        sharedPrefs.edit().putBoolean("url_filter_enabled", false).commit()
+                    }
+
+                    // b) Mise à jour de l'état UI
+                    _isUrlFilterEnabled.value = false
+
+                    // c) ARRÊT PHYSIQUE DU SERVICE VPN
+                    val intent =
+                        Intent(getApplication(), MyVpnService::class.java)
+                    intent.action = MyVpnService.ACTION_DISCONNECT
+                    getApplication<Application>().startService(intent)
+                }
+
+                // Étape 2 : Lancer la vérification de permissions et l'activation Root
+                checkRoot(manualToggle = true)
+            } else {
+                // ... reste de votre code de désactivation Root
+                _isRootEnabled.value = false
+                withContext(Dispatchers.IO) {
+                    sharedPrefs.edit().putBoolean("root_enabled", false).commit()
+                    hostsGenerator.generateDefaultHostsFile()
+                }
+            }
+        }
+    }
+
+    // ############################################################################
+    // LOGIQUE SYSTÈME ET UI
+    // ############################################################################
+
+    private fun checkRoot(manualToggle: Boolean) {
+        viewModelScope.launch {
+            val hasRoot = withContext(Dispatchers.IO) {
+                RootUtils.isRootAvailable()
+            }
+
+            if (manualToggle) {
+                _rootCheckResult.value = hasRoot
+            }
+
+            _isRootEnabled.value = hasRoot
+            sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
+
+            if (hasRoot) {
+                withContext(Dispatchers.IO) {
+                    hostsGenerator.generateHostsFile()
+                }
+            }
+        }
+    }
 
     fun toggleStartOnBoot(enabled: Boolean) {
         _isStartOnBootEnabled.value = enabled
@@ -152,38 +218,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setLanguage(code: String) {
         _languageCode.value = code
         sharedPrefs.edit().putString("language_code", code).apply()
-    }
-
-    fun toggleRoot(enabled: Boolean) {
-        if (enabled) {
-            checkRoot(manualToggle = true)
-        } else {
-            _isRootEnabled.value = false
-            sharedPrefs.edit().putBoolean("root_enabled", false).apply()
-            // Regenerate to clear hosts file when root filter is turned off
-            viewModelScope.launch {
-                hostsGenerator.generateHostsFile()
-            }
-        }
-    }
-
-    private fun checkRoot(manualToggle: Boolean) {
-        viewModelScope.launch {
-            val hasRoot = withContext(Dispatchers.IO) {
-                RootUtils.isRootAvailable()
-            }
-
-            if (manualToggle) {
-                _rootCheckResult.value = hasRoot
-            }
-
-            _isRootEnabled.value = hasRoot
-            sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
-
-            if (hasRoot) {
-                hostsGenerator.generateHostsFile()
-            }
-        }
     }
 
     fun resetRootCheckResult() {
