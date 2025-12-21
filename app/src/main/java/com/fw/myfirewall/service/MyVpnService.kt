@@ -53,6 +53,78 @@ class MyVpnService : VpnService() {
         return START_STICKY
     }
 
+    /**
+     * Démarre la boucle de lecture des paquets IP
+     */
+    private fun startPacketForwarding(pfd: ParcelFileDescriptor) {
+        vpnThread?.interrupt() // Stop l'ancien thread si existant
+        vpnThread = Thread {
+            val inputStream = FileInputStream(pfd.fileDescriptor)
+            val outputStream = FileOutputStream(pfd.fileDescriptor)
+            val packet = ByteBuffer.allocate(32767)
+
+            try {
+                while (!Thread.interrupted() && isServiceRunning.value) {
+                    val readBytes = inputStream.read(packet.array())
+                    if (readBytes > 0) {
+                        packet.limit(readBytes)
+                        packet.rewind()
+
+                        // Logique de filtrage DNS (IPv4 + UDP + Port 53)
+                        var shouldDrop = false
+                        if (isUrlFilterActive && readBytes >= 28) { // Min size for IP+UDP+DNS
+                            val ipVersion = (packet.get(0).toInt() shr 4) and 0x0F
+                            val protocol = packet.get(9).toInt()
+
+                            if (ipVersion == 4 && protocol == 17) { // IPv4 & UDP
+                                val destPort = packet.getShort(22).toInt() and 0xFFFF
+                                if (destPort == 53) {
+                                    // Utilisation du parseur DNS
+                                    val domain = DnsParser.extractDomain(packet)
+                                    if (blockedDomains.contains(domain)) {
+                                        Log.i("MyVpnService", "BLOQUÉ : $domain")
+                                        shouldDrop = true
+                                    }
+                                }
+                            }
+                        }
+
+                        if (!shouldDrop) {
+                            outputStream.write(packet.array(), 0, readBytes)
+                        }
+                        packet.clear()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("MyVpnService", "Error in packet loop", e)
+            } finally {
+                pfd.close()
+            }
+        }.apply {
+            name = "VpnPacketThread"
+            start()
+        }
+    }
+
+    /**
+     * Charge les domaines depuis les préférences ou la DB
+     */
+    private fun reloadUrlFilterRules() {
+        val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
+        isUrlFilterActive = prefs.getBoolean("url_filter_enabled", false)
+
+        if (isUrlFilterActive) {
+            serviceScope.launch(Dispatchers.IO) {
+                val db = AppDatabase.getDatabase(applicationContext)
+                // Remplacez par votre appel DB réel pour les domaines
+                val rules = db.blockRuleDao().getAllRulesSync()
+                blockedDomains.clear()
+                rules.forEach { rule -> blockedDomains.addAll(rule.patterns) }
+                Log.d("MyVpnService", "URLs chargées: ${blockedDomains.size}")
+            }
+        }
+    }
+
     private fun connect() {
         if (isServiceRunning.value) {
             Log.i("MyVpnService", "Service already running")
