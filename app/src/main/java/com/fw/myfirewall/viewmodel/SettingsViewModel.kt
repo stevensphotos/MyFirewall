@@ -93,10 +93,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // ############################################################################
 
     /**
-     * Active le filtrage via VPN.
-     * Si le mode ROOT était actif, il est purgé avant.
-     */
-    /**
      * Notifie le service VPN que les règles de filtrage ont changé.
      */
     private fun notifyVpnRulesChanged() {
@@ -127,15 +123,28 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * Active le filtrage via VPN.
+     * Si le mode ROOT était actif, il est purgé avant.
+     */
     fun toggleUrlFilter(enabled: Boolean) {
         viewModelScope.launch {
-            // 1. Gérer l'exclusion avec le ROOT (toujours nécessaire)
-            if (enabled && _isRootEnabled.value) {
-                withContext(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("root_enabled", false).commit()
-                    hostsGenerator.generateDefaultHostsFile()
+            if (enabled) {
+                // 1. Gérer l'exclusion avec le ROOT (Logic from URL_Filter_change_logic.txt)
+                val rootEnabled = sharedPrefs.getBoolean("root_enabled", false)
+                if (rootEnabled) {
+                    withContext(Dispatchers.IO) {
+                        sharedPrefs.edit().apply {
+                            putBoolean("root_enabled", false)
+                            putBoolean("advertising_enabled", false)
+                            putBoolean("annoyances_enabled", false)
+                            putBoolean("social_enabled", false)
+                            putBoolean("custom_enabled", false)
+                        }.commit()
+                        hostsGenerator.generateDefaultHostsFile()
+                    }
+                    _isRootEnabled.value = false
                 }
-                _isRootEnabled.value = false
             }
 
             // 2. Mettre à jour la préférence URL Filter
@@ -146,13 +155,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
             // 3. Synchroniser le service (Démarrer ou Arrêter selon l'état global)
             syncVpnServiceState()
+            
+            // 4. Notifier le service si actif
             if (enabled) {
                 notifyVpnRulesChanged()
             }
         }
     }
-
-
 
     /**
      * Active le filtrage via Root (Iptables/Hosts).
@@ -161,7 +170,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun toggleRoot(enabled: Boolean) {
         viewModelScope.launch {
             if (enabled) {
-                // Étape 1 : Si le VPN est actif, on le coupe physiquement
+                // New rule: when toggle {URL Filter (VPN Based)} is active.
+                // If user switch to ON the Toggle {URL Filter (Hosts Based)}
+                // Then set toggle {URL Filter (VPN Based)} to off
                 if (_isUrlFilterEnabled.value) {
                     // a) Mise à jour des préférences (Synchrone)
                     withContext(Dispatchers.IO) {
@@ -171,17 +182,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     // b) Mise à jour de l'état UI
                     _isUrlFilterEnabled.value = false
 
-                    // c) ARRÊT PHYSIQUE DU SERVICE VPN
-                    val intent =
-                        Intent(getApplication(), MyVpnService::class.java)
-                    intent.action = MyVpnService.ACTION_DISCONNECT
-                    getApplication<Application>().startService(intent)
+                    // c) Synchroniser le service (va couper le VPN si plus aucun filtre)
+                    syncVpnServiceState()
                 }
 
                 // Étape 2 : Lancer la vérification de permissions et l'activation Root
                 checkRoot(manualToggle = true)
             } else {
-                // ... reste de votre code de désactivation Root
                 _isRootEnabled.value = false
                 withContext(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("root_enabled", false).commit()

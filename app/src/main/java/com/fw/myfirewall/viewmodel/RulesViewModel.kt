@@ -80,6 +80,11 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun HostsGenerator.updateAllFilters(
+        category: BlockRuleCategory,
+        domains: Any
+    ) {
+    }
 
 
     fun toggleAdvertising(enabled: Boolean) {

@@ -4,48 +4,65 @@ import android.util.Log
 import java.nio.ByteBuffer
 
 object DnsParser {
-    /**
-     * Extrait le nom de domaine d'un paquet DNS (UDP Port 53).
-     * @param packet Le buffer contenant l'intégralité du paquet IP.
-     */
     fun extractDomain(packet: ByteBuffer): String {
-        val previousPosition = packet.position()
+        val originalPosition = packet.position()
         try {
-            // 1. Positionnement au début de la section Question du DNS
-            // Offset 28 = IP Header (20) + UDP Header (8)
-            // Offset 12 = DNS Header (ID, Flags, counts...)
-            packet.position(28 + 12)
+            val firstByte = packet.get(0).toInt()
+            val ipVersion = (firstByte shr 4) and 0x0F
 
-            val domainResult = StringBuilder()
+            // Determine the start of DNS data (IP Header + UDP Header (8) + DNS Header (12))
+            val dnsHeaderStart = if (ipVersion == 4) {
+                val ihl = (firstByte and 0x0F) * 4
+                ihl + 8
+            } else if (ipVersion == 6) {
+                40 + 8 // IPv6 fixed header is 40 bytes
+            } else 0
 
-            // 2. Lecture des labels DNS (format : [taille][texte][taille][texte]...[0])
-            var labelLength = packet.get().toInt() and 0xFF
 
-            while (labelLength > 0) {
-                for (i in 0 until labelLength) {
-                    domainResult.append(packet.get().toInt().toChar())
+            if (packet.limit() < dnsHeaderStart + 12) return ""
+
+            // Move to the start of the Question section (after 12 bytes of DNS header)
+            packet.position(dnsHeaderStart + 12)
+
+    val domainBuilder = StringBuilder()
+
+            // 4. Parse Labels
+            while (packet.hasRemaining()) {
+                val labelLength = packet.get().toInt() and 0xFF
+                if (labelLength == 0) break // End of domain name
+
+                // Safety check for compression or malformed packets (DNS compression starts with 0xC0)
+                if ((labelLength and 0xC0) == 0xC0) {
+                    // We don't handle pointer compression here, usually not needed for simple queries
+                    break
                 }
 
-                labelLength = packet.get().toInt() and 0xFF
-                if (labelLength > 0) {
-                    domainResult.append(".")
+                for (i in 0 until labelLength) {
+                    if (packet.hasRemaining()) {
+                        domainBuilder.append(packet.get().toInt().toChar())
+                    }
+                }
+
+                // Peek at next byte to see if we should add a dot
+                val nextLen = if (packet.hasRemaining()) packet.get(packet.position()).toInt() and 0xFF else 0
+                if (nextLen != 0) {
+                    domainBuilder.append(".")
                 }
             }
 
-            val finalDomain = domainResult.toString().lowercase()
+            val finalDomain = domainBuilder.toString().lowercase().trim()
 
-            // Log de debug pour vérifier l'extraction dans Logcat
-            Log.d("VpnDebug", "Domaine extrait : '$finalDomain'")
-
+            if (finalDomain.isNotEmpty()) {
+                Log.d("VpnDebug", "Successfully extracted: $finalDomain")
+            }
             return finalDomain
 
         } catch (e: Exception) {
-            Log.e("DnsParser", "Erreur lors de l'extraction DNS", e)
+            Log.e("DnsParser", "DNS Extraction failed: ${e.message}")
             return ""
         } finally {
-            // Toujours remettre le buffer à sa position initiale pour ne pas corrompre
-            // la suite du traitement du paquet dans la boucle principale.
-            packet.position(previousPosition)
+            // CRITICAL: Always restore position for MyVpnService to read correctly
+            packet.position(originalPosition)
         }
     }
 }
