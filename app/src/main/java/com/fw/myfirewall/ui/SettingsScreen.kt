@@ -31,6 +31,7 @@ import com.fw.myfirewall.R
 import com.fw.myfirewall.service.MyVpnService
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
+
 /**
  * SettingsScreen Composable:
  * Acts as the top-level container for the settings UI.
@@ -83,6 +84,9 @@ fun SettingsContent(viewModel: SettingsViewModel) {
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
     val showAboutDialog = remember { mutableStateOf(false) }
+    
+    // Store the pending action to execute after VPN permission is granted
+    val pendingVpnAction = remember { mutableStateOf<(() -> Unit)?>(null) }
 
     // ############################################################################
     // 4. PERMISSION HANDLERS
@@ -91,21 +95,36 @@ fun SettingsContent(viewModel: SettingsViewModel) {
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val intent = Intent(context, MyVpnService::class.java)
-            intent.action = MyVpnService.ACTION_CONNECT
-            context.startForegroundService(intent)
+            pendingVpnAction.value?.invoke()
         }
+        pendingVpnAction.value = null
     }
 
     val isRootEnabled by viewModel.isRootEnabled.collectAsState()
+    val isAppFilterEnabled by viewModel.isAppFilterEnabled.collectAsState()
+    val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
     val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
     val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
-    val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
     val isDynamicColorEnabled by viewModel.isDynamicColorEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val languageCode by viewModel.languageCode.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
     val isRootPossible by viewModel.isRootPossible.collectAsState()
+
+    // Helper to trigger VPN actions with permission check
+    fun performVpnAction(enable: Boolean, action: () -> Unit) {
+        if (enable) {
+            val intent = VpnService.prepare(context)
+            if (intent != null) {
+                pendingVpnAction.value = action
+                vpnLauncher.launch(intent)
+            } else {
+                action()
+            }
+        } else {
+            action()
+        }
+    }
 
     // Feedback for root check
     LaunchedEffect(rootCheckResult) {
@@ -216,21 +235,10 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     title = stringResource(R.string.vpn_service_label),
                     description = stringResource(R.string.vpn_service_text),
                     icon = Icons.Rounded.VpnKey,
-                    checked = MyVpnService.isServiceRunning.value,
+                    checked = isAppFilterEnabled,
                     onCheckedChange = { checked ->
-                        if (checked) {
-                            val intent = VpnService.prepare(context)
-                            if (intent != null) {
-                                vpnLauncher.launch(intent)
-                            } else {
-                                val serviceIntent = Intent(context, MyVpnService::class.java)
-                                serviceIntent.action = MyVpnService.ACTION_CONNECT
-                                context.startForegroundService(serviceIntent)
-                            }
-                        } else {
-                            val serviceIntent = Intent(context, MyVpnService::class.java)
-                            serviceIntent.action = MyVpnService.ACTION_DISCONNECT
-                            context.startService(serviceIntent)
+                        performVpnAction(checked) {
+                            viewModel.toggleAppFilter(checked)
                         }
                     }
                 )
@@ -246,7 +254,9 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     icon = Icons.Rounded.FilterAlt,
                     checked = isUrlFilterEnabled,
                     onCheckedChange = { checked ->
-                        viewModel.toggleUrlFilter(checked)
+                        performVpnAction(checked) {
+                            viewModel.toggleUrlFilter(checked)
+                        }
                     }
                 )
 
@@ -255,27 +265,22 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 //******* URL FILTER ROOT*******
                 //**********************************
 
-                // Dynamically determine icon and label color based on root availability
-                val rootStatusIcon = if (isRootPossible) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Block
-                val rootStatusColor = if (isRootPossible) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
-                val rootLabelText = if (isRootPossible)
-                    stringResource(R.string.root_service_label)
+                // Determine label color based on root availability
+                val labelColor = if (isRootPossible)
+                    MaterialTheme.colorScheme.onSurface
                 else
-                    "${stringResource(R.string.root_service_label)} (${stringResource(R.string.not_available)})"
-
+                    MaterialTheme.colorScheme.error
 
 
                 SettingsItemRow(
-                    title = rootLabelText,
+                    title = stringResource(R.string.root_service_label),
                     description = stringResource(R.string.root_service_text),
-                    icon = rootStatusIcon,
+                    icon = if (isRootPossible) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Block,
                     checked = isRootEnabled,
-                    titleColor = rootStatusColor
+                    titleColor = labelColor
                 ) { checked ->
                     viewModel.toggleRoot(checked)
                 }
-
-
 
                 SettingsDivider()
                 //**********************************
