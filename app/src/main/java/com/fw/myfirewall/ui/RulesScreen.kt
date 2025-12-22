@@ -325,7 +325,7 @@ fun RulesDivider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        thickness = 4.dp,
+        thickness = 1.dp,
         color = MaterialTheme.colorScheme.background
     )
 }
