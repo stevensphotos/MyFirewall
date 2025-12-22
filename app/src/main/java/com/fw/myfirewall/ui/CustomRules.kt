@@ -45,22 +45,7 @@ fun CustomRulesScreen(
     var rulesText by remember { mutableStateOf("") }
 
     // Validation logic: letters, numbers, dots, hyphens, underscores, or wildcards
-    val isError = rulesText.isNotEmpty() && !rulesText.all {
-        it.isLetterOrDigit() ||
-                it == '.' ||
-                it == '-' ||
-                it == '_' ||
-                it == '*' ||
-                it == '#' ||
-                it == '=' ||
-                it == '!' ||
-                it == '?' ||
-                it == '/' ||
-                it == ':' ||
-                it == ',' ||
-                it == ';' ||
-                it.isWhitespace()
-    }
+    val isError = rulesText.isNotEmpty()
 
     BackHandler(onBack = onBack)
 

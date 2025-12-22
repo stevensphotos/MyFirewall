@@ -114,6 +114,4 @@
     <string name="clear_button">Clear</string>
     <string name="import_applied_rules_title">Load Applied Rules</string>
     <string name="import_applied_rules_description">Import your currently active custom rules into the text field above for editing.</string>
-
-
 </resources>

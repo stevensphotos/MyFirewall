@@ -49,6 +49,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SaveRulesScreen(
@@ -179,28 +180,6 @@ fun SaveRulesScreen(
     }
 }
 
-private suspend fun exportRules(context: Context, db: AppDatabase, uri: Uri) {
-    withContext(Dispatchers.IO) {
-        try {
-            val rules = db.appRuleDao().getAllRules().first()
-            val gson = Gson()
-            val json = gson.toJson(rules)
-
-            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                outputStream.write(json.toByteArray())
-            }
-            
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, context.getString(R.string.export_failed, e.message), Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-}
-
 private suspend fun importRules(context: Context, db: AppDatabase, uri: Uri) {
     withContext(Dispatchers.IO) {
         try {
@@ -214,23 +193,74 @@ private suspend fun importRules(context: Context, db: AppDatabase, uri: Uri) {
                     }
                 }
             }
-            
+
             val json = stringBuilder.toString()
             val gson = Gson()
-            val listType = object : TypeToken<List<AppRule>>() {}.type
-            val rules: List<AppRule> = gson.fromJson(json, listType)
-            
-            // Insert rules
-            rules.forEach { rule ->
-                db.appRuleDao().insertRule(rule)
-            }
 
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, context.getString(R.string.import_success, rules.size), Toast.LENGTH_SHORT).show()
+            // On essaie de détecter le type de contenu dans le JSON
+            if (json.contains("\"domain\"")) {
+                // Importation de BlockRules (URL Filter)
+                val listType = object : TypeToken<List<com.fw.myfirewall.data.BlockRule>>() {}.type
+                val rules: List<com.fw.myfirewall.data.BlockRule> = gson.fromJson(json, listType)
+                db.blockRuleDao().insertBlockRules(rules)
+
+                notifyVpnToReload(context) // Prévenir le VPN
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Importé ${rules.size} règles URL avec succès", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Importation de AppRules (Application Filter)
+                val listType = object : TypeToken<List<AppRule>>() {}.type
+                val rules: List<AppRule> = gson.fromJson(json, listType)
+                rules.forEach { db.appRuleDao().insertRule(it) }
+
+                notifyVpnToReload(context) // Prévenir le VPN
+
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Importé ${rules.size} règles App avec succès", Toast.LENGTH_SHORT).show()
+                }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, context.getString(R.string.import_failed, e.message), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Échec de l'importation: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+private fun notifyVpnToReload(context: Context) {
+    val intent = android.content.Intent(context, com.fw.myfirewall.service.MyVpnService::class.java).apply {
+        action = "com.fw.myfirewall.ACTION_RELOAD_RULES"
+    }
+    context.startService(intent)
+}
+private suspend fun exportRules(context: Context, db: AppDatabase, uri: Uri) {
+    withContext(Dispatchers.IO) {
+        try {            // On récupère toutes les règles (App + Block)
+            val appRules = db.appRuleDao().getAllRules().first()
+            val blockRules = db.blockRuleDao().getAllRulesSync()
+
+            val gson = Gson()
+
+            // On décide quoi exporter : si on a des domaines, on exporte les BlockRules
+            // Sinon on exporte les AppRules.
+            // Note : Pour un export complet, vous pourriez créer une classe "Backup" regroupant les deux.
+            val json = if (blockRules.isNotEmpty()) {
+                gson.toJson(blockRules)
+            } else {
+                gson.toJson(appRules)
+            }
+
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(json.toByteArray())
+            }
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, R.string.export_success, Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "Échec de l'exportation : ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
