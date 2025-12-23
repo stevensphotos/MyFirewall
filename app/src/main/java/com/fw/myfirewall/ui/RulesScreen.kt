@@ -126,6 +126,7 @@ fun RulesScreen(
                     Text(
                         text = stringResource(R.string.advertising_title),
                         style = MaterialTheme.typography.titleMedium,
+//                        color = MaterialTheme.colorScheme.primary, // <--- CHANGEZ LA COULEUR ICI
                         modifier = Modifier.padding(bottom = 4.dp)
 
                     )
