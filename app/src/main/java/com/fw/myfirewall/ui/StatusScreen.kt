@@ -54,26 +54,31 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.fw.myfirewall.R
 import com.fw.myfirewall.viewmodel.StatusViewModel
 import android.content.pm.ApplicationInfo
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatusScreen(
     modifier: Modifier = Modifier,
     totalApps: Int = 0,
     blockedApps: Int = 0,
+    allowedApps: Int = 0,
+    userAppsCount: Int = 0,
+    // AJOUTEZ CES PARAMÈTRES S'ILS MANQUENT :
+    hasPermission: Boolean = false,
+    wifiUsage: Long = 0L,
+    mobileUsage: Long = 0L,
+    downloadSpeed: Long = 0L,
+    uploadSpeed: Long = 0L,
+    speedMode: String = "bits",
     viewModel: StatusViewModel
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-
+    
     // Refresh stats when screen resumes
     androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshNetworkStats()
-                viewModel.getFilteredAppsCount()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -82,35 +87,62 @@ fun StatusScreen(
         }
     }
 
-    val allowedApps = (totalApps - blockedApps).coerceAtLeast(0)
-
+    val allowedApps = totalApps - blockedApps
+    
     // Collecting state from ViewModel
     val advertisingCount by viewModel.advertisingCount.collectAsState()
     val annoyancesCount by viewModel.annoyancesCount.collectAsState()
     val socialCount by viewModel.socialCount.collectAsState()
     val customCount by viewModel.customCount.collectAsState()
-    val userAppsCount by viewModel.userAppsCount.collectAsState()
+
 
     val wifiUsage by viewModel.wifiUsage.collectAsState()
     val mobileUsage by viewModel.mobileUsage.collectAsState()
     val hasPermission by viewModel.hasUsagePermission.collectAsState()
-
+    
+    // Speed stats
     val downloadSpeed by viewModel.downloadSpeed.collectAsState()
     val uploadSpeed by viewModel.uploadSpeed.collectAsState()
     val speedMode by viewModel.speedMode.collectAsState()
 
+    // Collecting toggle states
     val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
     val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
 
+    val appItems = listOf(
+        Triple(
+            stringResource(R.string.blocked_apps_title),
+            blockedApps.toString(),
+            Icons.Default.Block to MaterialTheme.colorScheme.errorContainer // Rouge si erreur
+        ),
+        Triple(
+            stringResource(R.string.user_apps_title),
+            userAppsCount.toString(),
+            Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer // Couleur principale
+
+        ),
+        Triple(
+            stringResource(R.string.user_apps_title),
+            userAppsCount.toString(), // <--- CHANGE THIS from totalApps.toString()
+            Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer
+        )
+    )
+
+
+    // Container principal scrollable verticalement pour accueillir plusieurs carousels
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(vertical = 16.dp)
     ) {
-        // --- SECTION APPLICATIONS ---
+
+        // ############################################################################
+        // DEBUT CAROUSEL "APPLICATIONS"
+        // ############################################################################
+        
         Text(
             stringResource(R.string.applications_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -120,12 +152,14 @@ fun StatusScreen(
         val appItems = listOf(
             Triple(stringResource(R.string.blocked_apps_title), blockedApps.toString(), Icons.Default.Block to MaterialTheme.colorScheme.errorContainer),
             Triple(stringResource(R.string.allowed_apps_title), allowedApps.toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer),
-            Triple(stringResource(R.string.user_apps_title), userAppsCount.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer)
+            Triple(stringResource(R.string.user_apps_title), totalApps.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { appItems.size },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp),
             preferredItemWidth = 180.dp,
             itemSpacing = 16.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
@@ -136,13 +170,21 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third.first,
                 color = item.third.second,
-                modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.extraLarge)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
+        // ############################################################################
+        // FIN CAROUSEL "APPLICATIONS"
+        // ############################################################################
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- SECTION BLOCKED URLS ---
+        // ############################################################################
+        // DEBUT CAROUSEL "BLOCKED URLS"
+        // ############################################################################
+        
         Text(
             stringResource(R.string.blocked_urls_title),
             style = MaterialTheme.typography.headlineSmall,
@@ -158,7 +200,9 @@ fun StatusScreen(
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { blockedItems.size },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp),
             preferredItemWidth = 180.dp,
             itemSpacing = 16.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
@@ -169,24 +213,39 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third.first,
                 color = item.third.second,
-                onLongClick = { /* Quick action: Reload rules */ },
-                modifier = Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge)
+                onClick = { /* Action simple si besoin */ },
+                onLongClick = {
+                    // Exemple : Ouvrir directement l'importation de listes pour cette catégorie
+                    // Ou simplement naviguer vers l'écran CustomRules
+                    // onNavigateToCustomRules()
+                    println("Long click sur ${item.first}: charger de nouvelles listes")
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
+        // ############################################################################
+        // FIN CAROUSEL "BLOCKED URLS"
+        // ############################################################################
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- SECTION NETWORK ---
+        // ############################################################################
+        // DEBUT CAROUSEL "NETWORK"
+        // ############################################################################
+        
         Text(
             stringResource(R.string.network_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-
+        
         val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A"
         val mobileText = viewModel.formatDataSize(mobileUsage)
         val mobileLabel = if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)"
         val networkColor = if (hasPermission) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiaryContainer
+
         val speedText = "↓ ${viewModel.formatSpeed(downloadSpeed)}\n↑ ${viewModel.formatSpeed(uploadSpeed)}"
         val speedLabel = stringResource(R.string.network_speed_label, speedMode)
 
@@ -198,13 +257,21 @@ fun StatusScreen(
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { networkItems.size },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp),
             preferredItemWidth = 180.dp,
             itemSpacing = 16.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { i ->
             val item = networkItems[i]
-            val textSize = if (i == 0) 20.sp else 28.sp
+            
+            // Adjust dynamic text size
+            val textSize = when {
+                i == 0 -> 20.sp // Speed card has 2 lines, needs smaller font
+                item.second.length > 8 -> 28.sp 
+                else -> MaterialTheme.typography.displayMedium.fontSize
+            }
 
             StatusCard(
                 title = item.first,
@@ -212,27 +279,47 @@ fun StatusScreen(
                 icon = item.third,
                 color = networkColor,
                 onLongClick = {
-                    if (i == 1) context.startActivity(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
-                    if (i == 2) context.startActivity(android.content.Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS))
+                    when (i) {
+                        1 -> { // WiFi Card
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                        2 -> { // Mobile Card
+                            val intent = android.content.Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                    }
                 },
-                onClick = { if (i == 0) viewModel.toggleSpeedMode() },
+                onClick = {
+                    if (i == 0) {
+                        viewModel.toggleSpeedMode()
+//                    } else if (!hasPermission) {
+//                        openUsageStatsSettings(context)
+
+                    }
+                },
                 countFontSize = textSize,
-                modifier = Modifier.fillMaxSize().maskClip(MaterialTheme.shapes.extraLarge)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
+        // ############################################################################
+        // FIN CAROUSEL "NETWORK"
+        // ############################################################################
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun StatusCard(
     title: String,
     count: String,
     icon: ImageVector,
     color: Color,
     onClick: (() -> Unit)? = null,
-    onLongClick: (() -> Unit)? = null,
-    countFontSize: androidx.compose.ui.unit.TextUnit = 32.sp,
+    onLongClick: (() -> Unit)? = null, // AJOUT
+    countFontSize: androidx.compose.ui.unit.TextUnit = MaterialTheme.typography.displayMedium.fontSize,
     modifier: Modifier = Modifier
 ) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
@@ -243,32 +330,64 @@ fun StatusCard(
                 Modifier.combinedClickable(
                     onClick = { onClick?.invoke() },
                     onLongClick = {
+                        // Retour haptique pour confirmer l'appui long
                         haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                         onLongClick?.invoke()
                     }
                 )
             } else Modifier
         ),
-        shape = RoundedCornerShape(24.dp),
-        color = color
+
+
+        shape = RoundedCornerShape(25.dp),
+        color = color,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
+        // Box permet de superposer l'icône de réglages par-dessus le contenu
         Box(modifier = Modifier.fillMaxSize()) {
+
+            // ICÔNE DE SUGGESTION (S'affiche si onLongClick est défini)
             if (onLongClick != null) {
                 Icon(
                     imageVector = Icons.Rounded.SettingsSuggest,
-                    contentDescription = null,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(16.dp).graphicsLayer(alpha = 0.4f),
-                    tint = MaterialTheme.colorScheme.onSurface
+                    contentDescription = "Options disponibles",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .size(18.dp),
+                    // La couleur s'adapte au thème (onSurface avec de la transparence)
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
             }
+
+
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
-                Text(count, fontSize = countFontSize, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center)
-                Text(title, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = count,
+                    fontSize = countFontSize,
+                    lineHeight = if (count.contains("\n")) countFontSize * 1.2 else countFontSize,
+                    style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
