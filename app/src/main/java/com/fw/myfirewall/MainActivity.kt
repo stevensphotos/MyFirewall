@@ -145,7 +145,7 @@ class MainActivity : ComponentActivity() {
         var showCustomRulesScreen by rememberSaveable { mutableStateOf(false) }
 
         val coroutineScope = rememberCoroutineScope()
-        var selectedFilters by rememberSaveable { mutableStateOf(setOf(AppFilter.ALL)) }
+        var selectedFilters by rememberSaveable { mutableStateOf(setOf(AppFilter.USER,AppFilter.INTERNET)) }
 
         val context = LocalContext.current
         val database = remember { AppDatabase.getDatabase(context) }

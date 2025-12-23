@@ -20,8 +20,9 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
+        getByName("release") {
+            isMinifyEnabled = true // On garde l'optimisation
+            // On ajoute cette ligne pour garder les noms de classes originaux
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

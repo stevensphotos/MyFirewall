@@ -19,3 +19,18 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+
+
+
+# Supprimer tous les logs de type Verbose et Debug dans la version finale
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+# Désactiver l'obscurcissement (Garder les noms de classes et méthodes lisibles)
+-dontobfuscate
+
+# Optionnel : Conserver les informations de débogage pour des stacktraces claires
+-keepattributes SourceFile,LineNumberTable

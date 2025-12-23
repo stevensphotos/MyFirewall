@@ -38,7 +38,7 @@ class MyVpnService : VpnService() {
         private const val CHANNEL_ID = "MyFirewallVpnChannel"
         private const val NOTIFICATION_ID = 1
         private const val DUMMY_DNS = "10.0.0.1"
-        private const val REAL_DNS = "8.8.8.8"
+        private const val REAL_DNS = "9.9.9.9"
 
         var isServiceRunning = mutableStateOf(false)
     }
@@ -110,8 +110,18 @@ class MyVpnService : VpnService() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("MyVpnService", "Error in packet loop", e)
-            } finally {
+                if (isServiceRunning.value) {
+                    // On vérifie si c'est une erreur de descripteur fermé
+                    if (e is IOException && e.message?.contains("EBADF") == true) {
+                        Log.d("MyVpnService", "L'interface VPN a été fermée (EBADF attendu).")
+                    } else {
+                        Log.e("MyVpnService", "Erreur boucle paquet: ${e.message}", e)
+                    }
+                }
+
+
+
+                    } finally {
                 try { pfd.close() } catch (ignored: Exception) {}
             }
         }.apply {

@@ -26,7 +26,7 @@
     <string name="custom_label">Custom Rules</string>
     <string name="update_schedule_label">Update Schedule</string>
     <string name="applications_title">Applications</string>
-    <string name="total_apps_title">Total Apps</string>
+    <string name="user_apps_title">User Apps</string>
     <string name="allowed_apps_title">Allowed</string>
     <string name="blocked_apps_title">Blocked</string>
     <string name="blocked_urls_title">Blocked URLs</string>

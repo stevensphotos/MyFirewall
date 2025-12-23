@@ -4,12 +4,14 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.TrafficStats
+import android.content.pm.ApplicationInfo
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.BlockRuleCategory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,13 +22,19 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.math.log
+import kotlin.math.pow
 
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
+
     private val dao = AppDatabase.getDatabase(application).blockRuleDao()
     private val workManager = WorkManager.getInstance(application)
-    private val sharedPrefs = application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
+    private val sharedPrefs =
+        application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val statsRepository = NetworkStatsRepository(application)
+
 
     val advertisingCount = dao.countByCategory(BlockRuleCategory.ADVERTISING)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -40,11 +48,16 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
     val customCount = dao.countByCategory(BlockRuleCategory.CUSTOM)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    private val _isAdvertisingEnabled = MutableStateFlow(sharedPrefs.getBoolean("advertising_enabled", false))
+    private val _isAdvertisingEnabled =
+        MutableStateFlow(sharedPrefs.getBoolean("advertising_enabled", false))
     val isAdvertisingEnabled = _isAdvertisingEnabled.asStateFlow()
 
-    private val _isAnnoyancesEnabled = MutableStateFlow(sharedPrefs.getBoolean("annoyances_enabled", false))
+    private val _isAnnoyancesEnabled =
+        MutableStateFlow(sharedPrefs.getBoolean("annoyances_enabled", false))
     val isAnnoyancesEnabled = _isAnnoyancesEnabled.asStateFlow()
+
+    private val _userAppsCount = MutableStateFlow(0)
+    val userAppsCount = _userAppsCount.asStateFlow()
 
     private val _isSocialEnabled = MutableStateFlow(sharedPrefs.getBoolean("social_enabled", false))
     val isSocialEnabled = _isSocialEnabled.asStateFlow()
@@ -57,7 +70,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _mobileUsage = MutableStateFlow(0L)
     val mobileUsage = _mobileUsage.asStateFlow()
-    
+
     private val _hasUsagePermission = MutableStateFlow(hasUsageStatsPermission(application))
     val hasUsagePermission = _hasUsagePermission.asStateFlow()
 
@@ -85,6 +98,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         sharedPrefs.registerOnSharedPreferenceChangeListener(listener)
         refreshNetworkStats()
         startSpeedMonitoring()
+        getFilteredAppsCount()
     }
 
     private fun startSpeedMonitoring() {
@@ -97,6 +111,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
 
             while (isActive) {
                 delay(1000)
+
                 val curTotalRx = TrafficStats.getTotalRxBytes()
                 val curTotalTx = TrafficStats.getTotalTxBytes()
                 val curMobileRx = TrafficStats.getMobileRxBytes()
@@ -147,7 +162,6 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         speedUpdateJob?.cancel()
     }
 
-    // Ticker that emits every minute
     private val ticker = flow {
         while (true) {
             emit(System.currentTimeMillis())
@@ -163,23 +177,15 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
                 if (nextTime > currentTime) {
                     val diff = nextTime - currentTime
                     formatDuration(diff)
-                } else {
-                    "Pending..."
-                }
-            } else {
-                "Not scheduled"
-            }
+                } else "Pending..."
+            } else "Not scheduled"
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Loading...")
 
     private fun formatDuration(millis: Long): String {
         val hours = TimeUnit.MILLISECONDS.toHours(millis)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
-        return if (hours > 0) {
-            "${hours}h ${minutes}m"
-        } else {
-            "${minutes}m"
-        }
+        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
     }
 
     fun refreshNetworkStats() {
@@ -189,9 +195,8 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
                 _mobileUsage.value = statsRepository.getMobileDataUsage()
                 _hasUsagePermission.value = true
             } else {
-                val totalBoot = TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
-                _wifiUsage.value = 0 
-                _mobileUsage.value = totalBoot
+                _wifiUsage.value = 0
+                _mobileUsage.value = getBootDataUsage()
                 _hasUsagePermission.value = false
             }
         }
@@ -201,14 +206,27 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         return TrafficStats.getTotalRxBytes() + TrafficStats.getTotalTxBytes()
     }
 
+    fun getFilteredAppsCount() {
+        viewModelScope.launch(Dispatchers.Default) {
+            val pm = getApplication<Application>().packageManager
+            val allApps = pm.getInstalledPackages(0)
+            val userCount = allApps.count { pkg ->
+                val appInfo = pkg.applicationInfo
+                appInfo != null && (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0
+            }
+            _userAppsCount.value = userCount
+        }
+    }
+
     fun formatDataSize(bytes: Long): String {
         if (bytes < 0) return "N/A"
         if (bytes == 0L) return "0 B"
         val items = arrayOf("B", "KB", "MB", "GB", "TB")
-        val i = (Math.log(bytes.toDouble()) / Math.log(1024.0)).toInt()
-        return String.format("%.2f %s", bytes / Math.pow(1024.0, i.toDouble()), items[i])
+        val i = (log(bytes.toDouble(), 1024.0)).toInt()
+        val index = i.coerceIn(0, items.size - 1)
+        return String.format(Locale.getDefault(), "%.2f %s", bytes / 1024.0.pow(index.toDouble()), items[index])
     }
-    
+
     fun formatSpeed(bytesPerSec: Long): String {
         return formatDataSize(bytesPerSec) + "/s"
     }
