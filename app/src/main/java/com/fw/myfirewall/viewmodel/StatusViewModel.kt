@@ -2,15 +2,22 @@ package com.fw.myfirewall.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.net.TrafficStats
 import android.content.pm.ApplicationInfo
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.fw.myfirewall.data.AppDatabase
+import com.fw.myfirewall.data.BlockListConfig
+import com.fw.myfirewall.data.BlockListImporter
 import com.fw.myfirewall.data.BlockRuleCategory
+import com.fw.myfirewall.service.MyVpnService
+import com.fw.myfirewall.util.HostsGenerator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,8 +27,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.log
@@ -29,11 +38,14 @@ import kotlin.math.pow
 
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val dao = AppDatabase.getDatabase(application).blockRuleDao()
+    private val context = application.applicationContext
+    private val database = AppDatabase.getDatabase(application)
+    private val dao = database.blockRuleDao()
     private val workManager = WorkManager.getInstance(application)
     private val sharedPrefs =
         application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val statsRepository = NetworkStatsRepository(application)
+    private val hostsGenerator = HostsGenerator(dao, application)
 
 
     val advertisingCount = dao.countByCategory(BlockRuleCategory.ADVERTISING)
@@ -99,6 +111,79 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         refreshNetworkStats()
         startSpeedMonitoring()
         getFilteredAppsCount()
+    }
+
+    // --- QUICK SETTINGS TOGGLES ---
+
+    fun toggleAdvertising() {
+        val newState = !_isAdvertisingEnabled.value
+        Log.d("StatusViewModel", "Toggling Advertising to $newState")
+        _isAdvertisingEnabled.value = newState
+        sharedPrefs.edit().putBoolean("advertising_enabled", newState).apply()
+        handleRuleToggle(newState, BlockRuleCategory.ADVERTISING, BlockListConfig.URL_ADVERTISING)
+    }
+
+    fun toggleAnnoyances() {
+        val newState = !_isAnnoyancesEnabled.value
+        Log.d("StatusViewModel", "Toggling Annoyances to $newState")
+        _isAnnoyancesEnabled.value = newState
+        sharedPrefs.edit().putBoolean("annoyances_enabled", newState).apply()
+        handleRuleToggle(newState, BlockRuleCategory.ANNOYANCES, BlockListConfig.URL_ANNOYANCES)
+    }
+
+    fun toggleSocial() {
+        val newState = !_isSocialEnabled.value
+        Log.d("StatusViewModel", "Toggling Social to $newState")
+        _isSocialEnabled.value = newState
+        sharedPrefs.edit().putBoolean("social_enabled", newState).apply()
+        handleRuleToggle(newState, BlockRuleCategory.SOCIAL_MEDIA, BlockListConfig.URL_SOCIAL)
+    }
+
+    fun toggleCustom() {
+        val newState = !_isCustomEnabled.value
+        Log.d("StatusViewModel", "Toggling Custom to $newState")
+        _isCustomEnabled.value = newState
+        sharedPrefs.edit().putBoolean("custom_enabled", newState).apply()
+        viewModelScope.launch {
+            hostsGenerator.generateHostsFile()
+            notifyVpnRulesChanged()
+        }
+    }
+
+    private fun handleRuleToggle(enabled: Boolean, category: BlockRuleCategory, url: String) {
+        viewModelScope.launch {
+            if (enabled) {
+                val count = withContext(Dispatchers.IO) {
+                    dao.countByCategory(category).first()
+                }
+
+                if (count == 0) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Downloading block list...", Toast.LENGTH_SHORT).show()
+                    }
+                    val imported = withContext(Dispatchers.IO) {
+                        BlockListImporter.importFromUrl(context, url, category)
+                    }
+                    withContext(Dispatchers.Main) {
+                        if (imported > 0) {
+                            Toast.makeText(context, "Imported $imported rules", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to import rules", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+            withContext(Dispatchers.IO) {
+                hostsGenerator.generateHostsFile()
+            }
+            notifyVpnRulesChanged()
+        }
+    }
+
+    private fun notifyVpnRulesChanged() {
+        val intent = Intent(context, MyVpnService::class.java)
+        intent.action = "com.fw.myfirewall.ACTION_RELOAD_RULES"
+        context.startService(intent)
     }
 
     private fun startSpeedMonitoring() {

@@ -18,6 +18,7 @@ import com.fw.myfirewall.MainActivity
 import com.fw.myfirewall.R
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.AppRule
+import com.fw.myfirewall.data.BlockRuleCategory
 import com.fw.myfirewall.util.DnsParser
 import kotlinx.coroutines.*
 import java.io.FileInputStream
@@ -38,7 +39,7 @@ class MyVpnService : VpnService() {
         private const val CHANNEL_ID = "MyFirewallVpnChannel"
         private const val NOTIFICATION_ID = 1
         private const val DUMMY_DNS = "10.0.0.1"
-        private const val REAL_DNS = "9.9.9.9"
+        private const val REAL_DNS = "8.8.8.8"
 
         var isServiceRunning = mutableStateOf(false)
     }
@@ -74,54 +75,45 @@ class MyVpnService : VpnService() {
 
             try {
                 while (!Thread.interrupted() && isServiceRunning.value) {
-                    val readBytes = inputStream.read(packet.array())
-                    if (readBytes > 0) {
-                        packet.limit(readBytes)
-                        packet.rewind()
+                    try {
+                        val readBytes = inputStream.read(packet.array())
+                        if (readBytes > 0) {
+                            packet.limit(readBytes)
+                            packet.rewind()
 
-                        val firstByte = packet.get(0).toInt()
-                        val ipVersion = (firstByte shr 4) and 0x0F
+                            val firstByte = packet.get(0).toInt()
+                            val ipVersion = (firstByte shr 4) and 0x0F
 
-                        if (ipVersion == 4) {
-                            val protocol = packet.get(9).toInt()
-                            val destPort = packet.getShort(22).toInt() and 0xFFFF
+                            if (ipVersion == 4) {
+                                val protocol = packet.get(9).toInt()
+                                val destPort = packet.getShort(22).toInt() and 0xFFFF
 
-                            // INTERCEPT DNS (UDP Port 53)
-                            if (protocol == 17 && destPort == 53) {
-                                val domain = DnsParser.extractDomain(packet)
-                                if (domain.isNotEmpty()) {
-                                    if (blockedDomains.contains(domain)) {
-                                        Log.i("MyVpnService", "🛑 BLOCKED: $domain")
-                                        val response = DnsParser.createNxDomainResponse(packet, readBytes)
-                                        outputStream.write(response)
-                                    } else {
-                                        // ASYNC DNS PROXY: Resolve and reply
-                                        val queryData = packet.array().copyOf(readBytes)
-                                        dnsProxyExecutor.execute {
-                                            proxyDnsQuery(queryData, outputStream)
+                                if (protocol == 17 && destPort == 53) {
+                                    val domain = DnsParser.extractDomain(packet)
+                                    if (domain.isNotEmpty()) {
+                                        if (blockedDomains.contains(domain)) {
+                                            Log.i("MyVpnService", "🛑 BLOCKED: $domain")
+                                            val response = DnsParser.createNxDomainResponse(packet, readBytes)
+                                            outputStream.write(response)
+                                        } else {
+                                            val queryData = packet.array().copyOf(readBytes)
+                                            dnsProxyExecutor.execute {
+                                                proxyDnsQuery(queryData, outputStream)
+                                            }
                                         }
                                     }
                                 }
-                            } else if (!isUrlFilterActive) {
-                                // Task 1 (App Filtering): Packets from blocked apps reach here and are dropped.
                             }
                         }
                         packet.clear()
+                    } catch (e: IOException) {
+                        if (Thread.interrupted() || !isServiceRunning.value) break
+                        if (e.message?.contains("EBADF") == true) break
                     }
                 }
             } catch (e: Exception) {
-                if (isServiceRunning.value) {
-                    // On vérifie si c'est une erreur de descripteur fermé
-                    if (e is IOException && e.message?.contains("EBADF") == true) {
-                        Log.d("MyVpnService", "L'interface VPN a été fermée (EBADF attendu).")
-                    } else {
-                        Log.e("MyVpnService", "Erreur boucle paquet: ${e.message}", e)
-                    }
-                }
-
-
-
-                    } finally {
+                Log.e("MyVpnService", "Error in packet loop", e)
+            } finally {
                 try { pfd.close() } catch (ignored: Exception) {}
             }
         }.apply {
@@ -130,13 +122,10 @@ class MyVpnService : VpnService() {
         }
     }
 
-    /**
-     * Resolves an allowed DNS query using the physical network and sends the response back to the tunnel.
-     */
     private fun proxyDnsQuery(queryPacket: ByteArray, tunnelOutput: FileOutputStream) {
         try {
-            val buffer = ByteBuffer.wrap(queryPacket)
-            val ipHeaderLen = (buffer.get(0).toInt() and 0x0F) * 4
+            val queryBuffer = ByteBuffer.wrap(queryPacket)
+            val ipHeaderLen = (queryBuffer.get(0).toInt() and 0x0F) * 4
             val dnsPayloadOffset = ipHeaderLen + 8
             val dnsQueryPayload = queryPacket.copyOfRange(dnsPayloadOffset, queryPacket.size)
 
@@ -152,8 +141,6 @@ class MyVpnService : VpnService() {
             socket.receive(inPacket)
 
             val dnsResponsePayload = inPacket.data.copyOf(inPacket.length)
-            
-            // Wrap DNS response back into an IP/UDP packet using DnsParser helper
             val fullResponse = DnsParser.createResponsePacket(ByteBuffer.wrap(queryPacket), dnsResponsePayload)
             
             synchronized(tunnelOutput) {
@@ -161,7 +148,7 @@ class MyVpnService : VpnService() {
             }
             socket.close()
         } catch (e: Exception) {
-            Log.w("MyVpnService", "DNS Proxy failed: ${e.message}")
+            // Log.w("MyVpnService", "DNS Proxy failed: ${e.message}")
         }
     }
 
@@ -169,23 +156,59 @@ class MyVpnService : VpnService() {
         val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
         isUrlFilterActive = prefs.getBoolean("url_filter_enabled", false)
 
+        // Read category states to filter DB results
+        val isAdsEnabled = prefs.getBoolean("advertising_enabled", false)
+        val isAnnoyanceEnabled = prefs.getBoolean("annoyances_enabled", false)
+        val isSocialEnabled = prefs.getBoolean("social_enabled", false)
+        val isCustomEnabled = prefs.getBoolean("custom_enabled", false)
+
         serviceScope.launch(Dispatchers.IO) {
-            val db = AppDatabase.getDatabase(applicationContext)
-            val rules = db.blockRuleDao().getAllRulesSync()
-            val domains = rules.filter { it.isEnabled }.map { it.domain.lowercase().trim() }
-            
-            blockedDomains.clear()
-            blockedDomains.addAll(domains)
-            updateVpn()
+            try {
+                if (isUrlFilterActive) {
+                    val db = AppDatabase.getDatabase(applicationContext)
+                    val rules = db.blockRuleDao().getAllRulesSync()
+
+                    val newBlockedDomains = mutableSetOf<String>()
+                    rules.forEach { rule ->
+                        val isCategoryEnabled = when (rule.category) {
+                            BlockRuleCategory.ADVERTISING -> isAdsEnabled
+                            BlockRuleCategory.ANNOYANCES -> isAnnoyanceEnabled
+                            BlockRuleCategory.SOCIAL_MEDIA -> isSocialEnabled
+                            BlockRuleCategory.CUSTOM -> isCustomEnabled
+                        }
+                        if (isCategoryEnabled && rule.isEnabled) {
+                            newBlockedDomains.add(rule.domain.lowercase().trim())
+                        }
+                    }
+
+                    blockedDomains.clear()
+                    blockedDomains.addAll(newBlockedDomains)
+                    Log.d("MyVpnService", "Reloaded: ${blockedDomains.size} domains active across enabled categories")
+                } else {
+                    blockedDomains.clear()
+                }
+                
+                // Refresh VPN configuration if mode changed
+                updateVpn()
+
+            } catch (e: Exception) {
+                Log.e("MyVpnService", "Failed to reload rules", e)
+            }
         }
     }
 
     private fun connect() {
         if (isServiceRunning.value) return
         createNotificationChannel()
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notification_title))
             .setSmallIcon(R.drawable.notification_firewall)
+            .setContentIntent(pendingIntent)
             .setOngoing(true)
             .build()
 
@@ -204,7 +227,8 @@ class MyVpnService : VpnService() {
         cm.registerDefaultNetworkCallback(networkCallback!!)
 
         serviceScope.launch {
-            AppDatabase.getDatabase(applicationContext).appRuleDao().getAllRules().collect { rules ->
+            val db = AppDatabase.getDatabase(applicationContext)
+            db.appRuleDao().getAllRules().collect { rules ->
                 cachedRules = rules.associateBy { it.packageName }
                 updateVpn()
             }
@@ -226,22 +250,25 @@ class MyVpnService : VpnService() {
                 builder.setMtu(1500)
 
                 val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-                val isWifi = cm.getNetworkCapabilities(cm.activeNetwork)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+                val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+                val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
                 if (isUrlFilterActive) {
                     builder.addDnsServer(DUMMY_DNS)
                     builder.addRoute(DUMMY_DNS, 32)
-                    Log.d("MyVpnService", "Mode: DNS Filtering (Functional Proxy)")
                 } else {
                     builder.addRoute("0.0.0.0", 0)
-                    packageManager.getInstalledPackages(0).forEach { app ->
+                    val installedApps = withContext(Dispatchers.IO) {
+                        packageManager.getInstalledPackages(0)
+                    }
+                    for (app in installedApps) {
+                        if (app.packageName == packageName) continue
                         val rule = cachedRules[app.packageName]
                         val allowed = if (rule != null) (if (isWifi) rule.wifiAllowed else rule.mobileAllowed) else true
-                        if (allowed && app.packageName != packageName) {
-                            builder.addDisallowedApplication(app.packageName)
+                        if (allowed) {
+                            try { builder.addDisallowedApplication(app.packageName) } catch (_: Exception) {}
                         }
                     }
-                    Log.d("MyVpnService", "Mode: App Filtering")
                 }
 
                 val oldInterface = vpnInterface
@@ -266,7 +293,8 @@ class MyVpnService : VpnService() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(CHANNEL_ID, "Firewall", NotificationManager.IMPORTANCE_LOW)
-            (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
         }
     }
 
