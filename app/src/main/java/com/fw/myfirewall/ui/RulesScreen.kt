@@ -95,14 +95,14 @@ fun RulesScreen(
         // ############################################################################
         // TITLE SECTION
         // ############################################################################
-        Text(
-            text = stringResource(R.string.rules_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp) // Aligne le texte avec le bord des cartes
-                .padding(top = 8.dp, bottom = 16.dp)
-        )
+//        Text(
+//            text = stringResource(R.string.rules_title),
+//            style = MaterialTheme.typography.titleLarge,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 4.dp) // Aligne le texte avec le bord des cartes
+//                .padding(top = 8.dp, bottom = 16.dp)
+//        )
 
         // ############################################################################
         // MAIN SETTINGS CARD
@@ -127,6 +127,7 @@ fun RulesScreen(
                         text = stringResource(R.string.advertising_title),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 4.dp)
+
                     )
                 }
 

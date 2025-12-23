@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
@@ -179,35 +180,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ROW: HEADER SECTION (Title on left, Icon on right)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 1. LE TITRE
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier
-                    .weight(1f) // Prend tout l'espace restant, poussant l'icône à droite
-                    .padding(horizontal = 4.dp)
-                    .padding(top = 8.dp, bottom = 16.dp)
-            )
-
-            // 2. L'ICÔNE D'AIDE
-            IconButton(
-                onClick = { showAboutDialog.value = true },
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
-                    contentDescription = "About",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
-
-
         // ----------------------------------------------------------------------------
         // CARD: FIREWALL ENGINE
         // ----------------------------------------------------------------------------
@@ -223,13 +195,34 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                // --- HEADER DE CARTE AVEC TITRE À GAUCHE ET ICÔNE À DROITE ---
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween // Pousse les éléments aux extrémités
+                ) {
                     Text(
                         text = stringResource(R.string.Function_type_title),
                         style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 4.dp)
                     )
+
+                    // L'ICÔNE D'AIDE À DROITE
+                    IconButton(
+                        onClick = { showAboutDialog.value = true },
+                        modifier = Modifier.size(32.dp) // Taille légèrement réduite pour l'alignement
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
+                            contentDescription = "About",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
+
+
                 // APPLICATION FILTER
                 SettingsItemRow(
                     title = stringResource(R.string.vpn_service_label),
@@ -311,7 +304,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
+                verticalArrangement = Arrangement.spacedBy(0.0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -502,7 +495,7 @@ fun SettingsDivider() {
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         thickness = 1.dp,
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 }
 

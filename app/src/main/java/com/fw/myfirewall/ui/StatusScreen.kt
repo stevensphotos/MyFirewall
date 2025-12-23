@@ -2,22 +2,44 @@ package com.fw.myfirewall.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AdsClick
+import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.NetworkWifi
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.rounded.SettingsSuggest
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -43,9 +65,9 @@ fun StatusScreen(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    
+
     // Refresh stats when screen resumes
-    DisposableEffect(lifecycleOwner) {
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshNetworkStats()
@@ -59,7 +81,8 @@ fun StatusScreen(
     }
 
     val allowedApps = (totalApps - blockedApps).coerceAtLeast(0)
-    
+    val userAppsCountState by viewModel.userAppsCount.collectAsState()
+
     // Collecting state from ViewModel
     val advertisingCount by viewModel.advertisingCount.collectAsState()
     val annoyancesCount by viewModel.annoyancesCount.collectAsState()
@@ -69,7 +92,7 @@ fun StatusScreen(
     val wifiUsage by viewModel.wifiUsage.collectAsState()
     val mobileUsage by viewModel.mobileUsage.collectAsState()
     val hasPermission by viewModel.hasUsagePermission.collectAsState()
-    
+
     val downloadSpeed by viewModel.downloadSpeed.collectAsState()
     val uploadSpeed by viewModel.uploadSpeed.collectAsState()
     val speedMode by viewModel.speedMode.collectAsState()
@@ -83,19 +106,21 @@ fun StatusScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp)
+            .padding(top = 32.dp, bottom = 16.dp)
     ) {
         // --- SECTION APPLICATIONS ---
-        Text(
-            stringResource(R.string.applications_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+//        Text(
+//            stringResource(R.string.applications_title),
+//            style = MaterialTheme.typography.headlineSmall,
+//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+//        )
 
         val appItems = listOf(
+
+
+            Triple(stringResource(R.string.user_apps_title), userAppsCountState.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer),
             Triple(stringResource(R.string.blocked_apps_title), blockedApps.toString(), Icons.Default.Block to MaterialTheme.colorScheme.errorContainer),
-            Triple(stringResource(R.string.allowed_apps_title), allowedApps.toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer),
-            Triple("User Apps", userAppsCount.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer)
+            Triple(stringResource(R.string.allowed_apps_title), allowedApps.toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
         )
 
         HorizontalMultiBrowseCarousel(
@@ -118,18 +143,17 @@ fun StatusScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // --- SECTION BLOCKED URLS ---
-        Text(
-            stringResource(R.string.blocked_urls_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+//        Text(
+//            stringResource(R.string.blocked_urls_title),
+//            style = MaterialTheme.typography.headlineSmall,
+//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+//        )
 
-        // Using Res IDs for reliable identification in long-click
         val blockedItems = listOf(
-            R.string.advertising_label to Triple(advertisingCount.toString(), Icons.Default.AdsClick, if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
-            R.string.annoyances_label to Triple(annoyancesCount.toString(), Icons.Default.VisibilityOff, if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
-            R.string.social_label to Triple(socialCount.toString(), Icons.Default.Group, if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
-            R.string.custom_label to Triple(customCount.toString(), Icons.Default.Edit, if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)
+            Triple(stringResource(R.string.advertising_label), advertisingCount.toString(), Icons.Default.AdsClick to (if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)),
+            Triple(stringResource(R.string.annoyances_label), annoyancesCount.toString(), Icons.Default.VisibilityOff to (if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)),
+            Triple(stringResource(R.string.social_label), socialCount.toString(), Icons.Default.Group to (if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)),
+            Triple(stringResource(R.string.custom_label), customCount.toString(), Icons.Default.Edit to (if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant))
         )
 
         HorizontalMultiBrowseCarousel(
@@ -139,18 +163,18 @@ fun StatusScreen(
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->
-            val (resId, data) = blockedItems[index]
+            val item = blockedItems[index]
             StatusCard(
-                title = stringResource(resId),
-                count = data.first,
-                icon = data.second,
-                color = data.third,
+                title = item.first,
+                count = item.second,
+                icon = item.third.first,
+                color = item.third.second,
                 onLongClick = {
-                    when (resId) {
-                        R.string.advertising_label -> viewModel.toggleAdvertising()
-                        R.string.annoyances_label -> viewModel.toggleAnnoyances()
-                        R.string.social_label -> viewModel.toggleSocial()
-                        R.string.custom_label -> viewModel.toggleCustom()
+                    when (item.first) {
+                        context.getString(R.string.advertising_label) -> viewModel.toggleAdvertising()
+                        context.getString(R.string.annoyances_label) -> viewModel.toggleAnnoyances()
+                        context.getString(R.string.social_label) -> viewModel.toggleSocial()
+                        context.getString(R.string.custom_label) -> viewModel.toggleCustom()
                     }
                 },
                 modifier = Modifier.height(160.dp).maskClip(MaterialTheme.shapes.extraLarge)
@@ -160,11 +184,11 @@ fun StatusScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // --- SECTION NETWORK ---
-        Text(
-            stringResource(R.string.network_title),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+//        Text(
+//            stringResource(R.string.network_title),
+//            style = MaterialTheme.typography.headlineSmall,
+//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+//        )
         
         val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A"
         val mobileText = viewModel.formatDataSize(mobileUsage)

@@ -23,8 +23,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Apps
@@ -125,6 +127,15 @@ fun AppListScreen(
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(if (isLandscape) 0.9f else 1f)
+                        .verticalScroll(rememberScrollState())
+                        // Augmentez le padding top (ex: 32.dp au lieu de 16.dp)
+                        .padding(top = 32.dp, bottom = 16.dp)
+
+
+
+
+
+
                 ) {
                     // ############################################################################
                     // FILTER SECTION
@@ -150,12 +161,20 @@ fun AppListScreen(
                                     .size(48.dp)
                                     .combinedClickable(
                                         onClick = {
-                                            Toast.makeText(context, context.getString(R.string.filter_msg, filter.name), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.filter_msg, filter.name),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
 
                                             onFilterClick(filter)
                                         },
                                         onLongClick = {
-                                            Toast.makeText(context, context.getString(R.string.filter_msg, filter.name), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.filter_msg, filter.name),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
 
                                             onFilterClick(filter)
                                         }
@@ -176,20 +195,13 @@ fun AppListScreen(
                     // ############################################################################
                     // APP LIST SECTION
                     // ############################################################################
-                    Box(
+
+                    LazyColumn(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(8.dp)
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(25.dp))
-                            .border(
-                                width = 1.dp, 
-                                color = MaterialTheme.colorScheme.outlineVariant, 
-                                shape = RoundedCornerShape(25.dp)
-                            )
                     ) {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(filteredApps) { app ->
+                        items(filteredApps) { app ->
                                 AppItem(
                                     app = app,
                                     onWifiToggle = {
@@ -256,7 +268,7 @@ fun AppListScreen(
             }
         }
     }
-}
+
 
 // ############################################################################
 // APP ITEM COMPOSABLE
@@ -293,10 +305,11 @@ fun AppItem(
                     .combinedClickable(
                         onClick = {},
                         onLongClick = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", app.packageName, null)
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
+                            val intent =
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", app.packageName, null)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
                             context.startActivity(intent)
                         }
                     )

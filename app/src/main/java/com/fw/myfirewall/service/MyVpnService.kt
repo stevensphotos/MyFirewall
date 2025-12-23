@@ -39,7 +39,7 @@ class MyVpnService : VpnService() {
         private const val CHANNEL_ID = "MyFirewallVpnChannel"
         private const val NOTIFICATION_ID = 1
         private const val DUMMY_DNS = "10.0.0.1"
-        private const val REAL_DNS = "8.8.8.8"
+        private const val REAL_DNS = "9.9.9.9"
 
         var isServiceRunning = mutableStateOf(false)
     }
