@@ -114,4 +114,6 @@
     <string name="clear_button">Clear</string>
     <string name="import_applied_rules_title">Load Applied Rules</string>
     <string name="import_applied_rules_description">Import your currently active custom rules into the text field above for editing.</string>
+    <string name="filter_conflict_xor_applied">Conflicting filters resolved (exclusive selection applied).</string>
+    <string name="filter_combination_invalid">This combination of filters is not possible.</string>
 </resources>

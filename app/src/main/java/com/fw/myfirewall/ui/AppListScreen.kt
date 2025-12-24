@@ -176,7 +176,26 @@ fun AppListScreen(
                                                 Toast.LENGTH_SHORT
                                             ).show()
 
-                                            onFilterClick(filter)
+                                            if (filter == AppFilter.USER) {
+                                                val userApps = apps.filter { !it.isSystem }
+                                                if (userApps.isNotEmpty()) {
+                                                    val anyAllowed = userApps.any { it.wifiAllowed || it.mobileAllowed || it.roamingAllowed }
+                                                    val newState = !anyAllowed
+                                                    val updatedApps = apps.map { a ->
+                                                        if (!a.isSystem) {
+                                                            a.copy(
+                                                                wifiAllowed = newState,
+                                                                mobileAllowed = newState,
+                                                                roamingAllowed = newState
+                                                            )
+                                                        } else a
+                                                    }
+                                                    onAppsChange(updatedApps)
+                                                    onAppsUpdated(updatedApps)
+                                                }
+                                            } else {
+                                                onFilterLongClick(filter)
+                                            }
                                         }
                                     )
                             ) {

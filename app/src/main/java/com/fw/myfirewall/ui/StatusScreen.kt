@@ -136,6 +136,13 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third.first,
                 color = item.third.second,
+                onLongClick = {
+                    runCatching {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS))
+                    }.onFailure {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
+                    }
+                },
                 modifier = Modifier.height(160.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
@@ -170,11 +177,11 @@ fun StatusScreen(
                 icon = item.third.first,
                 color = item.third.second,
                 onLongClick = {
-                    when (item.first) {
-                        context.getString(R.string.advertising_label) -> viewModel.toggleAdvertising()
-                        context.getString(R.string.annoyances_label) -> viewModel.toggleAnnoyances()
-                        context.getString(R.string.social_label) -> viewModel.toggleSocial()
-                        context.getString(R.string.custom_label) -> viewModel.toggleCustom()
+                    when (index) {
+                        0 -> viewModel.toggleAdvertising()
+                        1 -> viewModel.toggleAnnoyances()
+                        2 -> viewModel.toggleSocial()
+                        3 -> viewModel.toggleCustom()
                     }
                 },
                 modifier = Modifier.height(160.dp).maskClip(MaterialTheme.shapes.extraLarge)
@@ -221,8 +228,16 @@ fun StatusScreen(
                 color = networkColor,
                 onLongClick = {
                     when (index) {
-                        1 -> context.startActivity(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
-                        2 -> context.startActivity(android.content.Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS))
+                        1 -> runCatching {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
+                        }.onFailure {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
+                        }
+                        2 -> runCatching {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS))
+                        }.onFailure {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
+                        }
                     }
                 },
                 onClick = {
