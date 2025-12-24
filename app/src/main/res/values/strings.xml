@@ -116,4 +116,24 @@
     <string name="import_applied_rules_description">Import your currently active custom rules into the text field above for editing.</string>
     <string name="filter_conflict_xor_applied">Conflicting filters resolved (exclusive selection applied).</string>
     <string name="filter_combination_invalid">This combination of filters is not possible.</string>
+    <string name="dns_settings_label">DNS Server</string>
+    <string name="dns_settings_description">Configure custom DNS servers</string>
+    <string name="dns_dialog_title">DNS Server Settings</string>
+    <string name="dns_primary_label">Primary DNS</string>
+    <string name="dns_secondary_label">Secondary DNS</string>
+    <string name="dns_preset_system">System Default</string>
+    <string name="dns_preset_google">Google DNS</string>
+    <string name="dns_preset_cloudflare">Cloudflare DNS</string>
+    <string name="dns_preset_quad9">Quad9 DNS</string>
+    <string name="dns_preset_custom">Custom</string>
+    <string name="dns_apply">Apply</string>
+    <string name="about_package_label">Package</string>
+    <string name="about_version_label">Version</string>
+    <string name="about_build_label">Build</string>
+    <string name="about_signature_unavailable">Signature unavailable</string>
+    <string name="language_english_native">English</string>
+    <string name="language_french_native">Français</string>
+    <string name="language_system_default">System Default</string>
+    <string name="dns_placeholder_primary">8.8.8.8</string>
+    <string name="dns_placeholder_secondary">8.8.4.4</string>
 </resources>

@@ -79,13 +79,17 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 fun SettingsContent(viewModel: SettingsViewModel) {
     val context = LocalContext.current
 
+
+
+
     // ############################################################################
     // 3. UI LOCAL STATES
     // ############################################################################
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
     val showAboutDialog = remember { mutableStateOf(false) }
-    
+    val showDnsDialog = remember { mutableStateOf(false) }
+
     // Store the pending action to execute after VPN permission is granted
     val pendingVpnAction = remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -168,6 +172,24 @@ fun SettingsContent(viewModel: SettingsViewModel) {
     }
     if (showAboutDialog.value) {
         AboutDialog(onDismissRequest = { showAboutDialog.value = false })
+    }
+    if (showDnsDialog.value) {
+        DnsDialog(
+            currentPrimary = viewModel.getDnsPrimary(),
+            currentSecondary = viewModel.getDnsSecondary(),
+            onDismissRequest = { showDnsDialog.value = false },
+            onConfirmation = { primary, secondary ->
+                viewModel.setDnsServer(primary, secondary)
+                // Redémarrer le VPN si actif pour appliquer les changements
+                if (isUrlFilterEnabled) {
+                    val intent = Intent(context, MyVpnService::class.java).apply {
+                        action = "com.fw.myfirewall.ACTION_RELOAD_RULES"
+                    }
+                    context.startService(intent)
+                }
+                showDnsDialog.value = false
+            }
+        )
     }
 
     // ############################################################################
@@ -287,6 +309,53 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     checked = isStartOnBootEnabled
                 ) { checked ->
                     viewModel.toggleStartOnBoot(checked)
+                }
+
+                SettingsDivider()
+
+                // DNS SETTINGS ROW
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDnsDialog.value = true }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.background,
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Dns,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.dns_settings_label),
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Text(
+                                text = stringResource(R.string.dns_settings_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -606,4 +675,103 @@ private fun getLanguageLabel(code: String): String {
         "fr" -> "Français"
         else -> "System Default"
     }
+}
+
+@Composable
+fun DnsDialog(
+    currentPrimary: String,
+    currentSecondary: String,
+    onDismissRequest: () -> Unit,
+    onConfirmation: (String, String) -> Unit
+) {
+    val dnsPresets = listOf(
+        Triple("system", R.string.dns_preset_system, "" to ""),
+        Triple("google", R.string.dns_preset_google, "8.8.8.8" to "8.8.4.4"),
+        Triple("cloudflare", R.string.dns_preset_cloudflare, "1.1.1.1" to "1.0.0.1"),
+        Triple("quad9", R.string.dns_preset_quad9, "9.9.9.9" to "149.112.112.112"),
+        Triple("custom", R.string.dns_preset_custom, "" to "")
+    )
+
+    // Détecter le preset actuel
+    val initialPreset = dnsPresets.find { 
+        it.third.first == currentPrimary && it.third.second == currentSecondary 
+    }?.first ?: if (currentPrimary.isEmpty()) "system" else "custom"
+
+    var selectedPreset by remember { mutableStateOf(initialPreset) }
+    var primaryDns by remember { mutableStateOf(currentPrimary) }
+    var secondaryDns by remember { mutableStateOf(currentSecondary) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(text = stringResource(R.string.dns_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Preset options
+                dnsPresets.forEach { (key, labelRes, dnsValues) ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedPreset = key
+                                val preset = dnsPresets.find { it.first == key }
+                                if (preset != null) {
+                                    primaryDns = preset.third.first
+                                    secondaryDns = preset.third.second
+                                }
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(labelRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f)
+                        )
+                        RadioButton(
+                            selected = (key == selectedPreset),
+                            onClick = {
+                                selectedPreset = key
+                                val preset = dnsPresets.find { it.first == key }
+                                if (preset != null) {
+                                    primaryDns = preset.third.first
+                                    secondaryDns = preset.third.second
+                                }
+                            }
+                        )
+                    }
+                }
+
+                if (selectedPreset == "custom") {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = primaryDns,
+                        onValueChange = { primaryDns = it },
+                        label = { Text(stringResource(R.string.dns_primary_label)) },
+                        placeholder = { Text("8.8.8.8") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = secondaryDns,
+                        onValueChange = { secondaryDns = it },
+                        label = { Text(stringResource(R.string.dns_secondary_label)) },
+                        placeholder = { Text("8.8.4.4") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirmation(primaryDns, secondaryDns) }) {
+                Text(stringResource(R.string.dns_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }

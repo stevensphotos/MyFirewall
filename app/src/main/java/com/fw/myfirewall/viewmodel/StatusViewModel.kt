@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.net.TrafficStats
 import android.content.pm.ApplicationInfo
+import android.net.ConnectivityManager
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
@@ -31,6 +32,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.log
@@ -77,6 +80,29 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
     private val _isCustomEnabled = MutableStateFlow(sharedPrefs.getBoolean("custom_enabled", false))
     val isCustomEnabled = _isCustomEnabled.asStateFlow()
 
+    // Engine status states
+    private val _isAppFilterEnabled = MutableStateFlow(sharedPrefs.getBoolean("app_filter_enabled", false))
+    val isAppFilterEnabled = _isAppFilterEnabled.asStateFlow()
+
+    private val _isUrlFilterEnabled = MutableStateFlow(sharedPrefs.getBoolean("url_filter_enabled", false))
+    val isUrlFilterEnabled = _isUrlFilterEnabled.asStateFlow()
+
+    private val _isStartOnBootEnabled = MutableStateFlow(sharedPrefs.getBoolean("start_on_boot", false))
+    val isStartOnBootEnabled = _isStartOnBootEnabled.asStateFlow()
+
+    // Network info states
+    private val _wifiIp = MutableStateFlow("N/A")
+    val wifiIp = _wifiIp.asStateFlow()
+
+    private val _mobileIp = MutableStateFlow("N/A")
+    val mobileIp = _mobileIp.asStateFlow()
+
+    private val _systemDns = MutableStateFlow("N/A")
+    val systemDns = _systemDns.asStateFlow()
+
+    private val _userDns = MutableStateFlow(sharedPrefs.getString("dns_primary", "8.8.8.8") ?: "8.8.8.8")
+    val userDns = _userDns.asStateFlow()
+
     private val _wifiUsage = MutableStateFlow(0L)
     val wifiUsage = _wifiUsage.asStateFlow()
 
@@ -103,6 +129,10 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
             "annoyances_enabled" -> _isAnnoyancesEnabled.value = prefs.getBoolean(key, false)
             "social_enabled" -> _isSocialEnabled.value = prefs.getBoolean(key, false)
             "custom_enabled" -> _isCustomEnabled.value = prefs.getBoolean(key, false)
+            "app_filter_enabled" -> _isAppFilterEnabled.value = prefs.getBoolean(key, false)
+            "url_filter_enabled" -> _isUrlFilterEnabled.value = prefs.getBoolean(key, false)
+            "start_on_boot" -> _isStartOnBootEnabled.value = prefs.getBoolean(key, false)
+            "dns_primary" -> _userDns.value = prefs.getString(key, "8.8.8.8") ?: "8.8.8.8"
         }
     }
 
@@ -111,6 +141,46 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         refreshNetworkStats()
         startSpeedMonitoring()
         getFilteredAppsCount()
+        refreshNetworkInfo()
+    }
+
+    private fun refreshNetworkInfo() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _wifiIp.value = getIpAddress(true)
+            _mobileIp.value = getIpAddress(false)
+            _systemDns.value = getSystemDns()
+        }
+    }
+
+    private fun getIpAddress(isWifi: Boolean): String {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces.hasMoreElements()) {
+                val intf = interfaces.nextElement()
+                val isWifiIntf = intf.name.contains("wlan") || intf.name.contains("p2p")
+                if (isWifi && !isWifiIntf) continue
+                if (!isWifi && (isWifiIntf || intf.isLoopback)) continue
+
+                val addrs = intf.inetAddresses
+                while (addrs.hasMoreElements()) {
+                    val addr = addrs.nextElement()
+                    if (!addr.isLoopbackAddress && addr is Inet4Address) {
+                        return addr.hostAddress ?: "N/A"
+                    }
+                }
+            }
+        } catch (e: Exception) {}
+        return "N/A"
+    }
+
+    private fun getSystemDns(): String {
+        return try {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val linkProperties = connectivityManager.getLinkProperties(connectivityManager.activeNetwork)
+            linkProperties?.dnsServers?.firstOrNull()?.hostAddress ?: "N/A"
+        } catch (e: Exception) {
+            "N/A"
+        }
     }
 
     // --- QUICK SETTINGS TOGGLES ---
@@ -247,32 +317,6 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         speedUpdateJob?.cancel()
     }
 
-    private val ticker = flow {
-        while (true) {
-            emit(System.currentTimeMillis())
-            delay(60_000)
-        }
-    }
-
-    val nextUpdateLabel = workManager.getWorkInfosForUniqueWorkFlow("blocklist_update")
-        .combine(ticker) { workInfos, currentTime ->
-            val info = workInfos.firstOrNull()
-            if (info != null && info.state == WorkInfo.State.ENQUEUED) {
-                val nextTime = info.nextScheduleTimeMillis
-                if (nextTime > currentTime) {
-                    val diff = nextTime - currentTime
-                    formatDuration(diff)
-                } else "Pending..."
-            } else "Not scheduled"
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Loading...")
-
-    private fun formatDuration(millis: Long): String {
-        val hours = TimeUnit.MILLISECONDS.toHours(millis)
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
-        return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-    }
-
     fun refreshNetworkStats() {
         viewModelScope.launch {
             if (hasUsageStatsPermission(getApplication())) {
@@ -284,6 +328,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
                 _mobileUsage.value = getBootDataUsage()
                 _hasUsagePermission.value = false
             }
+            refreshNetworkInfo()
         }
     }
 

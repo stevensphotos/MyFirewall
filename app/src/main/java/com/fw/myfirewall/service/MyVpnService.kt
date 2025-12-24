@@ -39,9 +39,14 @@ class MyVpnService : VpnService() {
         private const val CHANNEL_ID = "MyFirewallVpnChannel"
         private const val NOTIFICATION_ID = 1
         private const val DUMMY_DNS = "10.0.0.1"
-        private const val REAL_DNS = "9.9.9.9"
+        private const val DEFAULT_DNS = "8.8.8.8"
 
         var isServiceRunning = mutableStateOf(false)
+    }
+
+    private fun getDnsServer(): String {
+        val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
+        return prefs.getString("dns_primary", DEFAULT_DNS) ?: DEFAULT_DNS
     }
 
     private var vpnInterface: ParcelFileDescriptor? = null
@@ -131,7 +136,7 @@ class MyVpnService : VpnService() {
 
             val socket = DatagramSocket()
             socket.soTimeout = 2000
-            val realDnsAddr = InetAddress.getByName(REAL_DNS)
+            val realDnsAddr = InetAddress.getByName(getDnsServer())
             
             val outPacket = DatagramPacket(dnsQueryPayload, dnsQueryPayload.size, realDnsAddr, 53)
             socket.send(outPacket)

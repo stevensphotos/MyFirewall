@@ -282,6 +282,21 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _rootCheckResult.value = null
     }
 
+    fun setDnsServer(primary: String, secondary: String) {
+        sharedPrefs.edit()
+            .putString("dns_primary", primary)
+            .putString("dns_secondary", secondary)
+            .apply()
+    }
+
+    fun getDnsPrimary(): String {
+        return sharedPrefs.getString("dns_primary", "8.8.8.8") ?: "8.8.8.8"
+    }
+
+    fun getDnsSecondary(): String {
+        return sharedPrefs.getString("dns_secondary", "8.8.4.4") ?: "8.8.4.4"
+    }
+
     fun refreshRootStatus() {
         _isRootPossible.value = RootUtils.isDeviceRooted()
     }

@@ -61,6 +61,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.fw.myfirewall.model.AppInfo
+import androidx.compose.runtime.mutableStateMapOf
 
 enum class AppFilter(val icon: ImageVector) {
     ALL(Icons.Default.Apps),
@@ -85,7 +86,14 @@ fun AppListScreen(
     onRefresh: () -> Unit
 
 ) {
+
+    val lastToastTime = remember { mutableStateMapOf<AppFilter, Long>() }
+    val toastCooldown = 2000L // 2 secondes entre chaque Toast
+
+
     val context = LocalContext.current
+    val localSelectedFilters = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(selectedFilters) }
+    androidx.compose.runtime.LaunchedEffect(selectedFilters) { localSelectedFilters.value = selectedFilters }
     val filteredApps = remember(apps, selectedFilters) {
         if (selectedFilters.contains(AppFilter.ALL)) {
             apps
@@ -147,7 +155,7 @@ fun AppListScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         AppFilter.entries.forEach { filter ->
-                            val isSelected = selectedFilters.contains(filter)
+                            val isSelected = localSelectedFilters.value.contains(filter)
                             Surface(
                                 shape = CircleShape,
                                 color = if (isSelected) MaterialTheme.colorScheme.primaryContainer
@@ -161,20 +169,88 @@ fun AppListScreen(
                                     .size(48.dp)
                                     .combinedClickable(
                                         onClick = {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.filter_msg, filter.name),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            val current = localSelectedFilters.value
+                                            val wasSelected = current.contains(filter)
 
+                                            // Ignorer si le filtre est déjà sélectionné
+                                            if (wasSelected) {
+                                                return@combinedClickable
+                                            }
+
+                                            val updated = current.toMutableSet()
+                                            val removedConflicts = mutableListOf<AppFilter>()
+
+                                            // Ajouter le filtre cliqué
+                                            updated.add(filter)
+
+                                            // Résolution XOR des conflits lors de l'ajout
+                                            when (filter) {
+                                                AppFilter.INTERNET -> {
+                                                    if (updated.contains(AppFilter.NO_INTERNET)) {
+                                                        updated.remove(AppFilter.NO_INTERNET)
+                                                        removedConflicts += AppFilter.NO_INTERNET
+                                                    }
+                                                }
+                                                AppFilter.NO_INTERNET -> {
+                                                    if (updated.contains(AppFilter.INTERNET)) {
+                                                        updated.remove(AppFilter.INTERNET)
+                                                        removedConflicts += AppFilter.INTERNET
+                                                    }
+                                                }
+                                                AppFilter.SYSTEM -> {
+                                                    if (updated.contains(AppFilter.USER)) {
+                                                        updated.remove(AppFilter.USER)
+                                                        removedConflicts += AppFilter.USER
+                                                    }
+                                                    if (updated.contains(AppFilter.ALL)) {
+                                                        updated.remove(AppFilter.ALL)
+                                                        removedConflicts += AppFilter.ALL
+                                                    }
+                                                }
+                                                AppFilter.USER -> {
+                                                    if (updated.contains(AppFilter.SYSTEM)) {
+                                                        updated.remove(AppFilter.SYSTEM)
+                                                        removedConflicts += AppFilter.SYSTEM
+                                                    }
+                                                    if (updated.contains(AppFilter.ALL)) {
+                                                        updated.remove(AppFilter.ALL)
+                                                        removedConflicts += AppFilter.ALL
+                                                    }
+                                                }
+                                                AppFilter.ALL -> {
+                                                    // ALL retire USER et SYSTEM mais garde INTERNET/NO_INTERNET
+                                                    if (updated.contains(AppFilter.USER)) {
+                                                        updated.remove(AppFilter.USER)
+                                                        removedConflicts += AppFilter.USER
+                                                    }
+                                                    if (updated.contains(AppFilter.SYSTEM)) {
+                                                        updated.remove(AppFilter.SYSTEM)
+                                                        removedConflicts += AppFilter.SYSTEM
+                                                    }
+                                                    // Note: INTERNET et NO_INTERNET restent si présents
+                                                }
+                                            }
+
+                                            // Mettre à jour l'état local pour un retour visuel immédiat
+                                            localSelectedFilters.value = updated
+
+                                            // Propager les changements vers le parent
                                             onFilterClick(filter)
+                                            removedConflicts.forEach { onFilterClick(it) }
                                         },
                                         onLongClick = {
-                                            Toast.makeText(
-                                                context,
-                                                context.getString(R.string.filter_msg, filter.name),
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            val currentTime = System.currentTimeMillis()
+                                            val lastTime = lastToastTime.getOrDefault(filter, 0L)
+
+                                            if (currentTime - lastTime >= toastCooldown) {
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.filter_msg, filter.name),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+
+                                                lastToastTime[filter] = currentTime
+                                            }
 
                                             if (filter == AppFilter.USER) {
                                                 val userApps = apps.filter { !it.isSystem }
@@ -220,7 +296,10 @@ fun AppListScreen(
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                        items(filteredApps) { app ->
+                        items(
+                            items = filteredApps,
+                            key = { app -> app.packageName }
+                        ) { app ->
                                 AppItem(
                                     app = app,
                                     onWifiToggle = {

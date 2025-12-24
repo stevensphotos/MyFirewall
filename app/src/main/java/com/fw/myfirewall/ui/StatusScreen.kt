@@ -2,44 +2,22 @@ package com.fw.myfirewall.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AdsClick
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.NetworkWifi
-import androidx.compose.material.icons.filled.SignalCellularAlt
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.SettingsSuggest
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -60,14 +38,12 @@ fun StatusScreen(
     modifier: Modifier = Modifier,
     totalApps: Int = 0,
     blockedApps: Int = 0,
-    userAppsCount: Int = 0,
     viewModel: StatusViewModel
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-
-    // Refresh stats when screen resumes
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+    
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshNetworkStats()
@@ -80,27 +56,30 @@ fun StatusScreen(
         }
     }
 
-    val allowedApps = (totalApps - blockedApps).coerceAtLeast(0)
     val userAppsCountState by viewModel.userAppsCount.collectAsState()
-
-    // Collecting state from ViewModel
     val advertisingCount by viewModel.advertisingCount.collectAsState()
     val annoyancesCount by viewModel.annoyancesCount.collectAsState()
     val socialCount by viewModel.socialCount.collectAsState()
     val customCount by viewModel.customCount.collectAsState()
-
     val wifiUsage by viewModel.wifiUsage.collectAsState()
     val mobileUsage by viewModel.mobileUsage.collectAsState()
     val hasPermission by viewModel.hasUsagePermission.collectAsState()
-
     val downloadSpeed by viewModel.downloadSpeed.collectAsState()
     val uploadSpeed by viewModel.uploadSpeed.collectAsState()
     val speedMode by viewModel.speedMode.collectAsState()
-
     val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
     val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
+
+    // New Data States
+    val wifiIp by viewModel.wifiIp.collectAsState()
+    val mobileIp by viewModel.mobileIp.collectAsState()
+    val systemDns by viewModel.systemDns.collectAsState()
+    val userDns by viewModel.userDns.collectAsState()
+    val isAppFilterOn by viewModel.isAppFilterEnabled.collectAsState()
+    val isUrlFilterOn by viewModel.isUrlFilterEnabled.collectAsState()
+    val isBootOn by viewModel.isStartOnBootEnabled.collectAsState()
 
     Column(
         modifier = modifier
@@ -108,24 +87,16 @@ fun StatusScreen(
             .verticalScroll(rememberScrollState())
             .padding(top = 32.dp, bottom = 16.dp)
     ) {
-        // --- SECTION APPLICATIONS ---
-//        Text(
-//            stringResource(R.string.applications_title),
-//            style = MaterialTheme.typography.headlineSmall,
-//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-//        )
-
+        // --- 1. APPLICATIONS CAROUSEL ---
         val appItems = listOf(
-
-
             Triple(stringResource(R.string.user_apps_title), userAppsCountState.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer),
             Triple(stringResource(R.string.blocked_apps_title), blockedApps.toString(), Icons.Default.Block to MaterialTheme.colorScheme.errorContainer),
-            Triple(stringResource(R.string.allowed_apps_title), allowedApps.toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
+            Triple(stringResource(R.string.allowed_apps_title), (totalApps - blockedApps).coerceAtLeast(0).toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { appItems.size },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
+            modifier = Modifier.fillMaxWidth().height(140.dp),
             preferredItemWidth = 186.dp,
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
@@ -136,115 +107,101 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third.first,
                 color = item.third.second,
-                onLongClick = {
-                    runCatching {
-                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS))
-                    }.onFailure {
-                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
-                    }
-                },
-                modifier = Modifier.height(160.dp).maskClip(MaterialTheme.shapes.extraLarge)
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- SECTION BLOCKED URLS ---
-//        Text(
-//            stringResource(R.string.blocked_urls_title),
-//            style = MaterialTheme.typography.headlineSmall,
-//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-//        )
-
+        // --- 2. BLOCKED URLS CAROUSEL ---
         val blockedItems = listOf(
-            Triple(stringResource(R.string.advertising_label), advertisingCount.toString(), Icons.Default.AdsClick to (if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)),
-            Triple(stringResource(R.string.annoyances_label), annoyancesCount.toString(), Icons.Default.VisibilityOff to (if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)),
-            Triple(stringResource(R.string.social_label), socialCount.toString(), Icons.Default.Group to (if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)),
-            Triple(stringResource(R.string.custom_label), customCount.toString(), Icons.Default.Edit to (if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant))
+            R.string.advertising_label to Triple(advertisingCount.toString(), Icons.Default.AdsClick, if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            R.string.annoyances_label to Triple(annoyancesCount.toString(), Icons.Default.VisibilityOff, if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            R.string.social_label to Triple(socialCount.toString(), Icons.Default.Group, if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            R.string.custom_label to Triple(customCount.toString(), Icons.Default.Edit, if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { blockedItems.size },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
+            modifier = Modifier.fillMaxWidth().height(140.dp),
             preferredItemWidth = 186.dp,
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->
-            val item = blockedItems[index]
+            val (resId, data) = blockedItems[index]
             StatusCard(
-                title = item.first,
-                count = item.second,
-                icon = item.third.first,
-                color = item.third.second,
+                title = stringResource(resId),
+                count = data.first,
+                icon = data.second,
+                color = data.third,
                 onLongClick = {
-                    when (index) {
-                        0 -> viewModel.toggleAdvertising()
-                        1 -> viewModel.toggleAnnoyances()
-                        2 -> viewModel.toggleSocial()
-                        3 -> viewModel.toggleCustom()
+                    when (resId) {
+                        R.string.advertising_label -> viewModel.toggleAdvertising()
+                        R.string.annoyances_label -> viewModel.toggleAnnoyances()
+                        R.string.social_label -> viewModel.toggleSocial()
+                        R.string.custom_label -> viewModel.toggleCustom()
                     }
                 },
-                modifier = Modifier.height(160.dp).maskClip(MaterialTheme.shapes.extraLarge)
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- SECTION NETWORK ---
-//        Text(
-//            stringResource(R.string.network_title),
-//            style = MaterialTheme.typography.headlineSmall,
-//            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-//        )
-        
-        val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A"
-        val mobileText = viewModel.formatDataSize(mobileUsage)
-        val mobileLabel = if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)"
-        val networkColor = MaterialTheme.colorScheme.surfaceVariant
-
+        // --- 3. NETWORK STATS CAROUSEL ---
         val speedText = "↓ ${viewModel.formatSpeed(downloadSpeed)}\n↑ ${viewModel.formatSpeed(uploadSpeed)}"
-        val speedLabel = stringResource(R.string.network_speed_label, speedMode)
-
         val networkItems = listOf(
-            Triple(speedLabel, speedText, Icons.Default.Speed),
-            Triple(stringResource(R.string.network_wifi), wifiText, Icons.Default.NetworkWifi),
-            Triple(mobileLabel, mobileText, Icons.Default.SignalCellularAlt)
+            Triple(stringResource(R.string.network_speed_label, speedMode), speedText, Icons.Default.Speed),
+            Triple(stringResource(R.string.network_wifi), if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A", Icons.Default.NetworkWifi),
+            Triple(if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)", viewModel.formatDataSize(mobileUsage), Icons.Default.SignalCellularAlt)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { networkItems.size },
-            modifier = Modifier.fillMaxWidth().height(160.dp),
+            modifier = Modifier.fillMaxWidth().height(140.dp),
             preferredItemWidth = 186.dp,
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->
             val item = networkItems[index]
-            val textSize = if (index == 0) 20.sp else 28.sp
-
             StatusCard(
                 title = item.first,
                 count = item.second,
                 icon = item.third,
-                color = networkColor,
-                onLongClick = {
-                    when (index) {
-                        1 -> runCatching {
-                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
-                        }.onFailure {
-                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
-                        }
-                        2 -> runCatching {
-                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_DATA_ROAMING_SETTINGS))
-                        }.onFailure {
-                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_SETTINGS))
-                        }
-                    }
-                },
-                onClick = {
-                    if (index == 0) viewModel.toggleSpeedMode()
-                },
-                countFontSize = textSize,
-                modifier = Modifier.height(160.dp).maskClip(MaterialTheme.shapes.extraLarge)
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                onClick = { if (index == 0) viewModel.toggleSpeedMode() },
+                countFontSize = if (index == 0) 20.sp else 28.sp,
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // --- 4. NEW DEVICE INFO CAROUSEL (IP, DNS, STATUS) ---
+        val infoItems = listOf(
+            // IP Card
+            Triple("Device IPs", "Wi-Fi: $wifiIp\nMobile: $mobileIp", Icons.Default.Dns),
+            // DNS Card
+            Triple("DNS Servers", "System: $systemDns\nUser: $userDns", Icons.Default.Lan),
+            // Status Card
+            Triple("Engine Status", "Apps: ${if(isAppFilterOn) "ON" else "OFF"}\nURLs: ${if(isUrlFilterOn) "ON" else "OFF"}\nBoot: ${if(isBootOn) "ON" else "OFF"}", Icons.Default.Info)
+        )
+
+        HorizontalMultiBrowseCarousel(
+            state = rememberCarouselState { infoItems.size },
+            modifier = Modifier.fillMaxWidth().height(140.dp),
+            preferredItemWidth = 240.dp, // Wider for text readability
+            itemSpacing = 8.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) { index ->
+            val item = infoItems[index]
+            StatusCard(
+                title = item.first,
+                count = item.second,
+                icon = item.third,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                countFontSize = 14.sp, // Detail font size
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
     }
@@ -294,9 +251,16 @@ fun StatusCard(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(count, fontSize = countFontSize, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center, lineHeight = countFontSize)
+                Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = count, 
+                    fontSize = countFontSize, 
+                    fontWeight = FontWeight.Medium, 
+                    maxLines = 3, 
+                    textAlign = TextAlign.Center, 
+                    lineHeight = if (countFontSize < 20.sp) 18.sp else countFontSize
+                )
                 Text(title, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
