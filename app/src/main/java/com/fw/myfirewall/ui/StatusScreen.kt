@@ -31,6 +31,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.fw.myfirewall.R
 import com.fw.myfirewall.viewmodel.StatusViewModel
+import android.content.Intent
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +50,7 @@ fun StatusScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshNetworkStats()
                 viewModel.getFilteredAppsCount()
+                viewModel.checkPrivateDnsSetting()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -55,6 +58,10 @@ fun StatusScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
+
+    val isPrivateDnsActive by viewModel.isPrivateDnsActive.collectAsState()
+    val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
+
 
     val userAppsCountState by viewModel.userAppsCount.collectAsState()
     val advertisingCount by viewModel.advertisingCount.collectAsState()
@@ -93,6 +100,67 @@ fun StatusScreen(
             Triple(stringResource(R.string.blocked_apps_title), blockedApps.toString(), Icons.Default.Block to MaterialTheme.colorScheme.errorContainer),
             Triple(stringResource(R.string.allowed_apps_title), (totalApps - blockedApps).coerceAtLeast(0).toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
         )
+        if (isUrlFilterEnabled && isPrivateDnsActive) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                onClick = {
+                    try {
+                        // Tentative d'ouvrir directement la page DNS Privé
+                        val intent = Intent("android.settings.PRIVATE_DNS_SETTINGS")
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        try {
+                            // Fallback : Ouvrir les paramètres réseau globaux si le lien direct échoue
+                            val fallbackIntent = Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS)
+                            context.startActivity(fallbackIntent)
+                        } catch (e2: Exception) {
+                            // Si tout échoue, on affiche au moins un message
+                            Toast.makeText(context, "Impossible d'ouvrir les paramètres", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.dns_alert_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = stringResource(R.string.dns_alert_msg),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.dns_alert_cta),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { appItems.size },

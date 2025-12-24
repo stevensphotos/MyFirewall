@@ -136,4 +136,9 @@
     <string name="language_system_default">System Default</string>
     <string name="dns_placeholder_primary">8.8.8.8</string>
     <string name="dns_placeholder_secondary">8.8.4.4</string>
+    <string name="dns_alert_title">Private DNS Detected</string>
+    <string name="dns_alert_msg">URL filtering is inactive. This system setting has priority over the VPN.</string>
+    <string name="dns_alert_cta">Click here to disable it in settings.</string>
+    <string name="error_open_settings">Unable to open settings</string>
+
 </resources>

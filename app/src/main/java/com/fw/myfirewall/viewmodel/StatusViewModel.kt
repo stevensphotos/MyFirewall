@@ -39,9 +39,13 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.log
 import kotlin.math.pow
 
+
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
+
+
+
     private val database = AppDatabase.getDatabase(application)
     private val dao = database.blockRuleDao()
     private val workManager = WorkManager.getInstance(application)
@@ -49,6 +53,9 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val statsRepository = NetworkStatsRepository(application)
     private val hostsGenerator = HostsGenerator(dao, application)
+    private val _isPrivateDnsActive = MutableStateFlow(false)
+    val isPrivateDnsActive = _isPrivateDnsActive.asStateFlow()
+
 
 
     val advertisingCount = dao.countByCategory(BlockRuleCategory.ADVERTISING)
@@ -142,7 +149,20 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         startSpeedMonitoring()
         getFilteredAppsCount()
         refreshNetworkInfo()
+        checkPrivateDnsSetting()
     }
+
+    fun checkPrivateDnsSetting() {
+        val mode = android.provider.Settings.Global.getString(
+            context.contentResolver,
+            "private_dns_mode"
+        )
+        // Si le mode est "hostname" ou "opportunistic" (auto), le filtrage risque d'échouer
+        _isPrivateDnsActive.value = mode != null && mode != "off"
+
+
+    }
+
 
     private fun refreshNetworkInfo() {
         viewModelScope.launch(Dispatchers.IO) {
