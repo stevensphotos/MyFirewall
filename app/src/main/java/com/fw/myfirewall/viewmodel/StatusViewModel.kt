@@ -7,12 +7,11 @@ import android.content.SharedPreferences
 import android.net.TrafficStats
 import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.BlockListConfig
 import com.fw.myfirewall.data.BlockListImporter
@@ -25,17 +24,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.util.*
-import java.util.concurrent.TimeUnit
 import kotlin.math.log
 import kotlin.math.pow
 
@@ -44,19 +40,14 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
 
     private val context = application.applicationContext
 
-
-
     private val database = AppDatabase.getDatabase(application)
     private val dao = database.blockRuleDao()
-    private val workManager = WorkManager.getInstance(application)
     private val sharedPrefs =
         application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val statsRepository = NetworkStatsRepository(application)
     private val hostsGenerator = HostsGenerator(dao, application)
     private val _isPrivateDnsActive = MutableStateFlow(false)
     val isPrivateDnsActive = _isPrivateDnsActive.asStateFlow()
-
-
 
     val advertisingCount = dao.countByCategory(BlockRuleCategory.ADVERTISING)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
@@ -106,6 +97,9 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _systemDns = MutableStateFlow("N/A")
     val systemDns = _systemDns.asStateFlow()
+
+    private val _vpnDns = MutableStateFlow("N/A")
+    val vpnDns = _vpnDns.asStateFlow()
 
     private val _userDns = MutableStateFlow(sharedPrefs.getString("dns_primary", "8.8.8.8") ?: "8.8.8.8")
     val userDns = _userDns.asStateFlow()
@@ -157,10 +151,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
             context.contentResolver,
             "private_dns_mode"
         )
-        // Si le mode est "hostname" ou "opportunistic" (auto), le filtrage risque d'échouer
         _isPrivateDnsActive.value = mode != null && mode != "off"
-
-
     }
 
 
@@ -168,7 +159,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) {
             _wifiIp.value = getIpAddress(true)
             _mobileIp.value = getIpAddress(false)
-            _systemDns.value = getSystemDns()
+            updateDnsInfo()
         }
     }
 
@@ -193,13 +184,31 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         return "N/A"
     }
 
-    private fun getSystemDns(): String {
-        return try {
+    private fun updateDnsInfo() {
+        try {
             val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val linkProperties = connectivityManager.getLinkProperties(connectivityManager.activeNetwork)
-            linkProperties?.dnsServers?.firstOrNull()?.hostAddress ?: "N/A"
+            val allNetworks = connectivityManager.allNetworks
+            
+            var foundSystemDns = "N/A"
+            var foundVpnDns = "N/A"
+
+            for (network in allNetworks) {
+                val caps = connectivityManager.getNetworkCapabilities(network)
+                val lp = connectivityManager.getLinkProperties(network)
+                val dns = lp?.dnsServers?.firstOrNull()?.hostAddress ?: continue
+
+                if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
+                    foundVpnDns = dns
+                } else if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true || 
+                           caps?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
+                    foundSystemDns = dns
+                }
+            }
+            
+            _systemDns.value = foundSystemDns
+            _vpnDns.value = foundVpnDns
         } catch (e: Exception) {
-            "N/A"
+            Log.e("StatusViewModel", "Error updating DNS info", e)
         }
     }
 

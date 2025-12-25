@@ -79,10 +79,11 @@ fun StatusScreen(
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
 
-    // New Data States
+    // Data States
     val wifiIp by viewModel.wifiIp.collectAsState()
     val mobileIp by viewModel.mobileIp.collectAsState()
     val systemDns by viewModel.systemDns.collectAsState()
+    val vpnDns by viewModel.vpnDns.collectAsState()
     val userDns by viewModel.userDns.collectAsState()
     val isAppFilterOn by viewModel.isAppFilterEnabled.collectAsState()
     val isUrlFilterOn by viewModel.isUrlFilterEnabled.collectAsState()
@@ -110,17 +111,14 @@ fun StatusScreen(
                     .fillMaxWidth(),
                 onClick = {
                     try {
-                        // Tentative d'ouvrir directement la page DNS Privé
                         val intent = Intent("android.settings.PRIVATE_DNS_SETTINGS")
                         context.startActivity(intent)
                     } catch (e: Exception) {
                         try {
-                            // Fallback : Ouvrir les paramètres réseau globaux si le lien direct échoue
                             val fallbackIntent = Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS)
                             context.startActivity(fallbackIntent)
                         } catch (e2: Exception) {
-                            // Si tout échoue, on affiche au moins un message
-                            Toast.makeText(context, "Impossible d'ouvrir les paramètres", Toast.LENGTH_SHORT).show()
+                         //   Toast.makeText(context, stringResource(R.string.error_open_settings), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -137,25 +135,22 @@ fun StatusScreen(
                     )
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Column {
-                            Text(
-                                text = stringResource(R.string.dns_alert_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Text(
-                                text = stringResource(R.string.dns_alert_msg),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = stringResource(R.string.dns_alert_cta),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
+                        Text(
+                            text = stringResource(R.string.dns_alert_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            text = stringResource(R.string.dns_alert_msg),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.dns_alert_cta),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
                     }
                 }
             }
@@ -245,20 +240,20 @@ fun StatusScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- 4. NEW DEVICE INFO CAROUSEL (IP, DNS, STATUS) ---
+        // --- 4. DEVICE INFO CAROUSEL (IP, DNS, STATUS) ---
         val infoItems = listOf(
             // IP Card
-            Triple("Device IPs", "Wi-Fi: $wifiIp\nMobile: $mobileIp", Icons.Default.Dns),
-            // DNS Card
-            Triple("DNS Servers", "System: $systemDns\nUser: $userDns", Icons.Default.Lan),
+            Triple(stringResource(R.string.status_device_ips), "Wi-Fi: $wifiIp\nMobile: $mobileIp", Icons.Default.Dns),
+            // DNS Card (MODIFIED: Added 3rd line and renamed)
+            Triple(stringResource(R.string.status_dns_servers), "${stringResource(R.string.dns_label_system)}: $systemDns\n${stringResource(R.string.dns_label_vpn)}: $vpnDns\n${stringResource(R.string.dns_label_user)}: $userDns", Icons.Default.Lan),
             // Status Card
-            Triple("Engine Status", "Apps: ${if(isAppFilterOn) "ON" else "OFF"}\nURLs: ${if(isUrlFilterOn) "ON" else "OFF"}\nBoot: ${if(isBootOn) "ON" else "OFF"}", Icons.Default.Info)
+            Triple(stringResource(R.string.status_engine_status), "Apps: ${if(isAppFilterOn) "ON" else "OFF"}\nURLs: ${if(isUrlFilterOn) "ON" else "OFF"}\nBoot: ${if(isBootOn) "ON" else "OFF"}", Icons.Default.Info)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { infoItems.size },
             modifier = Modifier.fillMaxWidth().height(140.dp),
-            preferredItemWidth = 240.dp, // Wider for text readability
+            preferredItemWidth = 240.dp,
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->
@@ -268,7 +263,7 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third,
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                countFontSize = 14.sp, // Detail font size
+                countFontSize = 12.sp, // Reduced for 3 lines readability
                 modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
@@ -324,10 +319,12 @@ fun StatusCard(
                 Text(
                     text = count, 
                     fontSize = countFontSize, 
-                    fontWeight = FontWeight.Medium, 
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = countFontSize,
+                        lineHeight = if (countFontSize < 20.sp) 16.sp else countFontSize
+                    ),
                     maxLines = 3, 
-                    textAlign = TextAlign.Center, 
-                    lineHeight = if (countFontSize < 20.sp) 18.sp else countFontSize
+                    textAlign = TextAlign.Center
                 )
                 Text(title, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }

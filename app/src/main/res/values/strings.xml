@@ -151,4 +151,10 @@
     <string name="info_open_source_desc">This project is open source. You can check the code or report bugs on the official repository.</string>
     <string name="info_copyright">© 2024 MyFirewall Project</string>
     <string name="info_close_button">Close</string>
+    <string name="dns_label_system">System</string>
+    <string name="dns_label_vpn">VPN DNS</string>
+    <string name="dns_label_user">User</string>
+    <string name="status_device_ips">Device IPs</string>
+    <string name="status_dns_servers">DNS Servers</string>
+    <string name="status_engine_status">Engine Status</string>
 </resources>
