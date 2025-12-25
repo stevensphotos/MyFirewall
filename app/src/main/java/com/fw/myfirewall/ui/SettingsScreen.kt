@@ -38,7 +38,11 @@ import com.fw.myfirewall.viewmodel.SettingsViewModel
  * Acts as the top-level container for the settings UI.
  */
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel = viewModel()) {
+fun SettingsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = viewModel(),
+    onNavigateToHelp: () -> Unit = {}
+) {
     val settingsViewModel: SettingsViewModel = viewModel
 
     // ############################################################################
@@ -66,7 +70,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
             modifier = modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            SettingsContent(viewModel = settingsViewModel)
+            SettingsContent(viewModel = settingsViewModel, onNavigateToHelp = onNavigateToHelp)
         }
     }
 }
@@ -76,18 +80,14 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
  * Handles layout, category cards, and the new comprehensive tweaking section.
  */
 @Composable
-fun SettingsContent(viewModel: SettingsViewModel) {
+fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) {
     val context = LocalContext.current
-
-
-
 
     // ############################################################################
     // 3. UI LOCAL STATES
     // ############################################################################
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
-    val showAboutDialog = remember { mutableStateOf(false) }
     val showDnsDialog = remember { mutableStateOf(false) }
 
     // Store the pending action to execute after VPN permission is granted
@@ -170,9 +170,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
             }
         )
     }
-    if (showAboutDialog.value) {
-        AboutDialog(onDismissRequest = { showAboutDialog.value = false })
-    }
     if (showDnsDialog.value) {
         DnsDialog(
             currentPrimary = viewModel.getDnsPrimary(),
@@ -217,7 +214,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                // --- HEADER DE CARTE AVEC TITRE À GAUCHE ET ICÔNE À DROITE ---
+                // --- HEADER DE CARTE AVEC ICÔNE À GAUCHE ---
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -225,25 +222,26 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween // Pousse les éléments aux extrémités
                 ) {
+                    // L'ICÔNE D'AIDE À GAUCHE (Maintenant lance Onboarding)
                     Text(
                         text = stringResource(R.string.Function_type_title),
                         style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
 
-                    // L'ICÔNE D'AIDE À DROITE
+                    // L'ICÔNE D'AIDE (LANCE L'ONBOARDING)
                     IconButton(
-                        onClick = { showAboutDialog.value = true },
-                        modifier = Modifier.size(32.dp) // Taille légèrement réduite pour l'alignement
+                        onClick = onNavigateToHelp,
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
-                            contentDescription = "About",
+                            contentDescription = "Help",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
                 }
-
 
                 // APPLICATION FILTER
                 SettingsItemRow(
@@ -288,7 +286,10 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
 
                 SettingsItemRow(
-                    title = stringResource(R.string.root_service_label),
+                    title = if (isRootPossible)
+                        stringResource(R.string.root_service_label)
+                    else
+                        "${stringResource(R.string.root_service_label)} (${stringResource(R.string.not_available)})",
                     description = stringResource(R.string.root_service_text),
                     icon = if (isRootPossible) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Block,
                     checked = isRootEnabled,
@@ -373,7 +374,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(0.0.dp)
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -660,23 +661,9 @@ fun LanguageDialog(
     )
 }
 
-@Composable
-private fun getThemeLabel(key: String): String {
-    return when(key) {
-        "light" -> stringResource(R.string.theme_light)
-        "dark" -> stringResource(R.string.theme_dark)
-        else -> stringResource(R.string.theme_system)
-    }
-}
-
-private fun getLanguageLabel(code: String): String {
-    return when (code) {
-        "en" -> "English"
-        "fr" -> "Français"
-        else -> "System Default"
-    }
-}
-
+/**
+ * DnsDialog: Custom DNS configuration.
+ */
 @Composable
 fun DnsDialog(
     currentPrimary: String,
@@ -693,8 +680,8 @@ fun DnsDialog(
     )
 
     // Détecter le preset actuel
-    val initialPreset = dnsPresets.find { 
-        it.third.first == currentPrimary && it.third.second == currentSecondary 
+    val initialPreset = dnsPresets.find {
+        it.third.first == currentPrimary && it.third.second == currentSecondary
     }?.first ?: if (currentPrimary.isEmpty()) "system" else "custom"
 
     var selectedPreset by remember { mutableStateOf(initialPreset) }
@@ -774,4 +761,21 @@ fun DnsDialog(
             }
         }
     )
+}
+
+@Composable
+private fun getThemeLabel(key: String): String {
+    return when(key) {
+        "light" -> stringResource(R.string.theme_light)
+        "dark" -> stringResource(R.string.theme_dark)
+        else -> stringResource(R.string.theme_system)
+    }
+}
+
+private fun getLanguageLabel(code: String): String {
+    return when (code) {
+        "en" -> "English"
+        "fr" -> "Français"
+        else -> "System Default"
+    }
 }

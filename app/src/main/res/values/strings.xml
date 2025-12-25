@@ -72,7 +72,7 @@
     <string name="welcome_title">Welcome to MyFirewall</string>
     <string name="onboarding_disclaimer">This app uses a local VPN to filter your internet traffic directly on your device.   No personal data is sent to an external server. You retain full control.</string>
     <string name="permission_notification">Allow notifications (Required)</string>
-    <string name="start_protection">Start protecting my device</string>
+    <string name="onboarding_done">Done</string>
     <string name="permission_usage_stats">Allow usage access (Optional)</string>
     <string name="save_rules_back_desc">Back</string>
     <string name="export_rules_title">Export Rules</string>
@@ -140,5 +140,15 @@
     <string name="dns_alert_msg">URL filtering is inactive. This system setting has priority over the VPN.</string>
     <string name="dns_alert_cta">Click here to disable it in settings.</string>
     <string name="error_open_settings">Unable to open settings</string>
-
+    <string name="information_title">Informations</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="info_version">Version 1.0.0</string>
+    <string name="info_how_it_works_title">How it works?</string>
+    <string name="info_how_it_works_desc">MyFirewall creates a local VPN tunnel to filter traffic. No data is sent to external servers.</string>
+    <string name="info_dns_filtering_title">DNS Filtering</string>
+    <string name="info_dns_filtering_desc">To block ads, MyFirewall intercepts DNS requests. If filtering fails, disable \'Private DNS\' in Android settings.</string>
+    <string name="info_open_source_title">Open Source</string>
+    <string name="info_open_source_desc">This project is open source. You can check the code or report bugs on the official repository.</string>
+    <string name="info_copyright">© 2024 MyFirewall Project</string>
+    <string name="info_close_button">Close</string>
 </resources>

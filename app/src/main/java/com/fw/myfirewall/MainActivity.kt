@@ -58,6 +58,7 @@ import kotlinx.coroutines.withContext
 import androidx.compose.ui.res.stringResource
 import com.fw.myfirewall.data.UserPreferences
 import com.fw.myfirewall.ui.OnboardingScreen
+import com.fw.myfirewall.ui.InfoPage
 
 
 // ############################################################################
@@ -80,11 +81,11 @@ class MainActivity : ComponentActivity() {
             val themeMode by settingsViewModel.themeMode.collectAsState()
             val isDynamicColorEnabled by settingsViewModel.isDynamicColorEnabled.collectAsState()
 
-            // 1. Define the state variables HERE (before they are used)
+            // 1. État du premier lancement
             val isFirstLaunch by userPreferences.isFirstLaunch.collectAsState(initial = null)
             val scope = rememberCoroutineScope()
 
-            // Keep splash screen visible until we know if it's first launch or not
+            // SplashScreen actif tant que l'état est inconnu
             splashScreen.setKeepOnScreenCondition { isFirstLaunch == null }
 
             val darkTheme = when (themeMode) {
@@ -102,26 +103,41 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // 2. The conditional logic now has access to 'isFirstLaunch'
                     when (isFirstLaunch) {
-                        true -> {
-                            OnboardingScreen(
-                                onOnboardingFinished = {
-                                    scope.launch {
-                                        userPreferences.completeOnboarding()
-                                    }
-                                }
-                            )
-                        }
-
-                        false -> {
-                            MyFirewallApp()
-                        }
-
                         null -> {
+                            // État transitoire géré par SplashScreen
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
                             }
+                        }
+                        true -> {
+                            // ########################################################
+                            // SCÉNARIO PREMIER LANCEMENT
+                            // ########################################################
+                            var showOnboardingInfo by rememberSaveable { mutableStateOf(false) }
+
+                            if (showOnboardingInfo) {
+                                InfoPage(
+                                    onBack = { showOnboardingInfo = false },
+                                    onClose = {
+                                        showOnboardingInfo = false
+                                        scope.launch { userPreferences.completeOnboarding() }
+                                    }
+                                )
+                            } else {
+                                OnboardingScreen(
+                                    onOnboardingFinished = {
+                                        scope.launch { userPreferences.completeOnboarding() }
+                                    },
+                                    onInfoClick = { showOnboardingInfo = true }
+                                )
+                            }
+                        }
+                        false -> {
+                            // ########################################################
+                            // SCÉNARIO UTILISATEUR EXISTANT
+                            // ########################################################
+                            MyFirewallApp()
                         }
                     }
                 }
@@ -143,9 +159,18 @@ class MainActivity : ComponentActivity() {
         // State to handle screen overlays
         var showSaveRulesScreen by rememberSaveable { mutableStateOf(false) }
         var showCustomRulesScreen by rememberSaveable { mutableStateOf(false) }
+        var showOnboardingOverlay by rememberSaveable { mutableStateOf(false) }
+        var showInfoOverlay by rememberSaveable { mutableStateOf(false) }
 
         val coroutineScope = rememberCoroutineScope()
-        var selectedFilters by rememberSaveable { mutableStateOf(setOf(AppFilter.USER,AppFilter.INTERNET)) }
+        var selectedFilters by rememberSaveable {
+            mutableStateOf(
+                setOf(
+                    AppFilter.USER,
+                    AppFilter.INTERNET
+                )
+            )
+        }
 
         val context = LocalContext.current
         val database = remember { AppDatabase.getDatabase(context) }
@@ -165,34 +190,37 @@ class MainActivity : ComponentActivity() {
             withContext(Dispatchers.IO) {
                 isLoading = true
                 val pm = context.packageManager
-                val installedApps = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-                    .mapNotNull { packageInfo ->
-                        val appInfo = packageInfo.applicationInfo
-                        appInfo?.let {
-                            val label = pm.getApplicationLabel(it).toString()
-                            val icon = pm.getApplicationIcon(it).toBitmap().asImageBitmap()
-                            val isSystem = (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                            val hasInternet =
-                                packageInfo.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
+                val installedApps =
+                    pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+                        .mapNotNull { packageInfo ->
+                            val appInfo = packageInfo.applicationInfo
+                            appInfo?.let {
+                                val label = pm.getApplicationLabel(it).toString()
+                                val icon =
+                                    pm.getApplicationIcon(it).toBitmap().asImageBitmap()
+                                val isSystem =
+                                    (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+                                val hasInternet =
+                                    packageInfo.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
 
-                            val savedRule = dao.getRule(packageInfo.packageName)
-                            val wifiAllowed = savedRule?.wifiAllowed ?: true
-                            val mobileAllowed = savedRule?.mobileAllowed ?: true
-                            val roamingAllowed = savedRule?.roamingAllowed ?: true
+                                val savedRule = dao.getRule(packageInfo.packageName)
+                                val wifiAllowed = savedRule?.wifiAllowed ?: true
+                                val mobileAllowed = savedRule?.mobileAllowed ?: true
+                                val roamingAllowed = savedRule?.roamingAllowed ?: true
 
-                            AppInfo(
-                                label,
-                                packageInfo.packageName,
-                                icon,
-                                isSystem,
-                                hasInternet,
-                                wifiAllowed,
-                                mobileAllowed,
-                                roamingAllowed
-                            )
+                                AppInfo(
+                                    label,
+                                    packageInfo.packageName,
+                                    icon,
+                                    isSystem,
+                                    hasInternet,
+                                    wifiAllowed,
+                                    mobileAllowed,
+                                    roamingAllowed
+                                )
+                            }
                         }
-                    }
-                    .sortedBy { it.name }
+                        .sortedBy { it.name }
                 apps = installedApps
                 isLoading = false
                 dataLoaded = true
@@ -240,7 +268,28 @@ class MainActivity : ComponentActivity() {
                     showCustomRulesScreen = false
                 }
             )
-
+        } else if (showInfoOverlay) {
+            // Overlay for InfoPage
+            InfoPage(
+                onBack = { showInfoOverlay = false },
+                onClose = {
+                    showInfoOverlay = false
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(pagerDestinations.indexOf(AppDestinations.STATUS))
+                    }
+                }
+            )
+        } else if (showOnboardingOverlay) {
+            // Overlay for Onboarding (Help mode)
+            BackHandler { showOnboardingOverlay = false }
+            OnboardingScreen(
+                onOnboardingFinished = {
+                    showOnboardingOverlay = false
+                },
+                onInfoClick = {
+                    showInfoOverlay = true
+                }
+            )
         } else {
             // Main App Content with Navigation Suite
             NavigationSuiteScaffold(
@@ -271,7 +320,8 @@ class MainActivity : ComponentActivity() {
                     // ############################################################################
                     // HORIZONTAL PAGER FOR SCREEN CONTENT
                     // ############################################################################
-                    val currentPageDestination = pagerDestinations[pagerState.currentPage]
+                    val currentPageDestination =
+                        pagerDestinations[pagerState.currentPage]
                     val isSwipeEnabled = when (currentPageDestination) {
                         // Disable swipe on Settings page (to prevent overscroll or conflict)
 //                    AppDestinations.SETTINGS -> false
@@ -369,7 +419,10 @@ class MainActivity : ComponentActivity() {
 
                             AppDestinations.SETTINGS -> {
                                 SettingsScreen(
-                                    modifier = Modifier.padding(innerPadding)
+                                    modifier = Modifier.padding(innerPadding),
+                                    onNavigateToHelp = {
+                                        showOnboardingOverlay = true
+                                    }
                                 )
                             }
                             // Handled outside pager

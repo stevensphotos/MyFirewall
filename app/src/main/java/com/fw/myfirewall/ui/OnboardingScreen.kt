@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,9 +49,14 @@ import com.fw.myfirewall.viewmodel.hasUsageStatsPermission
 import com.fw.myfirewall.viewmodel.openUsageStatsSettings
 import androidx.compose.ui.tooling.preview.Preview
 
+// Constantes pour les clés de thème (évite le hardcoding dans la logique)
+private const val THEME_LIGHT = "light"
+private const val THEME_DARK = "dark"
+
 @Composable
 fun OnboardingScreen(
-    onOnboardingFinished: () -> Unit
+    onOnboardingFinished: () -> Unit,
+    onInfoClick: () -> Unit = {}
 ) {
     val settingsViewModel: SettingsViewModel = viewModel()
     val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
@@ -57,8 +64,8 @@ fun OnboardingScreen(
     val isDynamicColorEnabled by settingsViewModel.isDynamicColorEnabled.collectAsState()
 
     val darkTheme = when (themeMode) {
-        "light" -> false
-        "dark" -> true
+        THEME_LIGHT -> false
+        THEME_DARK -> true
         else -> isSystemInDarkTheme()
     }
 
@@ -69,6 +76,7 @@ fun OnboardingScreen(
     ) {
         OnboardingContent(
             onOnboardingFinished = onOnboardingFinished,
+            onInfoClick = onInfoClick,
             viewModel = settingsViewModel
         )
     }
@@ -77,10 +85,14 @@ fun OnboardingScreen(
 @Composable
 fun OnboardingContent(
     onOnboardingFinished: () -> Unit,
+    onInfoClick: () -> Unit,
     viewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Permet de sortir avec le bouton retour si lancé depuis les réglages
+    BackHandler(onBack = onOnboardingFinished)
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -156,7 +168,7 @@ fun OnboardingContent(
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(64.dp),
                 shadowElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -164,7 +176,7 @@ fun OnboardingContent(
                         painter = painterResource(id = R.mipmap.ic_launcher_foreground),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(120.dp)
+                            .size(64.dp)
                             .clip(CircleShape)
                     )
                 }
@@ -276,6 +288,21 @@ fun OnboardingContent(
             // Pousse le bouton vers le bas
             Spacer(modifier = Modifier.weight(1f))
 
+            // 5. Bouton Informations (AJOUTÉ)
+            OutlinedButton(
+                onClick = onInfoClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = ButtonDefaults.outlinedShape
+            ) {
+                Icon(Icons.Default.Info, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.information_title))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // 4. Bouton Final
             Button(
                 onClick = onOnboardingFinished,
@@ -283,7 +310,7 @@ fun OnboardingContent(
                     .fillMaxWidth()
                     .height(56.dp),
             ) {
-                Text(stringResource(R.string.start_protection))
+                Text(stringResource(R.string.onboarding_done))
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(Icons.Default.CheckCircle, contentDescription = null)
             }
@@ -298,22 +325,9 @@ fun OnboardingContent(
 @Composable
 fun OnboardingPreviewLight() {
     MyFirewallTheme(darkTheme = false) {
-        OnboardingContent(onOnboardingFinished = {})
-    }
-}
-
-@Preview(showBackground = true, name = "Onboarding - Dark Mode")
-@Composable
-fun OnboardingPreviewDark() {
-    MyFirewallTheme(darkTheme = true) {
-        OnboardingContent(onOnboardingFinished = {})
-    }
-}
-
-@Preview(showBackground = true, name = "Onboarding - Pure Black")
-@Composable
-fun OnboardingPreviewPureBlack() {
-    MyFirewallTheme(darkTheme = true, pureBlack = true) {
-        OnboardingContent(onOnboardingFinished = {})
+        OnboardingContent(
+            onOnboardingFinished = {},
+            onInfoClick = {}
+        )
     }
 }
