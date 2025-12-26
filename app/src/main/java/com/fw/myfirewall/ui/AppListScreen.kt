@@ -349,14 +349,25 @@ fun AppListScreen(
                                         }
                                     },
                                     onRoamingToggle = {
+                                        // 1. Trouver l'index de l'application dans la liste principale pour la cohérence
                                         val index = apps.indexOfFirst { it.packageName == app.packageName }
                                         if (index != -1) {
-                                            val newApp = apps[index].copy(roamingAllowed = !apps[index].roamingAllowed)
+                                            val currentApp = apps[index]
+
+                                            // 2. Créer une copie avec l'état Roaming inversé
+                                            val newApp = currentApp.copy(
+                                                roamingAllowed = !currentApp.roamingAllowed
+                                            )
+
+                                            // 3. Mettre à jour la liste complète (déclenche la recomposition locale)
                                             val newApps = apps.toMutableList().apply { set(index, newApp) }
+
+                                            // 4. Propager vers le ViewModel pour mise à jour de la base de données et du VPN
                                             onAppsChange(newApps)
                                             onAppUpdated(newApp)
                                         }
                                     },
+
                                     onToggleAll = {
                                         val index = apps.indexOfFirst { it.packageName == app.packageName }
                                         if (index != -1) {

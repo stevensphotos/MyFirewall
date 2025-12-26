@@ -205,6 +205,51 @@ fun OnboardingContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // QUICK START GUIDE: Section informative dans une carte
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.info_quick_start_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val steps = listOf(
+                        R.string.info_step_1,
+                        R.string.info_step_2,
+                        R.string.info_step_3,
+                        R.string.info_step_4
+                    )
+
+                    steps.forEach { stepRes ->
+                        Text(
+                            text = stringResource(stepRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            textAlign = TextAlign.Start
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+
+
+
+
+
+
+
             // ############################################################################
             // PERMISSIONS SECTION
             // ############################################################################
@@ -212,31 +257,39 @@ fun OnboardingContent(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // NOTIFICATION PERMISSION
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     if (!hasNotificationPermission) {
                         Column {
-                            Text(
-                                text = stringResource(R.string.perm_notification_title),
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                            )
                             Card(
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                        alpha = 0.5f
+                                    )
                                 ),
                                 shape = RoundedCornerShape(25.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 8.dp)
                             ) {
-                                Text(
-                                    text = stringResource(R.string.onboarding_perm_vpn_desc),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Justify,
-                                    modifier = Modifier.padding(16.dp),
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    // Titre inséré à l'intérieur de la carte pour la cohérence visuelle
+                                    Text(
+                                        text = stringResource(R.string.perm_notification_title),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = stringResource(R.string.onboarding_perm_vpn_desc),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Justify,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
                             }
                             OutlinedButton(
                                 onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },

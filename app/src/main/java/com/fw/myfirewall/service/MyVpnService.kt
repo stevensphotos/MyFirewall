@@ -41,6 +41,13 @@ class MyVpnService : VpnService() {
         private const val DUMMY_DNS = "10.0.0.1"
         private const val DEFAULT_DNS = "8.8.8.8"
 
+        private const val VPN_ADDRESS = "10.0.0.2"
+
+        private const val VPN_PREFIX_LENGTH = 30 // Équivalent à 255.255.255.252
+
+        private const val VPN_DNS_SERVER = "10.0.0.1"
+
+        private const val VPN_MTU = 1500
         var isServiceRunning = mutableStateOf(false)
     }
 
@@ -250,9 +257,9 @@ class MyVpnService : VpnService() {
                 if (prepare(this@MyVpnService) != null) return@launch
 
                 val builder = Builder()
-                builder.setSession("MyFirewall")
-                builder.addAddress("10.0.0.2", 32)
-                builder.setMtu(1500)
+                builder.setSession(getString(R.string.app_name))
+                builder.addAddress(VPN_ADDRESS, VPN_PREFIX_LENGTH)
+                builder.setMtu(VPN_MTU)
 
                 val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                 val caps = cm.getNetworkCapabilities(cm.activeNetwork)
