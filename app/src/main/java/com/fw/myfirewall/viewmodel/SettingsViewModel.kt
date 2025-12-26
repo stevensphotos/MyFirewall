@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fw.myfirewall.data.AppDatabase
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.Manifest
+
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     private val sharedPrefs =
@@ -47,6 +50,45 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _languageCode = MutableStateFlow("system")
     val languageCode: StateFlow<String> = _languageCode.asStateFlow()
+
+    // --- PERMISSIONS STATES ---
+    private val _isUsageStatsPermissionGranted = MutableStateFlow(false)
+    val isUsageStatsPermissionGranted: StateFlow<Boolean> =
+        _isUsageStatsPermissionGranted.asStateFlow()
+    private val _hasNotificationPermission = MutableStateFlow(false)
+    val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
+
+    // --- PERMISSIONS UPDATERS ---
+    fun updateUsageStatsStatus(context: Context) {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val mode = appOps.unsafeCheckOpNoThrow(
+            android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+            android.os.Process.myUid(),
+            context.packageName
+        )
+        _isUsageStatsPermissionGranted.value = (mode == android.app.AppOpsManager.MODE_ALLOWED)
+    }
+
+    fun updateNotificationPermission(granted: Boolean) {
+        _hasNotificationPermission.value = granted
+    }
+
+    fun checkInitialPermissions(context: Context) {
+        updateUsageStatsStatus(context)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val status = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            _hasNotificationPermission.value = (status == PackageManager.PERMISSION_GRANTED)
+        } else {
+            _hasNotificationPermission.value = true
+        }
+    }
+
+    // --- ROOT STATES ---
+
+
 
     // --- ROOT STATES ---
     private val _rootCheckResult = MutableStateFlow<Boolean?>(null)
@@ -92,6 +134,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             checkRoot(manualToggle = false)
         }
     }
+
+
 
     private fun notifyVpnRulesChanged() {
         val intent = Intent(getApplication(), MyVpnService::class.java)

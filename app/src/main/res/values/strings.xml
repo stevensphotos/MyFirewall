@@ -70,13 +70,12 @@
     <string name="network_mobile">Mobile Data</string>
     <string name="permission_required">Permission needed</string>
     <string name="welcome_title">Welcome to MyFirewall</string>
-    <string name="onboarding_disclaimer">This app uses a local VPN to filter your internet traffic directly on your device.   No personal data is sent to an external server. You retain full control.</string>
     <string name="permission_notification">Allow notifications (Required)</string>
     <string name="onboarding_done">Done</string>
     <string name="permission_usage_stats">Allow usage access (Optional)</string>
     <string name="save_rules_back_desc">Back</string>
     <string name="export_rules_title">Export Rules</string>
-    <string name="export_rules_description">Save your current application blocking rules to a JSON file. Useful for backup or transferring to another device.</string>
+    <string name="export_rules_description">Save your current rules to a JSON file. Useful for backup or transferring to another device.</string>
     <string name="export_button">Export</string>
     <string name="save_rules_title">Import / Export Rules</string>
     <string name="import_rules_title">Import Rules</string>
@@ -157,4 +156,21 @@
     <string name="status_device_ips">Device IPs</string>
     <string name="status_dns_servers">DNS Servers</string>
     <string name="status_engine_status">Engine Status</string>
+    <string name="export_app_rules_label">Applications Rules</string>
+    <string name="export_url_rules_label">URL Filter Rules</string>
+    <string name="import_app_rules_label">Applications Rules</string>
+    <string name="import_url_rules_label">URL Filter Rules</string>
+    <string name="export_app_rules_title">Export Applications Rules</string>
+    <string name="export_url_rules_title">Export URL Filter Rules</string>
+    <string name="rule_applied">Rules applied</string>
+    <string name="rule_not_applied">Rules not applied</string>
+    <string name="onboarding_disclaimer">MyFirewall protects your privacy by filtering network
+        traffic locally. It allows you to: Block internet access for specific apps
+        (Wi-Fi/Mobile). Filter malicious URLs and ads via local DNS.
+    </string>
+    <string name="permission_usage_stats_description">This permission allows MyFirewall to identify
+        which application is currently generating network traffic. It is required to display
+        real-time statistics and to apply specific blocking rules to the correct apps.
+    </string>
+    <string name="onboarding_perm_vpn_desc">Display a notification when URL filter or Application filter is running on VPN mode</string>
 </resources>

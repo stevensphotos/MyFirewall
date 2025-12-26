@@ -15,14 +15,10 @@ import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,8 +39,9 @@ fun StatusScreen(
     viewModel: StatusViewModel
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     
+    // Lifecycle observer to refresh data when screen comes to foreground
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -59,6 +56,7 @@ fun StatusScreen(
         }
     }
 
+    // Collect states from ViewModel
     val isPrivateDnsActive by viewModel.isPrivateDnsActive.collectAsState()
     val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
 
@@ -79,7 +77,7 @@ fun StatusScreen(
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
 
-    // Data States
+    // Data States for Device Info
     val wifiIp by viewModel.wifiIp.collectAsState()
     val mobileIp by viewModel.mobileIp.collectAsState()
     val systemDns by viewModel.systemDns.collectAsState()
@@ -95,12 +93,8 @@ fun StatusScreen(
             .verticalScroll(rememberScrollState())
             .padding(top = 32.dp, bottom = 16.dp)
     ) {
-        // --- 1. APPLICATIONS CAROUSEL ---
-        val appItems = listOf(
-            Triple(stringResource(R.string.user_apps_title), userAppsCountState.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer),
-            Triple(stringResource(R.string.blocked_apps_title), blockedApps.toString(), Icons.Default.Block to MaterialTheme.colorScheme.errorContainer),
-            Triple(stringResource(R.string.allowed_apps_title), (totalApps - blockedApps).coerceAtLeast(0).toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
-        )
+        
+        // Alert: Private DNS conflict
         if (isUrlFilterEnabled && isPrivateDnsActive) {
             Card(
                 colors = CardDefaults.cardColors(
@@ -118,11 +112,10 @@ fun StatusScreen(
                             val fallbackIntent = Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS)
                             context.startActivity(fallbackIntent)
                         } catch (e2: Exception) {
-                         //   Toast.makeText(context, stringResource(R.string.error_open_settings), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.error_open_settings), Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -156,6 +149,19 @@ fun StatusScreen(
             }
         }
 
+        // --- 1. APPLICATIONS CAROUSEL ---
+        val appItems = listOf(
+            // User Apps
+            Triple(stringResource(R.string.user_apps_title), userAppsCountState.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer),
+            // Blocked Apps (Modified to show real-time status)
+            Triple(
+                stringResource(R.string.blocked_apps_title), 
+                blockedApps.toString(), 
+                Icons.Default.Block to MaterialTheme.colorScheme.errorContainer
+            ),
+            // Allowed Apps
+            Triple(stringResource(R.string.allowed_apps_title), (totalApps - blockedApps).coerceAtLeast(0).toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
+        )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { appItems.size },
@@ -168,6 +174,9 @@ fun StatusScreen(
             StatusCard(
                 title = item.first,
                 count = item.second,
+                subtitle = if (index == 1) { // Apply only to Blocked Apps card
+                    if (isAppFilterOn) stringResource(R.string.rule_applied) else stringResource(R.string.rule_not_applied)
+                } else null,
                 icon = item.third.first,
                 color = item.third.second,
                 modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
@@ -244,10 +253,20 @@ fun StatusScreen(
         val infoItems = listOf(
             // IP Card
             Triple(stringResource(R.string.status_device_ips), "Wi-Fi: $wifiIp\nMobile: $mobileIp", Icons.Default.Dns),
-            // DNS Card (MODIFIED: Added 3rd line and renamed)
-            Triple(stringResource(R.string.status_dns_servers), "${stringResource(R.string.dns_label_system)}: $systemDns\n${stringResource(R.string.dns_label_vpn)}: $vpnDns\n${stringResource(R.string.dns_label_user)}: $userDns", Icons.Default.Lan),
+            // DNS Card
+            Triple(
+                stringResource(R.string.status_dns_servers), 
+                "${stringResource(R.string.dns_label_system)}: $systemDns\n" +
+                "${stringResource(R.string.dns_label_vpn)}: $vpnDns\n" +
+                "${stringResource(R.string.dns_label_user)}: $userDns", 
+                Icons.Default.Lan
+            ),
             // Status Card
-            Triple(stringResource(R.string.status_engine_status), "Apps: ${if(isAppFilterOn) "ON" else "OFF"}\nURLs: ${if(isUrlFilterOn) "ON" else "OFF"}\nBoot: ${if(isBootOn) "ON" else "OFF"}", Icons.Default.Info)
+            Triple(
+                stringResource(R.string.status_engine_status), 
+                "Apps: ${if(isAppFilterOn) "ON" else "OFF"}\nURLs: ${if(isUrlFilterOn) "ON" else "OFF"}\nBoot: ${if(isBootOn) "ON" else "OFF"}", 
+                Icons.Default.Info
+            )
         )
 
         HorizontalMultiBrowseCarousel(
@@ -263,18 +282,22 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third,
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                countFontSize = 12.sp, // Reduced for 3 lines readability
+                countFontSize = 12.sp,
                 modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
     }
 }
 
+// ############################################################################
+// REUSABLE STATUS CARD COMPONENT
+// ############################################################################
 @Composable
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun StatusCard(
     title: String,
     count: String,
+    subtitle: String? = null,
     icon: ImageVector,
     color: Color,
     onClick: (() -> Unit)? = null,
@@ -326,7 +349,21 @@ fun StatusCard(
                     maxLines = 3, 
                     textAlign = TextAlign.Center
                 )
-                Text(title, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                Text(
+                    text = title, 
+                    style = MaterialTheme.typography.labelSmall, 
+                    maxLines = 1, 
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

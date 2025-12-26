@@ -7,38 +7,34 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.fw.myfirewall.R
 import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.AppRule
+import com.fw.myfirewall.data.BlockRule
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -47,8 +43,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,43 +56,49 @@ fun SaveRulesScreen(
 
     BackHandler(onBack = onBack)
 
-    val exportLauncher = rememberLauncherForActivityResult(
+    // ############################################################################
+    // EXPORT LAUNCHERS
+    // ############################################################################
+    
+    val exportAppRulesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
-        uri?.let {
-            scope.launch {
-                exportRules(context, db, it)
-            }
-        }
+        uri?.let { scope.launch { exportRules(context, db, it, isAppRules = true) } }
     }
 
+    val exportUrlRulesLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { scope.launch { exportRules(context, db, it, isAppRules = false) } }
+    }
+
+    // ############################################################################
+    // IMPORT LAUNCHER
+    // ############################################################################
+    
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let {
-            scope.launch {
-                importRules(context, db, it)
-            }
-        }
+        uri?.let { scope.launch { importRules(context, db, it) } }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = {
-                Text(
-                    text = stringResource(R.string.save_rules_title),
-                    style = MaterialTheme.typography.titleLarge
-                )
-            },
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.save_rules_title),
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack, // Modification ici
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = stringResource(R.string.save_rules_back_desc)
                         )
                     }
                 }
-
             )
         }
     ) { innerPadding ->
@@ -110,8 +110,8 @@ fun SaveRulesScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            
-            // Export Card
+
+            // --- SECTION 1: EXPORT ---
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -119,9 +119,7 @@ fun SaveRulesScreen(
                 modifier = Modifier.fillMaxWidth(0.95f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.export_rules_title),
                         style = MaterialTheme.typography.titleMedium,
@@ -132,20 +130,51 @@ fun SaveRulesScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { exportLauncher.launch("myfirewall_rules.json") },
-                        modifier = Modifier.align(Alignment.End)
+
+                    // SPLIT EXPORT BUTTON
+                    var exportExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Download, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.export_button))
+                        Button(
+                            onClick = { exportAppRulesLauncher.launch("myfirewall_app_rules.json") },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.export_app_rules_label))
+                        }
+
+                        Button(
+                            onClick = { exportExpanded = true },
+                            modifier = Modifier.width(48.dp).offset(x = (-1).dp),
+                            shape = RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            DropdownMenu(
+                                expanded = exportExpanded,
+                                onDismissRequest = { exportExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.export_url_rules_label)) },
+                                    onClick = {
+                                        exportExpanded = false
+                                        exportUrlRulesLauncher.launch("myfirewall_url_rules.json")
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Download, contentDescription = null) }
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Import Card
+            // --- SECTION 2: IMPORT ---
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -153,9 +182,7 @@ fun SaveRulesScreen(
                 modifier = Modifier.fillMaxWidth(0.95f),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.import_rules_title),
                         style = MaterialTheme.typography.titleMedium,
@@ -166,19 +193,62 @@ fun SaveRulesScreen(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = { importLauncher.launch(arrayOf("application/json")) },
-                        modifier = Modifier.align(Alignment.End)
+
+                    // SPLIT IMPORT BUTTON
+                    var importExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Upload, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.import_button))
+                        Button(
+                            onClick = { importLauncher.launch(arrayOf("application/json")) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp)
+                        ) {
+                            Icon(Icons.Default.Upload, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.import_button))
+                        }
+
+                        Button(
+                            onClick = { importExpanded = true },
+                            modifier = Modifier.width(48.dp).offset(x = (-1).dp),
+                            shape = RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            DropdownMenu(
+                                expanded = importExpanded,
+                                onDismissRequest = { importExpanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.import_app_rules_label)) },
+                                    onClick = {
+                                        importExpanded = false
+                                        importLauncher.launch(arrayOf("application/json"))
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Upload, contentDescription = null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.import_url_rules_label)) },
+                                    onClick = {
+                                        importExpanded = false
+                                        importLauncher.launch(arrayOf("application/json"))
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Upload, contentDescription = null) }
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+// ############################################################################
+// HELPER FUNCTIONS
+// ############################################################################
 
 private suspend fun importRules(context: Context, db: AppDatabase, uri: Uri) {
     withContext(Dispatchers.IO) {
@@ -197,58 +267,50 @@ private suspend fun importRules(context: Context, db: AppDatabase, uri: Uri) {
             val json = stringBuilder.toString()
             val gson = Gson()
 
-            // On essaie de détecter le type de contenu dans le JSON
             if (json.contains("\"domain\"")) {
-                // Importation de BlockRules (URL Filter)
-                val listType = object : TypeToken<List<com.fw.myfirewall.data.BlockRule>>() {}.type
-                val rules: List<com.fw.myfirewall.data.BlockRule> = gson.fromJson(json, listType)
+                // Import URL Rules
+                val listType = object : TypeToken<List<BlockRule>>() {}.type
+                val rules: List<BlockRule> = gson.fromJson(json, listType)
                 db.blockRuleDao().insertBlockRules(rules)
-
-                notifyVpnToReload(context) // Prévenir le VPN
-
+                notifyVpnToReload(context)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Importé ${rules.size} règles URL avec succès", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Imported ${rules.size} URL rules successfully", Toast.LENGTH_SHORT).show()
                 }
             } else {
-                // Importation de AppRules (Application Filter)
+                // Import App Rules
                 val listType = object : TypeToken<List<AppRule>>() {}.type
                 val rules: List<AppRule> = gson.fromJson(json, listType)
                 rules.forEach { db.appRuleDao().insertRule(it) }
-
-                notifyVpnToReload(context) // Prévenir le VPN
-
+                notifyVpnToReload(context)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Importé ${rules.size} règles App avec succès", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.import_success, rules.size), Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Échec de l'importation: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.import_failed, e.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
 }
+
 private fun notifyVpnToReload(context: Context) {
     val intent = android.content.Intent(context, com.fw.myfirewall.service.MyVpnService::class.java).apply {
         action = "com.fw.myfirewall.ACTION_RELOAD_RULES"
     }
     context.startService(intent)
 }
-private suspend fun exportRules(context: Context, db: AppDatabase, uri: Uri) {
+
+private suspend fun exportRules(context: Context, db: AppDatabase, uri: Uri, isAppRules: Boolean) {
     withContext(Dispatchers.IO) {
-        try {            // On récupère toutes les règles (App + Block)
-            val appRules = db.appRuleDao().getAllRules().first()
-            val blockRules = db.blockRuleDao().getAllRulesSync()
-
+        try {
             val gson = Gson()
-
-            // On décide quoi exporter : si on a des domaines, on exporte les BlockRules
-            // Sinon on exporte les AppRules.
-            // Note : Pour un export complet, vous pourriez créer une classe "Backup" regroupant les deux.
-            val json = if (blockRules.isNotEmpty()) {
-                gson.toJson(blockRules)
-            } else {
+            val json = if (isAppRules) {
+                val appRules = db.appRuleDao().getAllRules().first()
                 gson.toJson(appRules)
+            } else {
+                val blockRules = db.blockRuleDao().getAllRulesSync()
+                gson.toJson(blockRules)
             }
 
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
@@ -256,11 +318,11 @@ private suspend fun exportRules(context: Context, db: AppDatabase, uri: Uri) {
             }
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, R.string.export_success, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Échec de l'exportation : ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.export_failed, e.message), Toast.LENGTH_SHORT).show()
             }
         }
     }
