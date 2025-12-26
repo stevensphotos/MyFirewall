@@ -113,6 +113,9 @@ fun InfoPage(
 
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+
 
 
 // SECTION REPOSITORY (Lien Web)

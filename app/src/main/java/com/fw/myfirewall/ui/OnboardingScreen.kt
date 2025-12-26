@@ -28,6 +28,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
@@ -138,7 +139,9 @@ fun OnboardingContent(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // HEADER: Icône + Titre dans une carte style Outlined
+            // ############################################################################
+            // HEADER SECTION: Icon + Title
+            // ############################################################################
             OutlinedCard(
                 colors = CardDefaults.outlinedCardColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -182,111 +185,58 @@ fun OnboardingContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ############################################################################
+            // DISCLAIMER SECTION
+            // ############################################################################
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                 ),
-                shape = RoundedCornerShape(25.dp),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(25.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // Titre de la carte pour faire ressortir le sujet
-                    Text(
-                        text = stringResource(R.string.onboarding_disclaimer_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = stringResource(R.string.onboarding_disclaimer),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Justify,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.onboarding_disclaimer),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Justify,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(25.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.info_quick_start_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    val steps = listOf(
-                        R.string.info_step_1,
-                        R.string.info_step_2,
-                        R.string.info_step_3,
-                        R.string.info_step_4
-                    )
-
-                    steps.forEach { stepRes ->
-                        Text(
-                            text = stringResource(stepRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            textAlign = TextAlign.Start
-                        )
-                    }
-                }
-            }
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Permissions Section
+            // ############################################################################
+            // PERMISSIONS SECTION
+            // ############################################################################
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // NOTIFICATION PERMISSION
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     if (!hasNotificationPermission) {
                         Column {
+                            Text(
+                                text = stringResource(R.string.perm_notification_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                            )
                             Card(
                                 colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                        alpha = 0.5f
-                                    )
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                                 ),
                                 shape = RoundedCornerShape(25.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 8.dp)
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    // Titre inséré à l'intérieur de la carte pour la cohérence
-                                    Text(
-                                        text = stringResource(R.string.perm_notification_title),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center
-                                    )
-
-                                    Spacer(modifier = Modifier.height(8.dp))
-
-                                    Text(
-                                        text = stringResource(R.string.onboarding_perm_vpn_desc),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        textAlign = TextAlign.Justify,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
-                                }
+                                Text(
+                                    text = stringResource(R.string.onboarding_perm_vpn_desc),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Justify,
+                                    modifier = Modifier.padding(16.dp),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
                             }
                             OutlinedButton(
                                 onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
@@ -298,19 +248,9 @@ fun OnboardingContent(
                     } else {
                         PermissionGrantedRow(text = stringResource(R.string.permission_notification))
                     }
-                }                }
+                }
 
-            // Titre de section pour les permissions (Rigueur visuelle)
-            Text(
-                text = stringResource(R.string.onboarding_permissions_setup),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
-            )
-
-            if (!isUsageStatsGranted) {
-
-
+                // USAGE STATS PERMISSION
                 if (!isUsageStatsGranted) {
                     Column {
                         Card(
@@ -325,7 +265,6 @@ fun OnboardingContent(
                                 .padding(bottom = 8.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                // Titre inséré à l'intérieur de la carte pour la cohérence
                                 Text(
                                     text = stringResource(R.string.perm_usage_stats_title),
                                     style = MaterialTheme.typography.titleMedium,
@@ -344,6 +283,8 @@ fun OnboardingContent(
                                 )
                             }
                         }
+
+                        // LE BOUTON : Il ne s'affiche que si la permission n'est PAS accordée
                         OutlinedButton(
                             onClick = { openUsageStatsSettings(context) },
                             modifier = Modifier.fillMaxWidth()
@@ -352,44 +293,35 @@ fun OnboardingContent(
                         }
                     }
                 } else {
+                    // ÉTAT ACCORDÉ : Le bouton disparaît et laisse place à la validation visuelle
                     PermissionGrantedRow(text = stringResource(R.string.permission_usage_stats))
                 }
 
                 // ROOT PERMISSION
                 if (isRootPossible && !isRootEnabled) {
                     Column {
+                        Text(
+                            text = stringResource(R.string.perm_root_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+                        )
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                    alpha = 0.5f
-                                )
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                             ),
                             shape = RoundedCornerShape(25.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                // Titre inséré à l'intérieur de la carte
-                                Text(
-                                    text = stringResource(R.string.perm_root_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Text(
-                                    text = stringResource(R.string.root_disclaimer_onboarding),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    textAlign = TextAlign.Justify
-                                )
-                            }
+                            Text(
+                                text = stringResource(R.string.root_disclaimer_onboarding),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                textAlign = TextAlign.Justify,
+                                modifier = Modifier.padding(16.dp)
+                            )
                         }
-
                         OutlinedButton(
                             onClick = { viewModel.toggleRoot(enabled = true) },
                             modifier = Modifier.fillMaxWidth()
@@ -404,7 +336,11 @@ fun OnboardingContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 5. BOUTON INFORMATIONS
+            // ############################################################################
+            // NAVIGATION BUTTONS
+            // ############################################################################
+
+            // Bouton Informations
             OutlinedButton(
                 onClick = onInfoClick,
                 modifier = Modifier
@@ -419,7 +355,7 @@ fun OnboardingContent(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 6. BOUTON FINAL
+            // Bouton Final
             Button(
                 onClick = onOnboardingFinished,
                 modifier = Modifier
