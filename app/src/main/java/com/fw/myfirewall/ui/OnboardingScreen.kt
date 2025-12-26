@@ -131,67 +131,188 @@ fun OnboardingContent(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .padding(24.dp),
-               // .verticalScroll(rememberScrollState()), // Point ici, pas de virgule avant
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(64.dp),
-                shadowElevation = 4.dp
+            // HEADER: Icône + Titre dans une carte style Outlined
+            OutlinedCard(
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = ButtonDefaults.outlinedButtonBorder,
+                shape = RoundedCornerShape(36.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Image(
-                        painter = painterResource(id = R.mipmap.ic_launcher_foreground),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
+                Row(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(36.dp),
+                        shadowElevation = 2.dp
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.mipmap.ic_launcher_foreground),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Text(
+                        text = stringResource(R.string.welcome_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Start
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = stringResource(R.string.welcome_title),
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Justify
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                 ),
-                shape = RoundedCornerShape(25.dp)
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = stringResource(R.string.onboarding_disclaimer),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-            }
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Titre de la carte pour faire ressortir le sujet
+                    Text(
+                        text = stringResource(R.string.onboarding_disclaimer_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.onboarding_disclaimer),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Justify,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                ),
+                shape = RoundedCornerShape(25.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.info_quick_start_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val steps = listOf(
+                        R.string.info_step_1,
+                        R.string.info_step_2,
+                        R.string.info_step_3,
+                        R.string.info_step_4
+                    )
+
+                    steps.forEach { stepRes ->
+                        Text(
+                            text = stringResource(stepRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            textAlign = TextAlign.Start
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 3. Permissions Section
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     if (!hasNotificationPermission) {
-                        // Champ de texte explicatif identique au disclaimer
+                        Column {
+                            Card(
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                        alpha = 0.5f
+                                    )
+                                ),
+                                shape = RoundedCornerShape(25.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp)) {
+                                    // Titre inséré à l'intérieur de la carte pour la cohérence
+                                    Text(
+                                        text = stringResource(R.string.perm_notification_title),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center
+                                    )
+
+                                    Spacer(modifier = Modifier.height(8.dp))
+
+                                    Text(
+                                        text = stringResource(R.string.onboarding_perm_vpn_desc),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        textAlign = TextAlign.Justify,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                            OutlinedButton(
+                                onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.permission_notification))
+                            }
+                        }
+                    } else {
+                        PermissionGrantedRow(text = stringResource(R.string.permission_notification))
+                    }
+                }                }
+
+            // Titre de section pour les permissions (Rigueur visuelle)
+            Text(
+                text = stringResource(R.string.onboarding_permissions_setup),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
+
+            if (!isUsageStatsGranted) {
+
+
+                if (!isUsageStatsGranted) {
+                    Column {
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
@@ -201,88 +322,87 @@ fun OnboardingContent(
                             shape = RoundedCornerShape(25.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 4.dp)
+                                .padding(bottom = 8.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.onboarding_perm_vpn_desc),
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(16.dp),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Titre inséré à l'intérieur de la carte pour la cohérence
+                                Text(
+                                    text = stringResource(R.string.perm_usage_stats_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
 
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = stringResource(R.string.permission_usage_stats_description),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Justify,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
                         OutlinedButton(
-                            onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                            onClick = { openUsageStatsSettings(context) },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(stringResource(R.string.permission_notification))
+                            Text(stringResource(R.string.permission_usage_stats))
                         }
-                    } else {
-                        PermissionGrantedRow(text = stringResource(R.string.permission_notification))
-                    }
-                }
-
-                if (!isUsageStatsGranted) {                    // Champ de texte identique au disclaimer pour expliquer la permission
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                        ),
-                        shape = RoundedCornerShape(25.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.permission_usage_stats_description),
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = { openUsageStatsSettings(context) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.permission_usage_stats))
                     }
                 } else {
                     PermissionGrantedRow(text = stringResource(R.string.permission_usage_stats))
                 }
 
+                // ROOT PERMISSION
                 if (isRootPossible && !isRootEnabled) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                        ),
-                        shape = RoundedCornerShape(25.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.root_disclaimer_onboarding),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = { viewModel.toggleRoot(enabled = true) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.permission_root))
+                    Column {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                    alpha = 0.5f
+                                )
+                            ),
+                            shape = RoundedCornerShape(25.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                // Titre inséré à l'intérieur de la carte
+                                Text(
+                                    text = stringResource(R.string.perm_root_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = stringResource(R.string.root_disclaimer_onboarding),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    textAlign = TextAlign.Justify
+                                )
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { viewModel.toggleRoot(enabled = true) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.permission_root))
+                        }
                     }
                 } else if (isRootEnabled) {
                     PermissionGrantedRow(text = stringResource(R.string.root_access_granted))
                 }
             }
 
-            // 4. ESPACEUR ÉLASTIQUE (Maintenant correctement placé dans la Column)
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // 5. BOUTON INFORMATIONS
             OutlinedButton(
@@ -314,9 +434,6 @@ fun OnboardingContent(
     }
 }
 
-// ############################################################################
-// PREVIEWS
-// ############################################################################
 @Preview(showBackground = true, name = "Onboarding - Light Mode")
 @Composable
 fun OnboardingPreviewLight() {

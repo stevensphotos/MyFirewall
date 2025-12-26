@@ -5,7 +5,6 @@
     <string name="status_title" translatable="false">Status</string>
     <string name="vpn_service_text">work with VPN Service</string>
     <string name="Function_type_title">Firewall and Url filtering</string>
-    <string name="filter_msg">Filter: %1$s</string>
     <string name="root_service_label">URL Filter</string>
     <string name="url_filter_label">URL Filter</string>
     <string name="url_filter_desc">URL Filter VPN based</string>
@@ -28,7 +27,7 @@
     <string name="applications_title">Applications</string>
     <string name="user_apps_title">User Apps</string>
     <string name="allowed_apps_title">Allowed</string>
-    <string name="blocked_apps_title">Blocked</string>
+    <string name="blocked_apps_title">Block list</string>
     <string name="blocked_urls_title">Blocked URLs</string>
     <string name="annoyances_label">Annoyances</string>
     <string name="ui_settings_title">UI Settings</string>
@@ -41,11 +40,7 @@
     <string name="wifi_content_description">Wi-Fi</string>
     <string name="mobile_data_content_description">Mobile Data</string>
     <string name="roaming_content_description">Roaming</string>
-    <string name="filter_all">All</string>
-    <string name="filter_system">System</string>
     <string name="filter_user">User</string>
-    <string name="filter_internet">Internet</string>
-    <string name="filter_no_internet">No Internet</string>
     <string name="notification_channel_name">MyFirewall VPN Service</string>
     <string name="notification_title">MyFirewall is running</string>
     <string name="notification_content">Traffic is being filtered</string>
@@ -143,6 +138,8 @@
     <string name="onboarding_continue">Continue</string>
     <string name="info_version">Version 1.0.0</string>
     <string name="info_how_it_works_title">How it works?</string>
+    <string name="info_how_it_hosts_title">Hosts File based filter</string>
+   <string name="info_how_it_hosts_works_desc">Hosts filtering redirects blacklisted domains to 0.0.0.0 via system /etc/hosts, blocking ads globally with zero CPU or battery impact.</string>
     <string name="info_how_it_works_desc">MyFirewall creates a local VPN tunnel to filter traffic. No data is sent to external servers.</string>
     <string name="info_dns_filtering_title">DNS Filtering</string>
     <string name="info_dns_filtering_desc">To block ads, MyFirewall intercepts DNS requests. If filtering fails, disable \'Private DNS\' in Android settings.</string>
@@ -173,4 +170,30 @@
         real-time statistics and to apply specific blocking rules to the correct apps.
     </string>
     <string name="onboarding_perm_vpn_desc">Display a notification when URL filter or Application filter is running on VPN mode</string>
+    <string name="filter_msg">Filter applied: %1$s</string>
+    <string name="filter_all">All Apps</string>
+    <string name="filter_system">System Apps</string>
+    <string name="filter_internet">Internet Access</string>
+    <string name="filter_no_internet">No Internet Access</string>
+    <string name="perm_notification_title">Notifications</string>
+    <string name="perm_usage_stats_title">Usage Statistics</string>
+    <string name="perm_root_title">Root Access</string>
+    <string name="onboarding_permissions_setup">Required Permissions</string>
+    <string name="onboarding_disclaimer_title">Privacy &amp; Security</string>
+    <string name="info_quick_start_title">Quick Start Guide</string>
+    <string name="info_step_1">1. Grant VPN permission to enable local filtering.</string>
+    <string name="info_step_2">2. Go to the "Apps" tab to allow or block specific applications.
+    </string>
+    <string name="info_step_3">3. Use the "Status" tab to monitor your real-time traffic.</string>
+    <string name="info_step_4">4. For advanced users, enable URL filtering in Settings.</string>
+    <string name="info_support_title">Support &amp; Community</string>
+    <string name="info_support_desc">Access our full documentation, report issues, or contribute to
+        the project on our repository.
+    </string>
+    <string name="info_button_repo">View Repository</string>
+    <string name="info_faq_title">Quick FAQ</string>
+    <string name="info_faq_issue">Local VPN filtering requires analyzing every network packet. This
+        process might cause slight latency depending on your device performance and the number of
+        active rules.
+    </string>
 </resources>

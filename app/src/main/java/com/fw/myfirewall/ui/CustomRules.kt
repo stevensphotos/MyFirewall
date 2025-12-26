@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,10 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.viewmodel.RulesViewModel
@@ -37,8 +33,8 @@ import kotlinx.coroutines.withContext
 fun CustomRulesScreen(
     modifier: Modifier = Modifier,
     viewModel: RulesViewModel = viewModel(),
+    onNavigateToSaveRules: () -> Unit, // <--- AJOUTER CETTE LIGNE
     onBack: () -> Unit,
-    onNavigateToSaveRules: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -79,7 +75,8 @@ fun CustomRulesScreen(
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, context.getString(R.string.export_failed, e.message), Toast.LENGTH_SHORT).show()
+                            val errorMsg = context.getString(R.string.export_failed, e.message ?: "")
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -178,7 +175,7 @@ fun CustomRulesScreen(
                         onClick = { expanded = true },
                         modifier = Modifier
                             .width(48.dp)
-                            .offset(x = (-1).dp), // Overlap border
+                            .offset(x = (-1).dp),
                         shape = RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp),
                         contentPadding = PaddingValues(0.dp)
                     ) {
@@ -188,11 +185,11 @@ fun CustomRulesScreen(
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Clear applied rules") },
+                                text = { Text(stringResource(R.string.clear_button)) },
                                 onClick = {
                                     viewModel.clearAllCustomRules()
                                     expanded = false
-                                    Toast.makeText(context, "All applied custom rules cleared", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.custom_rules_error), Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
@@ -217,8 +214,7 @@ fun CustomRulesScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.export_rules_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -249,8 +245,7 @@ fun CustomRulesScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = stringResource(R.string.import_applied_rules_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -264,9 +259,9 @@ fun CustomRulesScreen(
                                 val currentRules = viewModel.getCurrentCustomRules()
                                 if (currentRules.isNotEmpty()) {
                                     rulesText = currentRules
-                                    Toast.makeText(context, "Loaded applied rules", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.import_success, 1), Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(context, "No custom rules currently applied", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.not_available), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -274,7 +269,7 @@ fun CustomRulesScreen(
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Load")
+                        Text(stringResource(R.string.configure_button))
                     }
                 }
             }

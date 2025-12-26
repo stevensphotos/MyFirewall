@@ -260,6 +260,7 @@ class MainActivity : ComponentActivity() {
             // Overlay for CustomRulesScreen
             BackHandler { showCustomRulesScreen = false }
             CustomRulesScreen(
+                // Correction : Ajout du paramètre manquant pour la navigation
                 onNavigateToSaveRules = {
                     showCustomRulesScreen = false
                     showSaveRulesScreen = true
@@ -268,6 +269,7 @@ class MainActivity : ComponentActivity() {
                     showCustomRulesScreen = false
                 }
             )
+
         } else if (showInfoOverlay) {
             // Overlay for InfoPage
             InfoPage(

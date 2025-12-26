@@ -281,7 +281,7 @@ fun StatusScreen(
                 title = item.first,
                 count = item.second,
                 icon = item.third,
-                color = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.primaryContainer,
                 countFontSize = 12.sp,
                 modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )

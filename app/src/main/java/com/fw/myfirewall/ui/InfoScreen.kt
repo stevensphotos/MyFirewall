@@ -19,6 +19,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.fw.myfirewall.R
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.QuestionAnswer
+import androidx.compose.ui.platform.LocalContext
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +35,8 @@ fun InfoPage(
     onBack: () -> Unit = {},
     onClose: () -> Unit = {}
 ) {
+
+    val context = LocalContext.current // <--- AJOUTER CETTE LIGNE ICI
     Scaffold(
         topBar = {
             TopAppBar(
@@ -72,6 +83,15 @@ fun InfoPage(
                 icon = Icons.Rounded.Description,
                 description = stringResource(R.string.info_dns_filtering_desc)
             )
+            Spacer(modifier = Modifier.height(16.dp))
+
+
+            // Section HOSTS
+            InfoSectionCard(
+                title = stringResource(R.string.info_how_it_hosts_title),
+                icon = Icons.Rounded.Description,
+                description = stringResource(R.string.info_how_it_hosts_works_desc)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -83,6 +103,40 @@ fun InfoPage(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+
+
+            // Section QUICK FAQ
+            InfoSectionCard(
+                title = stringResource(R.string.info_faq_title),
+                icon = Icons.Rounded.QuestionAnswer,
+                description = stringResource(R.string.info_faq_issue)
+
+            )
+
+
+
+// SECTION REPOSITORY (Lien Web)
+            InfoSectionCard(
+                title = stringResource(R.string.info_support_title),
+                icon = Icons.Rounded.OpenInNew,
+                description = stringResource(R.string.info_support_desc)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    val intent =
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/votre_repo"))
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Rounded.Public, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.info_button_repo))
+            }
 
             // Close Button
             Button(

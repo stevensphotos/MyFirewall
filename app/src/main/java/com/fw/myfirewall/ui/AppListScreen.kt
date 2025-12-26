@@ -9,7 +9,6 @@ import com.fw.myfirewall.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +24,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Android
@@ -52,7 +50,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
@@ -191,12 +188,14 @@ fun AppListScreen(
                                                         removedConflicts += AppFilter.NO_INTERNET
                                                     }
                                                 }
+
                                                 AppFilter.NO_INTERNET -> {
                                                     if (updated.contains(AppFilter.INTERNET)) {
                                                         updated.remove(AppFilter.INTERNET)
                                                         removedConflicts += AppFilter.INTERNET
                                                     }
                                                 }
+
                                                 AppFilter.SYSTEM -> {
                                                     if (updated.contains(AppFilter.USER)) {
                                                         updated.remove(AppFilter.USER)
@@ -207,6 +206,7 @@ fun AppListScreen(
                                                         removedConflicts += AppFilter.ALL
                                                     }
                                                 }
+
                                                 AppFilter.USER -> {
                                                     if (updated.contains(AppFilter.SYSTEM)) {
                                                         updated.remove(AppFilter.SYSTEM)
@@ -217,6 +217,7 @@ fun AppListScreen(
                                                         removedConflicts += AppFilter.ALL
                                                     }
                                                 }
+
                                                 AppFilter.ALL -> {
                                                     // ALL retire USER et SYSTEM mais garde INTERNET/NO_INTERNET
                                                     if (updated.contains(AppFilter.USER)) {
@@ -242,16 +243,30 @@ fun AppListScreen(
                                             val currentTime = System.currentTimeMillis()
                                             val lastTime = lastToastTime.getOrDefault(filter, 0L)
 
+                                            // 1. Résolution de la ressource (Déjà correct dans votre code)
+                                            val filterLabelRes = when (filter) {
+                                                AppFilter.ALL -> R.string.filter_all
+                                                AppFilter.SYSTEM -> R.string.filter_system
+                                                AppFilter.USER -> R.string.filter_user
+                                                AppFilter.INTERNET -> R.string.filter_internet
+                                                AppFilter.NO_INTERNET -> R.string.filter_no_internet
+                                            }
+
+                                            // 2. Un seul bloc de Toast utilisant filterLabelRes
                                             if (currentTime - lastTime >= toastCooldown) {
                                                 Toast.makeText(
                                                     context,
-                                                    context.getString(R.string.filter_msg, filter.name),
+                                                    context.getString(
+                                                        R.string.filter_msg,
+                                                        context.getString(filterLabelRes) // On injecte la string localisée ici
+                                                    ),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
 
                                                 lastToastTime[filter] = currentTime
                                             }
 
+                                            // 3. Logique métier pour USER ou autres filtres (Conservée par rigueur)
                                             if (filter == AppFilter.USER) {
                                                 val userApps = apps.filter { !it.isSystem }
                                                 if (userApps.isNotEmpty()) {
