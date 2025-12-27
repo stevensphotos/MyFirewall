@@ -75,6 +75,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // --- PERMISSIONS UPDATERS ---
     fun updateUsageStatsStatus(context: Context) {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        // Suppression de la vérification Build.VERSION : unsafeCheckOpNoThrow est natif en API 29
         val mode = appOps.unsafeCheckOpNoThrow(
             android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
             android.os.Process.myUid(),
@@ -89,6 +90,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun checkInitialPermissions(context: Context) {
         updateUsageStatsStatus(context)
+
+        // TIRAMISU est l'API 33. On garde la vérification car 33 > 29.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val status = androidx.core.content.ContextCompat.checkSelfPermission(
                 context,
@@ -96,9 +99,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             )
             _hasNotificationPermission.value = (status == PackageManager.PERMISSION_GRANTED)
         } else {
+            // Pour les versions entre 29 et 32, les notifications sont autorisées par défaut
             _hasNotificationPermission.value = true
         }
     }
+
 
     // --- ROOT STATES ---
 
