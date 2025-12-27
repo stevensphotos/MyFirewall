@@ -88,6 +88,9 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
     private val _isStartOnBootEnabled = MutableStateFlow(sharedPrefs.getBoolean("start_on_boot", false))
     val isStartOnBootEnabled = _isStartOnBootEnabled.asStateFlow()
 
+    private val _isRootEnabled = MutableStateFlow(sharedPrefs.getBoolean("root_enabled", false))
+    val isRootEnabled = _isRootEnabled.asStateFlow()
+
     // Network info states
     private val _wifiIp = MutableStateFlow("N/A")
     val wifiIp = _wifiIp.asStateFlow()
@@ -133,6 +136,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
             "app_filter_enabled" -> _isAppFilterEnabled.value = prefs.getBoolean(key, false)
             "url_filter_enabled" -> _isUrlFilterEnabled.value = prefs.getBoolean(key, false)
             "start_on_boot" -> _isStartOnBootEnabled.value = prefs.getBoolean(key, false)
+            "root_enabled" -> _isRootEnabled.value = prefs.getBoolean(key, false)
             "dns_primary" -> _userDns.value = prefs.getString(key, "8.8.8.8") ?: "8.8.8.8"
         }
     }

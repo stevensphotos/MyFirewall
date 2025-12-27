@@ -87,6 +87,12 @@ fun AppListScreen(
     val lastToastTime = remember { mutableStateMapOf<AppFilter, Long>() }
     val toastCooldown = 2000L // 2 secondes entre chaque Toast
 
+    val filterAllLabel = stringResource(R.string.filter_all)
+    val filterSystemLabel = stringResource(R.string.filter_system)
+    val filterUserLabel = stringResource(R.string.filter_user)
+    val filterInternetLabel = stringResource(R.string.filter_internet)
+    val filterNoInternetLabel = stringResource(R.string.filter_no_internet)
+    val filterMsg = stringResource(R.string.filter_msg)
 
     val context = LocalContext.current
     val localSelectedFilters = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(selectedFilters) }
@@ -243,23 +249,20 @@ fun AppListScreen(
                                             val currentTime = System.currentTimeMillis()
                                             val lastTime = lastToastTime.getOrDefault(filter, 0L)
 
-                                            // 1. Résolution de la ressource (Déjà correct dans votre code)
-                                            val filterLabelRes = when (filter) {
-                                                AppFilter.ALL -> R.string.filter_all
-                                                AppFilter.SYSTEM -> R.string.filter_system
-                                                AppFilter.USER -> R.string.filter_user
-                                                AppFilter.INTERNET -> R.string.filter_internet
-                                                AppFilter.NO_INTERNET -> R.string.filter_no_internet
+                                            // 1. Résolution de la ressource locale
+                                            val filterLabel = when (filter) {
+                                                AppFilter.ALL -> filterAllLabel
+                                                AppFilter.SYSTEM -> filterSystemLabel
+                                                AppFilter.USER -> filterUserLabel
+                                                AppFilter.INTERNET -> filterInternetLabel
+                                                AppFilter.NO_INTERNET -> filterNoInternetLabel
                                             }
 
-                                            // 2. Un seul bloc de Toast utilisant filterLabelRes
+                                            // 2. Un seul bloc de Toast utilisant filterMsg
                                             if (currentTime - lastTime >= toastCooldown) {
                                                 Toast.makeText(
                                                     context,
-                                                    context.getString(
-                                                        R.string.filter_msg,
-                                                        context.getString(filterLabelRes) // On injecte la string localisée ici
-                                                    ),
+                                                    filterMsg.format(filterLabel),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
 

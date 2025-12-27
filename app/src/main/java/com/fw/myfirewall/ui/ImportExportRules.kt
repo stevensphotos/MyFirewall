@@ -61,9 +61,8 @@ fun RulesManagementCard(
             // 1. CUSTOM RULES ROW
             RulesNavigationRow(
                 icon = Icons.Rounded.EditNote,
-                label = "Block list custom Rules",
-                description = "Create / Modify export rules",
-                onClick = onNavigateToCustomRules,
+                label = stringResource(R.string.custom_rules_label),
+                description = stringResource(R.string.custom_rules_desc),onClick = onNavigateToCustomRules,
                 isLast = false
             )
 

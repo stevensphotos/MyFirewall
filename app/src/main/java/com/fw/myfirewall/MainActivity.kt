@@ -118,7 +118,9 @@ class MainActivity : ComponentActivity() {
 
                             if (showOnboardingInfo) {
                                 InfoPage(
-                                    onBack = { showOnboardingInfo = false },
+                                    onBack = {
+                                        showOnboardingInfo = false
+                                    },
                                     onClose = {
                                         showOnboardingInfo = false
                                         scope.launch { userPreferences.completeOnboarding() }
@@ -129,10 +131,13 @@ class MainActivity : ComponentActivity() {
                                     onOnboardingFinished = {
                                         scope.launch { userPreferences.completeOnboarding() }
                                     },
-                                    onInfoClick = { showOnboardingInfo = true }
+                                    onInfoClick = {
+                                        showOnboardingInfo = true
+                                    }
                                 )
                             }
                         }
+
                         false -> {
                             // ########################################################
                             // SCÉNARIO UTILISATEUR EXISTANT

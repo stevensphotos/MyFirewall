@@ -144,7 +144,7 @@ class MyVpnService : VpnService() {
             val socket = DatagramSocket()
             socket.soTimeout = 2000
             val realDnsAddr = InetAddress.getByName(getDnsServer())
-            
+
             val outPacket = DatagramPacket(dnsQueryPayload, dnsQueryPayload.size, realDnsAddr, 53)
             socket.send(outPacket)
 
@@ -154,7 +154,7 @@ class MyVpnService : VpnService() {
 
             val dnsResponsePayload = inPacket.data.copyOf(inPacket.length)
             val fullResponse = DnsParser.createResponsePacket(ByteBuffer.wrap(queryPacket), dnsResponsePayload)
-            
+
             synchronized(tunnelOutput) {
                 tunnelOutput.write(fullResponse)
             }
@@ -199,7 +199,7 @@ class MyVpnService : VpnService() {
                 } else {
                     blockedDomains.clear()
                 }
-                
+
                 // Refresh VPN configuration if mode changed
                 updateVpn()
 
@@ -303,11 +303,17 @@ class MyVpnService : VpnService() {
     }
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, "Firewall", NotificationManager.IMPORTANCE_LOW)
-            val manager = getSystemService(NotificationManager::class.java)
-            manager?.createNotificationChannel(channel)
+        // La vérification de Build.VERSION est supprimée car minSdk = 29
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = getString(R.string.notification_channel_desc)
         }
+
+        val manager = getSystemService(NotificationManager::class.java)
+        manager?.createNotificationChannel(channel)
     }
 
     override fun onDestroy() {

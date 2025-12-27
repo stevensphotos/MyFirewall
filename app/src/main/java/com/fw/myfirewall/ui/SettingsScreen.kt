@@ -83,6 +83,9 @@ fun SettingsScreen(
 fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) {
     val context = LocalContext.current
 
+    val rootGrantedMsg = stringResource(R.string.root_access_granted)
+    val rootDeniedMsg = stringResource(R.string.root_access_not_available)
+
     // ############################################################################
     // 3. UI LOCAL STATES
     // ############################################################################
@@ -135,9 +138,9 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     LaunchedEffect(rootCheckResult) {
         rootCheckResult?.let { hasRoot ->
             if (hasRoot) {
-                Toast.makeText(context, context.getString(R.string.root_access_granted), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, rootGrantedMsg, Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(context, context.getString(R.string.root_access_not_available), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, rootDeniedMsg, Toast.LENGTH_SHORT).show()
             }
             viewModel.resetRootCheckResult()
         }
@@ -299,18 +302,16 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                 }
 
                 SettingsDivider()
-                //**********************************
-                //********** START ON BOOT *********
-                //**********************************
-
                 SettingsItemRow(
                     title = stringResource(R.string.start_on_boot_label),
                     description = stringResource(R.string.start_on_boot_text),
                     icon = Icons.Rounded.PowerSettingsNew,
-                    checked = isStartOnBootEnabled
-                ) { checked ->
-                    viewModel.toggleStartOnBoot(checked)
-                }
+                    checked = isStartOnBootEnabled,
+                    onCheckedChange = { checked ->
+                        // On passe le contexte pour le Toast d'erreur
+                        viewModel.toggleStartOnBoot(checked, context)
+                    }
+                )
 
                 SettingsDivider()
 

@@ -18,9 +18,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.Manifest
+import android.widget.Toast
+import com.fw.myfirewall.R
+
+
+
+// APPLICATION LICENCE
+private const val APP_LICENSE = "GPLv3"
+private const val REPO_URL = "https://github.com/votre_pseudo/MyFirewall"
+fun getLicenseInfo(): String = APP_LICENSE
+fun getRepoUrl(): String = REPO_URL
 
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
+
+
+
+
     private val sharedPrefs =
         application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val hostsGenerator: HostsGenerator
@@ -297,9 +311,32 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun toggleStartOnBoot(enabled: Boolean) {
-        _isStartOnBootEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("start_on_boot", enabled).apply()
+
+    /**
+     * Toggles Start on Boot.
+     * Restricted: Cannot be enabled if both URL Filter and App Filter are disabled.
+     */
+    fun toggleStartOnBoot(enabled: Boolean, context: Context) {
+        viewModelScope.launch {
+            if (enabled && !_isUrlFilterEnabled.value && !_isAppFilterEnabled.value) {
+                // Règle de rigueur : Notification à l'utilisateur via ressource strings.xml
+                _rootCheckResult.value =
+                    false // On peut réutiliser un canal de feedback ou un Toast dédié
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.error_start_on_boot_disabled),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                return@launch
+            }
+
+            _isStartOnBootEnabled.value = enabled
+            withContext(Dispatchers.IO) {
+                sharedPrefs.edit().putBoolean("start_on_boot", enabled).commit()
+            }
+        }
     }
 
     fun togglePureBlack(enabled: Boolean) {

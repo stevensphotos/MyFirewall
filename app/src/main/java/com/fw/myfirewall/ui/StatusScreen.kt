@@ -41,6 +41,14 @@ fun StatusScreen(
     val context = LocalContext.current
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     
+    val errorOpenSettingsMsg = stringResource(R.string.error_open_settings)
+    val statusOn = stringResource(R.string.status_on)
+    val statusOff = stringResource(R.string.status_off)
+    val engineAppLabel = stringResource(R.string.status_engine_app)
+    val engineUrlVpnLabel = stringResource(R.string.status_engine_url_vpn)
+    val engineUrlRootLabel = stringResource(R.string.status_engine_url_root)
+    val engineBootLabel = stringResource(R.string.status_engine_boot)
+
     // Lifecycle observer to refresh data when screen comes to foreground
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -86,6 +94,7 @@ fun StatusScreen(
     val isAppFilterOn by viewModel.isAppFilterEnabled.collectAsState()
     val isUrlFilterOn by viewModel.isUrlFilterEnabled.collectAsState()
     val isBootOn by viewModel.isStartOnBootEnabled.collectAsState()
+    val isRootOn by viewModel.isRootEnabled.collectAsState()
 
     Column(
         modifier = modifier
@@ -112,7 +121,7 @@ fun StatusScreen(
                             val fallbackIntent = Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS)
                             context.startActivity(fallbackIntent)
                         } catch (e2: Exception) {
-                            Toast.makeText(context, context.getString(R.string.error_open_settings), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, errorOpenSettingsMsg, Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -264,7 +273,10 @@ fun StatusScreen(
             // Status Card
             Triple(
                 stringResource(R.string.status_engine_status), 
-                "Apps: ${if(isAppFilterOn) "ON" else "OFF"}\nURLs: ${if(isUrlFilterOn) "ON" else "OFF"}\nBoot: ${if(isBootOn) "ON" else "OFF"}", 
+                "${engineAppLabel.format(if (isAppFilterOn) statusOn else statusOff)}\n" +
+                "${engineUrlVpnLabel.format(if (isUrlFilterOn) statusOn else statusOff)}\n" +
+                "${engineUrlRootLabel.format(if (isRootOn) statusOn else statusOff)}\n" +
+                "${engineBootLabel.format(if (isBootOn) statusOn else statusOff)}",
                 Icons.Default.Info
             )
         )
@@ -346,7 +358,7 @@ fun StatusCard(
                         fontSize = countFontSize,
                         lineHeight = if (countFontSize < 20.sp) 16.sp else countFontSize
                     ),
-                    maxLines = 3, 
+                    maxLines = 4, 
                     textAlign = TextAlign.Center
                 )
                 if (subtitle != null) {

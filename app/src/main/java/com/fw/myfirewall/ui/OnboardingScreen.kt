@@ -107,10 +107,13 @@ fun OnboardingContent(
     val isRootPossible by viewModel.isRootPossible.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
 
+    val rootGrantedMsg = stringResource(R.string.root_access_granted)
+    val rootDeniedMsg = stringResource(R.string.root_access_not_available)
+
     LaunchedEffect(rootCheckResult) {
         rootCheckResult?.let { hasRoot ->
-            val message = if (hasRoot) R.string.root_access_granted else R.string.root_access_not_available
-            Toast.makeText(context, context.getString(message), Toast.LENGTH_SHORT).show()
+            val message = if (hasRoot) rootGrantedMsg else rootDeniedMsg
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             viewModel.resetRootCheckResult()
         }
     }
@@ -303,14 +306,12 @@ fun OnboardingContent(
                     }
                 }
 
-                // USAGE STATS PERMISSION
+                // --- USAGE STATS PERMISSION ---
                 if (!isUsageStatsGranted) {
                     Column {
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                    alpha = 0.5f
-                                )
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                             ),
                             shape = RoundedCornerShape(25.dp),
                             modifier = Modifier
@@ -325,9 +326,7 @@ fun OnboardingContent(
                                     modifier = Modifier.fillMaxWidth(),
                                     textAlign = TextAlign.Center
                                 )
-
                                 Spacer(modifier = Modifier.height(8.dp))
-
                                 Text(
                                     text = stringResource(R.string.permission_usage_stats_description),
                                     style = MaterialTheme.typography.bodyMedium,
@@ -336,8 +335,6 @@ fun OnboardingContent(
                                 )
                             }
                         }
-
-                        // LE BOUTON : Il ne s'affiche que si la permission n'est PAS accordée
                         OutlinedButton(
                             onClick = { openUsageStatsSettings(context) },
                             modifier = Modifier.fillMaxWidth()
@@ -346,18 +343,12 @@ fun OnboardingContent(
                         }
                     }
                 } else {
-                    // ÉTAT ACCORDÉ : Le bouton disparaît et laisse place à la validation visuelle
                     PermissionGrantedRow(text = stringResource(R.string.permission_usage_stats))
                 }
 
-                // ROOT PERMISSION
+                // --- ROOT PERMISSION ---
                 if (isRootPossible && !isRootEnabled) {
                     Column {
-                        Text(
-                            text = stringResource(R.string.perm_root_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
-                        )
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
@@ -367,13 +358,22 @@ fun OnboardingContent(
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp)
                         ) {
-                            Text(
-                                text = stringResource(R.string.root_disclaimer_onboarding),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                textAlign = TextAlign.Justify,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = stringResource(R.string.perm_root_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = stringResource(R.string.root_disclaimer_onboarding),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Justify,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
                         }
                         OutlinedButton(
                             onClick = { viewModel.toggleRoot(enabled = true) },
@@ -387,19 +387,17 @@ fun OnboardingContent(
                 }
             }
 
+            // 4. FOOTER SECTION
+            // Note: Weight(1f) is used to push buttons to the bottom
+            Spacer(modifier = Modifier.weight(1f))
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ############################################################################
-            // NAVIGATION BUTTONS
-            // ############################################################################
-
-            // Bouton Informations
             OutlinedButton(
                 onClick = onInfoClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = ButtonDefaults.outlinedShape
+                shape = RoundedCornerShape(28.dp)
             ) {
                 Icon(Icons.Default.Info, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -408,28 +406,17 @@ fun OnboardingContent(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Bouton Final
             Button(
                 onClick = onOnboardingFinished,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp)
             ) {
                 Text(stringResource(R.string.onboarding_done))
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(Icons.Default.CheckCircle, contentDescription = null)
             }
         }
-    }
-}
-
-@Preview(showBackground = true, name = "Onboarding - Light Mode")
-@Composable
-fun OnboardingPreviewLight() {
-    MyFirewallTheme(darkTheme = false) {
-        OnboardingContent(
-            onOnboardingFinished = {},
-            onInfoClick = {}
-        )
     }
 }

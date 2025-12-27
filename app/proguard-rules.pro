@@ -20,6 +20,42 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Préserver les annotations de sérialisation pour GSON/Kotlin
+-keepattributes Signature,EnclosingMethod,InnerClasses,*Annotation*
+-keepclassmembers class ** {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Protéger les entités Room et les modèles de données
+-keep class com.fw.myfirewall.data.** { *; }
+
+# Préserver les ViewModels pour Compose
+-keep class * extends androidx.lifecycle.ViewModel { *; }
+
+
+# Garder les classes de données pour la désérialisation GSON
+-keep class com.fw.myfirewall.data.** { *; }
+-keepattributes Signature,EnclosingMethod,InnerClasses,*Annotation*
+
+# Empêcher la suppression des champs annotés par SerializedName
+-keepclassmembers class ** {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Conserver les énumérations (important pour BlockRuleCategory)
+-keepclassmembers enum com.fw.myfirewall.data.** { *; }
+
+# Règles spécifiques pour Room (utilisé lors de l'importation)
+-keep class * extends androidx.room.RoomDatabase
+-keep class androidx.room.RoomDatabase
+
+# Préserver les signatures pour TypeToken
+-keepattributes Signature, EnclosingMethod, InnerClasses, *Annotation*
+-keep class com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep class com.fw.myfirewall.data.** { *; }
+
+
 
 
 

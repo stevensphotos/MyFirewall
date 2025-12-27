@@ -101,7 +101,6 @@
     <string name="about_bugs">Bugs</string>
     <string name="about_licence">Licence</string>
     <string name="custom_rules_title">Block list rules</string>
-    <string name="custom_rules_label">your rules</string>
     <string name="custom_rules_supporting_text">Add your own rules, by domain, or IP Address.</string>
     <string name="custom_rules_error">Please enter valid letters, numbers or dots only.</string>
     <string name="apply_button">Apply</string>
@@ -192,8 +191,27 @@
     </string>
     <string name="info_button_repo">View Repository</string>
     <string name="info_faq_title">Quick FAQ</string>
-    <string name="info_faq_issue">Local VPN filtering requires analyzing every network packet. This
-        process might cause slight latency depending on your device performance and the number of
-        active rules.
+    <string name="error_start_on_boot_disabled">Cannot enable Start on Boot: Please activate at
+        least one Firewall engine first.
     </string>
+    <string name="custom_rules_clear_applied">Clear applied rules</string>
+    <string name="custom_rules_cleared_msg">All applied custom rules cleared</string>
+    <string name="custom_rules_loaded_msg">Loaded applied rules</string>
+    <string name="custom_rules_no_rules_msg">No custom rules currently applied</string>
+    <string name="custom_rules_load_button">Load</string>
+    <string name="custom_rules_desc">Create / Modify export rules</string>
+    <string name="custom_rules_label">Block list custom Rules</string>
+    <string name="notification_channel_desc">Firewall Service</string>
+
+    <string name="info_faq_issue">Q: How does the firewall block apps? A: It uses a local VPN to
+        filter traffic.\nQ: Does it need Root? A: No, it works on non-rooted devices too.\nQ: Does
+        it collect data? A: No, all filtering is done locally on your device.\nQ: Will it drain
+        battery? A: Minimal impact, as it only processes network headers.
+    </string>
+    <string name="status_engine_app">App Filter: %1$s</string>
+    <string name="status_engine_url_vpn">URL VPN: %1$s</string>
+    <string name="status_engine_url_root">URL Root: %1$s</string>
+    <string name="status_engine_boot">Boot: %1$s</string>
+    <string name="status_on">ON</string>
+    <string name="status_off">OFF</string>
 </resources>

@@ -40,6 +40,12 @@ fun CustomRulesScreen(
     val scope = rememberCoroutineScope()
     var rulesText by remember { mutableStateOf("") }
 
+    val exportSuccessMsg = stringResource(R.string.export_success)
+    val exportFailedMsg = stringResource(R.string.export_failed)
+    val customRulesErrorMsg = stringResource(R.string.custom_rules_error)
+    val importSuccessMsg = stringResource(R.string.import_success)
+    val notAvailableMsg = stringResource(R.string.not_available)
+
     // Validation logic: letters, numbers, dots, hyphens, underscores, or wildcards
     val isError = rulesText.isNotEmpty() && !rulesText.all {
         it.isLetterOrDigit() ||
@@ -71,11 +77,11 @@ fun CustomRulesScreen(
                             outputStream.write(rulesText.toByteArray())
                         }
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, context.getString(R.string.export_success), Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, exportSuccessMsg, Toast.LENGTH_SHORT).show()
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
-                            val errorMsg = context.getString(R.string.export_failed, e.message ?: "")
+                            val errorMsg = exportFailedMsg.format(e.message ?: "")
                             Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -189,7 +195,7 @@ fun CustomRulesScreen(
                                 onClick = {
                                     viewModel.clearAllCustomRules()
                                     expanded = false
-                                    Toast.makeText(context, context.getString(R.string.custom_rules_error), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, customRulesErrorMsg, Toast.LENGTH_SHORT).show()
                                 }
                             )
                         }
@@ -259,9 +265,9 @@ fun CustomRulesScreen(
                                 val currentRules = viewModel.getCurrentCustomRules()
                                 if (currentRules.isNotEmpty()) {
                                     rulesText = currentRules
-                                    Toast.makeText(context, context.getString(R.string.import_success, 1), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, importSuccessMsg.format(1), Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(context, context.getString(R.string.not_available), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, notAvailableMsg, Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },

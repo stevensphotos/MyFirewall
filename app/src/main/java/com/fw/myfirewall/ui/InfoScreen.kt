@@ -95,14 +95,6 @@ fun InfoPage(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Section Open Source / Support
-            InfoSectionCard(
-                title = stringResource(R.string.info_open_source_title),
-                icon = Icons.Rounded.BugReport,
-                description = stringResource(R.string.info_open_source_desc)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
 
 
             // Section QUICK FAQ
@@ -114,6 +106,17 @@ fun InfoPage(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
+
+
+            // Section Open Source / Support
+            InfoSectionCard(
+                title = stringResource(R.string.info_open_source_title),
+                icon = Icons.Rounded.BugReport,
+                description = stringResource(R.string.info_open_source_desc)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
 
 
 
