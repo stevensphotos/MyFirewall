@@ -49,15 +49,26 @@
 -keep class * extends androidx.room.RoomDatabase
 -keep class androidx.room.RoomDatabase
 
+# Empêcher R8 de casser Room en mode Release
+-keep class * extends androidx.room.RoomDatabase
+-keep class androidx.room.RoomDatabase
+-keep class com.fw.myfirewall.data.** { *; }
+-keep @androidx.room.Entity class *
+-keep @androidx.room.Dao class *
+-keep @androidx.room.Database class *
+
+# Nécessaire si vous utilisez des Coroutines avec Room
+-keepattributes Signature, *Annotation*
+-keep class * extends kotlin.coroutines.CoroutineContext
+-keep class com.fw.myfirewall.model.AppInfo { *; }
+-keep class com.fw.myfirewall.data.AppRule { *; }
+
+
 # Préserver les signatures pour TypeToken
 -keepattributes Signature, EnclosingMethod, InnerClasses, *Annotation*
 -keep class com.google.gson.reflect.TypeToken
 -keep class * extends com.google.gson.reflect.TypeToken
 -keep class com.fw.myfirewall.data.** { *; }
-
-
-
-
 
 # Supprimer tous les logs de type Verbose et Debug dans la version finale
 -assumenosideeffects class android.util.Log {

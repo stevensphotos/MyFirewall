@@ -301,7 +301,12 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                     viewModel.toggleRoot(checked)
                 }
 
+
                 SettingsDivider()
+
+                //START ON BOOT OPTION
+
+
                 SettingsItemRow(
                     title = stringResource(R.string.start_on_boot_label),
                     description = stringResource(R.string.start_on_boot_text),

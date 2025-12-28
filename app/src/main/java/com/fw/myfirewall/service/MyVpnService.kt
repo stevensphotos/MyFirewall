@@ -69,14 +69,27 @@ class MyVpnService : VpnService() {
     private var cachedRules: Map<String, AppRule> = emptyMap()
     private var isObserversRegistered = false
 
+    // Dans MyVpnService.kt (remplacez le bloc dans onStartCommand au niveau du caret)
+    // Dans MyVpnService.kt
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_CONNECT -> connect()
             ACTION_DISCONNECT -> disconnect()
-            "com.fw.myfirewall.ACTION_RELOAD_RULES" -> reloadUrlFilterRules()
+            "com.fw.myfirewall.ACTION_RELOAD_RULES" -> {
+                // SÉCURISATION : On utilise Dispatchers.IO pour ne pas bloquer le système (ANR)
+                // et on ajoute un bloc try-catch global pour capter l'erreur "Update failed"
+                serviceScope.launch(Dispatchers.IO) {
+                    try {
+                        reloadUrlFilterRules()
+                    } catch (e: Exception) {
+                        Log.e("MyVpnService", "❌ Rules reload failed in Release mode", e)
+                    }
+                }
+            }
         }
         return START_STICKY
     }
+
 
     private fun startPacketForwarding(pfd: ParcelFileDescriptor) {
         vpnThread?.interrupt()
@@ -168,7 +181,6 @@ class MyVpnService : VpnService() {
         val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
         isUrlFilterActive = prefs.getBoolean("url_filter_enabled", false)
 
-        // Read category states to filter DB results
         val isAdsEnabled = prefs.getBoolean("advertising_enabled", false)
         val isAnnoyanceEnabled = prefs.getBoolean("annoyances_enabled", false)
         val isSocialEnabled = prefs.getBoolean("social_enabled", false)
@@ -195,12 +207,11 @@ class MyVpnService : VpnService() {
 
                     blockedDomains.clear()
                     blockedDomains.addAll(newBlockedDomains)
-                    Log.d("MyVpnService", "Reloaded: ${blockedDomains.size} domains active across enabled categories")
                 } else {
                     blockedDomains.clear()
                 }
 
-                // Refresh VPN configuration if mode changed
+                // Lancer la mise à jour de l'interface VPN
                 updateVpn()
 
             } catch (e: Exception) {
@@ -248,12 +259,21 @@ class MyVpnService : VpnService() {
         isObserversRegistered = true
     }
 
+    /**
+     * Met à jour l'interface VPN.
+     * Cette méthode est appelée lors des changements de toggles (Wi-Fi/Mobile/App).
+     */
     private fun updateVpn() {
         if (!isServiceRunning.value) return
 
-        serviceScope.launch {
+        // Règle d'or : On déporte toute l'analyse réseau et package sur Dispatchers.IO
+        serviceScope.launch(Dispatchers.IO) {
             try {
-                delay(500)
+                // PATCH : On laisse un délai de "respiration" au system_server
+                // pour stabiliser les permissions avant d'interroger le Builder.
+                delay(300)
+
+                // Vérification de la préparation (nécessaire pour le PermissionMonitor)
                 if (prepare(this@MyVpnService) != null) return@launch
 
                 val builder = Builder()
@@ -261,41 +281,77 @@ class MyVpnService : VpnService() {
                 builder.addAddress(VPN_ADDRESS, VPN_PREFIX_LENGTH)
                 builder.setMtu(VPN_MTU)
 
-                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-                val caps = cm.getNetworkCapabilities(cm.activeNetwork)
-                val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-
+                // Configuration du tunnel selon le mode actif
                 if (isUrlFilterActive) {
                     builder.addDnsServer(DUMMY_DNS)
                     builder.addRoute(DUMMY_DNS, 32)
                 } else {
+                    // Mode Application Filter : on ajoute la route par défaut
                     builder.addRoute("0.0.0.0", 0)
-                    val installedApps = withContext(Dispatchers.IO) {
-                        packageManager.getInstalledPackages(0)
-                    }
+
+                    val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+                    val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+                    val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+
+                    // Parcours optimisé des applications
+                    val installedApps = packageManager.getInstalledPackages(0)
                     for (app in installedApps) {
                         if (app.packageName == packageName) continue
+
                         val rule = cachedRules[app.packageName]
-                        val allowed = if (rule != null) (if (isWifi) rule.wifiAllowed else rule.mobileAllowed) else true
-                        if (allowed) {
-                            try { builder.addDisallowedApplication(app.packageName) } catch (_: Exception) {}
+                        // Si autorisé sur le réseau actuel, on l'exclut du VPN (Direct Access)
+                        val isAllowed = rule?.let {
+                            if (isWifi) it.wifiAllowed else it.mobileAllowed
+                        } ?: true
+
+                        if (isAllowed) {
+                            try {
+                                builder.addDisallowedApplication(app.packageName)
+                            } catch (e: Exception) {
+                                // Ignore les erreurs sur les packages systèmes protégés
+                            }
                         }
                     }
                 }
 
-                val oldInterface = vpnInterface
-                vpnInterface = builder.establish()
-                oldInterface?.close()
-                vpnInterface?.let { startPacketForwarding(it) }
+                // APPEL CRITIQUE : Retour sur le thread Main UNIQUEMENT pour establish()
+                // C'est ici que l'erreur PermissionMonitor se produisait.
+                withContext(Dispatchers.Main) {
+                    try {
+                        val oldInterface = vpnInterface
+                        val newInterface = builder.establish()
 
+                        if (newInterface != null) {
+                            // On ne ferme l'ancienne interface qu'après avoir réussi la nouvelle
+                            oldInterface?.close()
+                            vpnInterface = newInterface
+                            startPacketForwarding(newInterface)
+                        } else {
+                            Log.e("MyVpnService", "❌ System refused to establish VPN interface")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("MyVpnService", "❌ PermissionMonitor Sync Error during establish", e)
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("MyVpnService", "Update failed", e)
             }
         }
     }
-
     private fun disconnect() {
         isServiceRunning.value = false
+
+        // Désenregistrer le callback réseau pour éviter les fuites
+        networkCallback?.let {
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            try {
+                cm.unregisterNetworkCallback(it)
+            } catch (_: Exception) {
+            }
+            networkCallback = null
+        }
+        isObserversRegistered = false
+
         vpnThread?.interrupt()
         vpnInterface?.close()
         vpnInterface = null

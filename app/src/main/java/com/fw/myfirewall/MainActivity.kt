@@ -214,14 +214,15 @@ class MainActivity : ComponentActivity() {
                                 val roamingAllowed = savedRule?.roamingAllowed ?: true
 
                                 AppInfo(
-                                    label,
-                                    packageInfo.packageName,
-                                    icon,
-                                    isSystem,
-                                    hasInternet,
-                                    wifiAllowed,
-                                    mobileAllowed,
-                                    roamingAllowed
+                                    name = label, // Le nom stabilisé pour l'UI
+                                    label = label, // La valeur brute pour la recherche/tri
+                                    packageName = packageInfo.packageName,
+                                    icon = icon,
+                                    isSystem = isSystem,
+                                    hasInternet = hasInternet,
+                                    wifiAllowed = wifiAllowed,
+                                    mobileAllowed = mobileAllowed,
+                                    roamingAllowed = roamingAllowed
                                 )
                             }
                         }
