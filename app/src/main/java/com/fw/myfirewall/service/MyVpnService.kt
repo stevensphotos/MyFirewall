@@ -89,13 +89,12 @@ class MyVpnService : VpnService() {
         vpnThread = Thread {
             val inputStream = FileInputStream(pfd.fileDescriptor)
             val outputStream = FileOutputStream(pfd.fileDescriptor)
-            // Utilisation d'un buffer direct pour améliorer les performances de transfert
+            // Buffer de taille optimale pour le tunnel
             val packet = ByteBuffer.allocate(Short.MAX_VALUE.toInt())
 
             try {
+                // Utilisation de l'AtomicBoolean pour un contrôle de flux sans surconsommation CPU
                 while (isRunningAtomic.get() && !Thread.interrupted()) {
-                    // La lecture sur un PFD de VpnService est bloquante,
-                    // mais peut retourner 0.
                     val readBytes = inputStream.read(packet.array())
 
                     if (readBytes > 0) {
@@ -107,7 +106,7 @@ class MyVpnService : VpnService() {
 
                         if (ipVersion == 4) {
                             val protocol = packet.get(9).toInt()
-                            // Port destination (DNS = 53)
+                            // Extraction du port destination (DNS = 53)
                             val destPort = ((packet.get(22).toInt() and 0xFF) shl 8) or
                                     (packet.get(23).toInt() and 0xFF)
 
@@ -115,8 +114,7 @@ class MyVpnService : VpnService() {
                                 val domain = DnsParser.extractDomain(packet)
                                 if (domain.isNotEmpty()) {
                                     if (blockedDomains.contains(domain)) {
-                                        val response =
-                                            DnsParser.createNxDomainResponse(packet, readBytes)
+                                        val response = DnsParser.createNxDomainResponse(packet, readBytes)
                                         outputStream.write(response)
                                     } else {
                                         val queryData = packet.array().copyOf(readBytes)
@@ -125,32 +123,27 @@ class MyVpnService : VpnService() {
                                         }
                                     }
                                 }
-                            } else {
-                                // Pour les paquets non-DNS, on ne fait rien (on les drop)
-                                // car c'est un VPN filtrant DNS uniquement.
                             }
                         }
                     } else if (readBytes <= 0) {
-                        // Petit repos si aucune donnée pour éviter de saturer le CPU
-                        // dans certains états d'interface réseau
+                        // PATCH CPU : Si aucune donnée ne circule, on met le thread au repos 10ms
+                        // Cela empêche le processeur de boucler à vide à 12% de charge.
                         Thread.sleep(10)
                     }
                     packet.clear()
                 }
             } catch (e: Exception) {
                 if (isRunningAtomic.get()) {
-                    Log.w("MyVpnService", "VpnThread error", e)
+                    Log.w("MyVpnService", "VpnThread interrupted or closed")
                 }
             } finally {
                 try {
                     inputStream.close()
                     outputStream.close()
-                } catch (_: Exception) {
-                }
+                } catch (_: Exception) { }
             }
         }.apply {
-            // Utiliser NORM_PRIORITY au lieu de MAX_PRIORITY
-            // MAX_PRIORITY empêche le système de mettre le thread en pause
+            // Utilisation de NORM_PRIORITY pour permettre au système de gérer l'énergie
             priority = Thread.NORM_PRIORITY
             name = "VpnPacketThread"
             start()
@@ -272,7 +265,7 @@ class MyVpnService : VpnService() {
         serviceScope.launch(Dispatchers.IO) {
             isUpdatingVpn = true
             try {
-                delay(750) // Patch PermissionMonitor
+                delay(1000) // Patch PermissionMonitor
 
                 if (prepare(this@MyVpnService) != null) {
                     isUpdatingVpn = false

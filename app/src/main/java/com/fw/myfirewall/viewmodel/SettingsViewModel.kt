@@ -68,10 +68,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // --- PERMISSIONS UPDATERS ---
     fun updateUsageStatsStatus(context: Context) {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
-        val mode = appOps.unsafeCheckOpNoThrow(
+        val mode = appOps.checkOpNoThrow(
             android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
             android.os.Process.myUid(),
             context.packageName
+
         )
         _isUsageStatsPermissionGranted.value = (mode == android.app.AppOpsManager.MODE_ALLOWED)
     }

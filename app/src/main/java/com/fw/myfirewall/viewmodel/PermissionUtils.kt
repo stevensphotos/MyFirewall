@@ -13,7 +13,7 @@ fun hasUsageStatsPermission(context: Context): Boolean {
 
     // Suppression de la condition if (Build.VERSION.SDK_INT >= Q) car minSdk = 29
     // unsafeCheckOpNoThrow est la méthode recommandée pour l'API 29+
-    val mode = appOps.unsafeCheckOpNoThrow(
+    val mode = appOps.checkOpNoThrow(
         AppOpsManager.OPSTR_GET_USAGE_STATS,
         Process.myUid(),
         context.packageName
