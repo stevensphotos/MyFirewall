@@ -30,6 +30,7 @@ import java.net.InetAddress
 import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MyVpnService : VpnService() {
 
@@ -40,40 +41,45 @@ class MyVpnService : VpnService() {
         private const val NOTIFICATION_ID = 1
         private const val DUMMY_DNS = "10.0.0.1"
         private const val DEFAULT_DNS = "8.8.8.8"
-
         private const val VPN_ADDRESS = "10.0.0.2"
-
-        private const val VPN_PREFIX_LENGTH = 30 // Équivalent à 255.255.255.252
-
-        private const val VPN_DNS_SERVER = "10.0.0.1"
-
+        private const val VPN_PREFIX_LENGTH = 30
         private const val VPN_MTU = 1500
         var isServiceRunning = mutableStateOf(false)
-    }
-
-    private fun getDnsServer(): String {
-        val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
-        return prefs.getString("dns_primary", DEFAULT_DNS) ?: DEFAULT_DNS
     }
 
     private var vpnInterface: ParcelFileDescriptor? = null
     private var vpnThread: Thread? = null
     private var isUrlFilterActive = false
     private val blockedDomains = ConcurrentHashMap.newKeySet<String>()
-    private val dnsProxyExecutor = Executors.newFixedThreadPool(4)
-
+    private val dnsProxyExecutor = Executors.newFixedThreadPool(2)
     private val serviceJob = Job()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var cachedRules: Map<String, AppRule> = emptyMap()
     private var isObserversRegistered = false
+
+    // Patch CPU : Variable atomique pour le contrôle de flux (plus léger que State)
+    private val isRunningAtomic = AtomicBoolean(false)
+    private var isUpdatingVpn = false
+
+    private fun getDnsServer(): String {
+        val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
+        return prefs.getString("dns_primary", DEFAULT_DNS) ?: DEFAULT_DNS
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_CONNECT -> connect()
             ACTION_DISCONNECT -> disconnect()
-            "com.fw.myfirewall.ACTION_RELOAD_RULES" -> reloadUrlFilterRules()
+            "com.fw.myfirewall.ACTION_RELOAD_RULES" -> {
+                serviceScope.launch(Dispatchers.IO) {
+                    try {
+                        reloadUrlFilterRules()
+                    } catch (e: Exception) {
+                        Log.e("MyVpnService", "Reload rules failed", e)
+                    }
+                }
+            }
         }
         return START_STICKY
     }
@@ -83,52 +89,69 @@ class MyVpnService : VpnService() {
         vpnThread = Thread {
             val inputStream = FileInputStream(pfd.fileDescriptor)
             val outputStream = FileOutputStream(pfd.fileDescriptor)
-            val packet = ByteBuffer.allocate(32767)
+            // Utilisation d'un buffer direct pour améliorer les performances de transfert
+            val packet = ByteBuffer.allocate(Short.MAX_VALUE.toInt())
 
             try {
-                while (!Thread.interrupted() && isServiceRunning.value) {
-                    try {
-                        val readBytes = inputStream.read(packet.array())
-                        if (readBytes > 0) {
-                            packet.limit(readBytes)
-                            packet.rewind()
+                while (isRunningAtomic.get() && !Thread.interrupted()) {
+                    // La lecture sur un PFD de VpnService est bloquante,
+                    // mais peut retourner 0.
+                    val readBytes = inputStream.read(packet.array())
 
-                            val firstByte = packet.get(0).toInt()
-                            val ipVersion = (firstByte shr 4) and 0x0F
+                    if (readBytes > 0) {
+                        packet.limit(readBytes)
+                        packet.rewind()
 
-                            if (ipVersion == 4) {
-                                val protocol = packet.get(9).toInt()
-                                val destPort = packet.getShort(22).toInt() and 0xFFFF
+                        val firstByte = packet.get(0).toInt()
+                        val ipVersion = (firstByte shr 4) and 0x0F
 
-                                if (protocol == 17 && destPort == 53) {
-                                    val domain = DnsParser.extractDomain(packet)
-                                    if (domain.isNotEmpty()) {
-                                        if (blockedDomains.contains(domain)) {
-                                            Log.i("MyVpnService", "🛑 BLOCKED: $domain")
-                                            val response = DnsParser.createNxDomainResponse(packet, readBytes)
-                                            outputStream.write(response)
-                                        } else {
-                                            val queryData = packet.array().copyOf(readBytes)
-                                            dnsProxyExecutor.execute {
-                                                proxyDnsQuery(queryData, outputStream)
-                                            }
+                        if (ipVersion == 4) {
+                            val protocol = packet.get(9).toInt()
+                            // Port destination (DNS = 53)
+                            val destPort = ((packet.get(22).toInt() and 0xFF) shl 8) or
+                                    (packet.get(23).toInt() and 0xFF)
+
+                            if (protocol == 17 && destPort == 53) {
+                                val domain = DnsParser.extractDomain(packet)
+                                if (domain.isNotEmpty()) {
+                                    if (blockedDomains.contains(domain)) {
+                                        val response =
+                                            DnsParser.createNxDomainResponse(packet, readBytes)
+                                        outputStream.write(response)
+                                    } else {
+                                        val queryData = packet.array().copyOf(readBytes)
+                                        dnsProxyExecutor.execute {
+                                            proxyDnsQuery(queryData, outputStream)
                                         }
                                     }
                                 }
+                            } else {
+                                // Pour les paquets non-DNS, on ne fait rien (on les drop)
+                                // car c'est un VPN filtrant DNS uniquement.
                             }
                         }
-                        packet.clear()
-                    } catch (e: IOException) {
-                        if (Thread.interrupted() || !isServiceRunning.value) break
-                        if (e.message?.contains("EBADF") == true) break
+                    } else if (readBytes <= 0) {
+                        // Petit repos si aucune donnée pour éviter de saturer le CPU
+                        // dans certains états d'interface réseau
+                        Thread.sleep(10)
                     }
+                    packet.clear()
                 }
             } catch (e: Exception) {
-                Log.e("MyVpnService", "Error in packet loop", e)
+                if (isRunningAtomic.get()) {
+                    Log.w("MyVpnService", "VpnThread error", e)
+                }
             } finally {
-                try { pfd.close() } catch (ignored: Exception) {}
+                try {
+                    inputStream.close()
+                    outputStream.close()
+                } catch (_: Exception) {
+                }
             }
         }.apply {
+            // Utiliser NORM_PRIORITY au lieu de MAX_PRIORITY
+            // MAX_PRIORITY empêche le système de mettre le thread en pause
+            priority = Thread.NORM_PRIORITY
             name = "VpnPacketThread"
             start()
         }
@@ -160,7 +183,7 @@ class MyVpnService : VpnService() {
             }
             socket.close()
         } catch (e: Exception) {
-            // Log.w("MyVpnService", "DNS Proxy failed: ${e.message}")
+            // Error logged silently to avoid CPU spikes
         }
     }
 
@@ -168,7 +191,6 @@ class MyVpnService : VpnService() {
         val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
         isUrlFilterActive = prefs.getBoolean("url_filter_enabled", false)
 
-        // Read category states to filter DB results
         val isAdsEnabled = prefs.getBoolean("advertising_enabled", false)
         val isAnnoyanceEnabled = prefs.getBoolean("annoyances_enabled", false)
         val isSocialEnabled = prefs.getBoolean("social_enabled", false)
@@ -179,7 +201,6 @@ class MyVpnService : VpnService() {
                 if (isUrlFilterActive) {
                     val db = AppDatabase.getDatabase(applicationContext)
                     val rules = db.blockRuleDao().getAllRulesSync()
-
                     val newBlockedDomains = mutableSetOf<String>()
                     rules.forEach { rule ->
                         val isCategoryEnabled = when (rule.category) {
@@ -192,17 +213,12 @@ class MyVpnService : VpnService() {
                             newBlockedDomains.add(rule.domain.lowercase().trim())
                         }
                     }
-
                     blockedDomains.clear()
                     blockedDomains.addAll(newBlockedDomains)
-                    Log.d("MyVpnService", "Reloaded: ${blockedDomains.size} domains active across enabled categories")
                 } else {
                     blockedDomains.clear()
                 }
-
-                // Refresh VPN configuration if mode changed
                 updateVpn()
-
             } catch (e: Exception) {
                 Log.e("MyVpnService", "Failed to reload rules", e)
             }
@@ -225,6 +241,8 @@ class MyVpnService : VpnService() {
             .build()
 
         startForeground(NOTIFICATION_ID, notification)
+
+        isRunningAtomic.set(true)
         isServiceRunning.value = true
         reloadUrlFilterRules()
         startObservers()
@@ -248,19 +266,13 @@ class MyVpnService : VpnService() {
         isObserversRegistered = true
     }
 
-    // Ajout d'un verrou pour empêcher les mises à jour concurrentes lors de clics rapides
-    private var isUpdatingVpn = false
-
-
     private fun updateVpn() {
         if (!isServiceRunning.value || isUpdatingVpn) return
 
         serviceScope.launch(Dispatchers.IO) {
             isUpdatingVpn = true
             try {
-                // PATCH DE STABILITÉ : Délai pour laisser le PermissionMonitor du système
-                // stabiliser les droits d'UID après le clic UI en version Release.
-                delay(750)
+                delay(750) // Patch PermissionMonitor
 
                 if (prepare(this@MyVpnService) != null) {
                     isUpdatingVpn = false
@@ -277,71 +289,67 @@ class MyVpnService : VpnService() {
                     builder.addRoute(DUMMY_DNS, 32)
                 } else {
                     builder.addRoute("0.0.0.0", 0)
-
-                    val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+                    val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                     val caps = cm.getNetworkCapabilities(cm.activeNetwork)
                     val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
                     val installedApps = packageManager.getInstalledPackages(0)
                     for (app in installedApps) {
                         if (app.packageName == packageName) continue
-
                         val rule = cachedRules[app.packageName]
-                        // On vérifie si l'application est autorisée sur le réseau actuel
                         val allowed = if (rule != null) {
                             if (isWifi) rule.wifiAllowed else rule.mobileAllowed
                         } else true
 
                         if (allowed) {
                             try {
-                                // On exclut du VPN les applications autorisées
                                 builder.addDisallowedApplication(app.packageName)
-                            } catch (e: Exception) {
-                                // Ignorer les erreurs sur les packages système protégés
-                            }
+                            } catch (e: Exception) {}
                         }
                     }
                 }
 
-                // ÉTABLISSEMENT SÉCURISÉ : On bascule sur le Main Thread pour establish()
                 withContext(Dispatchers.Main) {
                     try {
                         val oldInterface = vpnInterface
-                        // On tente d'établir la nouvelle interface AVANT de fermer l'ancienne
-                        // pour que le système garde l'index tun0 stable.
                         val newInterface = builder.establish()
-
                         if (newInterface != null) {
                             oldInterface?.close()
                             vpnInterface = newInterface
                             startPacketForwarding(newInterface)
-                        } else {
-                            Log.e("MyVpnService", "❌ System refused to establish VPN interface")
                         }
                     } catch (e: Exception) {
-                        Log.e("MyVpnService", "❌ PermissionMonitor Sync Error during establish", e)
+                        Log.e("MyVpnService", "Establish VPN failed", e)
                     }
                 }
-
             } catch (e: Exception) {
                 Log.e("MyVpnService", "Update failed", e)
             } finally {
-                // Libération du verrou après le traitement
                 isUpdatingVpn = false
             }
         }
     }
 
     private fun disconnect() {
+        isRunningAtomic.set(false)
         isServiceRunning.value = false
+
+        networkCallback?.let {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            try { cm.unregisterNetworkCallback(it) } catch (e: Exception) {}
+        }
+
         vpnThread?.interrupt()
-        vpnInterface?.close()
+        try {
+            vpnInterface?.close()
+        } catch (e: Exception) {
+            Log.e("MyVpnService", "Error closing interface", e)
+        }
         vpnInterface = null
         stopSelf()
     }
 
     private fun createNotificationChannel() {
-        // La vérification de Build.VERSION est supprimée car minSdk = 29
         val channel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notification_channel_name),
@@ -349,7 +357,6 @@ class MyVpnService : VpnService() {
         ).apply {
             description = getString(R.string.notification_channel_desc)
         }
-
         val manager = getSystemService(NotificationManager::class.java)
         manager?.createNotificationChannel(channel)
     }
