@@ -164,7 +164,11 @@ class MainActivity : ComponentActivity() {
         // State to handle screen overlays
         var showSaveRulesScreen by rememberSaveable { mutableStateOf(false) }
         var showCustomRulesScreen by rememberSaveable { mutableStateOf(false) }
+
+        @Suppress("AssignedValueIsNeverRead")
         var showOnboardingOverlay by rememberSaveable { mutableStateOf(false) }
+
+        @Suppress("AssignedValueIsNeverRead")
         var showInfoOverlay by rememberSaveable { mutableStateOf(false) }
 
         val coroutineScope = rememberCoroutineScope()

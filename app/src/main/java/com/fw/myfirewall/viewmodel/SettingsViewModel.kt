@@ -167,10 +167,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+        /**
+     * Toggles the VPN-based URL filter.
+     * Forces a service restart if switching from Application Filter to ensure clean routing.
+     */
     fun toggleUrlFilter(enabled: Boolean) {
         viewModelScope.launch {
             if (enabled) {
-                // 1. Exclusivité Root
+                // 1. Handle exclusivity with Hosts-based filter (Root)
                 if (_isRootEnabled.value) {
                     _isRootEnabled.value = false
                     viewModelScope.launch(Dispatchers.IO) {
@@ -178,13 +182,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         hostsGenerator.generateDefaultHostsFile()
                     }
                 }
-                // 2. Exclusivité App Filter
+
+                // 2. Handle exclusivity with Application Filter
                 val wasAppEnabled = _isAppFilterEnabled.value
                 if (wasAppEnabled) {
                     _isAppFilterEnabled.value = false
                     viewModelScope.launch(Dispatchers.IO) {
                         sharedPrefs.edit().putBoolean("app_filter_enabled", false).apply()
                     }
+                    // Crucial: Stop service to clear UID-based routing before starting DNS-based filter
+                    stopVpnService()
+                    delay(400)
                 }
 
                 _isUrlFilterEnabled.value = true
@@ -192,28 +200,42 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     sharedPrefs.edit().putBoolean("url_filter_enabled", true).apply()
                 }
 
-                // Délai pour laisser le PermissionMonitor stabiliser les états
-                delay(150)
-                if (wasAppEnabled) notifyVpnRulesChanged() else startVpnService()
+                // Safety delay for system settings propagation
+                delay(300)
+                startVpnService()
             } else {
                 _isUrlFilterEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("url_filter_enabled", false).apply()
                 }
                 checkAndDisableStartOnBoot()
-                if (!_isAppFilterEnabled.value) stopVpnService() else notifyVpnRulesChanged()
+                // Stop service if no other VPN filter is active
+                if (!_isAppFilterEnabled.value) {
+                    stopVpnService()
+                } else {
+                    notifyVpnRulesChanged()
+                }
             }
         }
     }
 
+    /**
+     * Toggles the Application-based filter.
+     * Forces a service restart if switching from URL Filter to ensure clean routing.
+     */
     fun toggleAppFilter(enabled: Boolean) {
         viewModelScope.launch {
-            // 1. GESTION DE L'EXCLUSIVITÉ (Sans bloquer le thread principal)
-            if (enabled && _isUrlFilterEnabled.value) {
+            val wasUrlEnabled = _isUrlFilterEnabled.value
+
+            if (enabled && wasUrlEnabled) {
+                // Handle exclusivity: disable URL filter state
                 _isUrlFilterEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("url_filter_enabled", false).apply()
                 }
+                // Crucial: Stop service to clear DNS-based routing before starting UID-based filter
+                stopVpnService()
+                delay(400)
             }
 
             // 2. MISE À JOUR DE L'ÉTAT UI IMMÉDIATE
@@ -226,11 +248,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
             // 4. DÉCLENCHEMENT DU SERVICE AVEC UN LÉGER DÉLAI DE SÉCURITÉ
             if (enabled) {
-                // On laisse 100ms pour que les préférences soient propagées au système
-                delay(100)
+                // Safety delay for system settings propagation
+                delay(300)
                 startVpnService()
             } else {
                 checkAndDisableStartOnBoot()
+                // Stop service if no other VPN filter is active
                 if (!_isUrlFilterEnabled.value) {
                     stopVpnService()
                 } else {
@@ -239,6 +262,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
 
     fun toggleRoot(enabled: Boolean) {
         viewModelScope.launch {
