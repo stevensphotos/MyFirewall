@@ -22,6 +22,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -110,6 +111,7 @@ class MainActivity : ComponentActivity() {
                                 CircularProgressIndicator()
                             }
                         }
+
                         true -> {
                             // ########################################################
                             // SCÉNARIO PREMIER LANCEMENT
@@ -231,9 +233,12 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                         .sortedBy { it.name }
-                apps = installedApps
-                isLoading = false
-                dataLoaded = true
+
+                withContext(Dispatchers.Main) {
+                    apps = installedApps
+                    isLoading = false
+                    dataLoaded = true
+                }
             }
         }
 
@@ -303,143 +308,136 @@ class MainActivity : ComponentActivity() {
                 }
             )
         } else {
-            // Main App Content with Navigation Suite
-            NavigationSuiteScaffold(
-                navigationSuiteItems = {
-                    // ############################################################################
-                    // BOTTOM NAVIGATION BAR ITEMS
-                    // ############################################################################
-                    pagerDestinations.forEachIndexed { index, destination ->
-                        item(
-                            icon = {
-                                Icon(
-                                    destination.icon,
-                                    contentDescription = destination.name
-                                )
-                            },
-                            label = { Text(text = stringResource(id = destination.labelRes)) },
-                            selected = index == pagerState.currentPage,
-                            onClick = {
-                                coroutineScope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            }
-                        )
-                    }
-                }
+            // ############################################################################
+            // NAVIGATION WRAPPER WITH ACCESSIBILITY CAP
+            // ############################################################################
+            val currentDensity = androidx.compose.ui.platform.LocalDensity.current
+
+            // On plafonne le facteur d'échelle du texte à 1.2x pour les labels de navigation
+            // afin d'éviter le wrapping tout en restant lisible.
+            CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(
+                    density = currentDensity.density,
+                    fontScale = currentDensity.fontScale.coerceAtMost(1.2f)
+                )
             ) {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    // ############################################################################
-                    // HORIZONTAL PAGER FOR SCREEN CONTENT
-                    // ############################################################################
-                    val currentPageDestination =
-                        pagerDestinations[pagerState.currentPage]
-                    val isSwipeEnabled = when (currentPageDestination) {
-                        // Disable swipe on Settings page (to prevent overscroll or conflict)
-//                    AppDestinations.SETTINGS -> false
-                        else -> true
+                NavigationSuiteScaffold(
+                    navigationSuiteItems = {
+                        pagerDestinations.forEachIndexed { index, destination ->
+                            item(
+                                icon = {
+                                    Icon(
+                                        destination.icon,
+                                        contentDescription = destination.name
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        text = stringResource(id = destination.labelRes),
+                                        maxLines = 1, // Force une seule ligne
+                                        softWrap = false, // Empêche le retour à la ligne
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.labelMedium
+                                    )
+                                },
+                                selected = index == pagerState.currentPage,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                }
+                            )
+                        }
                     }
+                ) {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                        val isSwipeEnabled = true
 
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = isSwipeEnabled
-                    ) { page ->
-                        when (pagerDestinations[page]) {
-                            AppDestinations.STATUS -> {
-                                StatusScreen(
-                                    modifier = Modifier.padding(innerPadding),
-                                    totalApps = apps.size,
-                                    blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed },
-                                    viewModel = statusViewModel
-                                )
-                            }
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = isSwipeEnabled
+                        ) { page ->
+                            when (pagerDestinations[page]) {
+                                AppDestinations.STATUS -> {
+                                    StatusScreen(
+                                        modifier = Modifier.padding(innerPadding),
+                                        totalApps = apps.size,
+                                        blockedApps = apps.count { !it.wifiAllowed && !it.mobileAllowed },
+                                        viewModel = statusViewModel
+                                    )
+                                }
 
-                            AppDestinations.APPLICATIONS -> {
-                                AppListScreen(
-                                    modifier = Modifier.padding(innerPadding),
-                                    selectedFilters = selectedFilters,
-                                    onFilterClick = { filter ->
-                                        if (filter == AppFilter.ALL) {
-                                            selectedFilters = setOf(AppFilter.ALL)
-                                        } else {
-                                            val current = selectedFilters.toMutableSet()
-                                            if (current.contains(AppFilter.ALL)) {
-                                                current.remove(AppFilter.ALL)
-                                            }
-
-                                            if (current.contains(filter)) {
-                                                current.remove(filter)
+                                AppDestinations.APPLICATIONS -> {
+                                    AppListScreen(
+                                        modifier = Modifier.padding(innerPadding),
+                                        selectedFilters = selectedFilters,
+                                        onFilterClick = { filter ->
+                                            if (filter == AppFilter.ALL) {
+                                                selectedFilters = setOf(AppFilter.ALL)
                                             } else {
-                                                current.add(filter)
+                                                val current = selectedFilters.toMutableSet()
+                                                if (current.contains(AppFilter.ALL)) {
+                                                    current.remove(AppFilter.ALL)
+                                                }
+                                                if (current.contains(filter)) {
+                                                    current.remove(filter)
+                                                } else {
+                                                    current.add(filter)
+                                                }
+                                                selectedFilters =
+                                                    if (current.isEmpty()) setOf(AppFilter.ALL) else current
                                             }
-
-                                            selectedFilters =
-                                                if (current.isEmpty()) setOf(AppFilter.ALL) else current
-                                        }
-                                    },
-                                    onFilterLongClick = { filter ->
-                                        if (filter != AppFilter.ALL) {
-                                            val current = selectedFilters.toMutableSet()
-                                            if (current.contains(AppFilter.ALL)) {
-                                                current.remove(AppFilter.ALL)
-                                            }
-
-                                            if (current.contains(filter)) {
-                                                current.remove(filter)
+                                        },
+                                        onFilterLongClick = { filter ->
+                                            if (filter != AppFilter.ALL) {
+                                                val current = selectedFilters.toMutableSet()
+                                                if (current.contains(AppFilter.ALL)) {
+                                                    current.remove(AppFilter.ALL)
+                                                }
+                                                if (current.contains(filter)) {
+                                                    current.remove(filter)
+                                                } else {
+                                                    current.add(filter)
+                                                }
+                                                selectedFilters =
+                                                    if (current.isEmpty()) setOf(AppFilter.ALL) else current
                                             } else {
-                                                current.add(filter)
+                                                selectedFilters = setOf(AppFilter.ALL)
                                             }
+                                        },
+                                        apps = apps,
+                                        isLoading = isLoading,
+                                        onAppsChange = { newApps -> apps = newApps },
+                                        onAppUpdated = { app -> updateAppRule(app) },
+                                        onAppsUpdated = { updatedApps ->
+                                            updatedApps.forEach {
+                                                updateAppRule(
+                                                    it
+                                                )
+                                            }
+                                        },
+                                        onRefresh = { coroutineScope.launch { loadApps() } }
+                                    )
+                                }
 
-                                            selectedFilters =
-                                                if (current.isEmpty()) setOf(AppFilter.ALL) else current
-                                        } else {
-                                            // Long click on ALL resets to just ALL
-                                            selectedFilters = setOf(AppFilter.ALL)
-                                        }
-                                    },
-                                    apps = apps,
-                                    isLoading = isLoading,
-                                    onAppsChange = { newApps ->
-                                        apps = newApps
-                                    },
-                                    onAppUpdated = { app ->
-                                        updateAppRule(app)
-                                    },
-                                    onAppsUpdated = { updatedApps ->
-                                        updatedApps.forEach { updateAppRule(it) }
-                                    },
-                                    onRefresh = {
-                                        coroutineScope.launch {
-                                            loadApps()
-                                        }
-                                    }
-                                )
-                            }
+                                AppDestinations.RULES -> {
+                                    RulesScreen(
+                                        modifier = Modifier.padding(innerPadding),
+                                        onNavigateToSaveRules = { showSaveRulesScreen = true },
+                                        onNavigateToCustomRules = { showCustomRulesScreen = true }
+                                    )
+                                }
 
-                            AppDestinations.RULES -> {
-                                RulesScreen(
-                                    modifier = Modifier.padding(innerPadding),
-                                    onNavigateToSaveRules = {
-                                        showSaveRulesScreen = true
-                                    },
-                                    onNavigateToCustomRules = {
-                                        showCustomRulesScreen = true
-                                    }
-                                )
-                            }
+                                AppDestinations.SETTINGS -> {
+                                    SettingsScreen(
+                                        modifier = Modifier.padding(innerPadding),
+                                        onNavigateToHelp = { showOnboardingOverlay = true }
+                                    )
+                                }
 
-                            AppDestinations.SETTINGS -> {
-                                SettingsScreen(
-                                    modifier = Modifier.padding(innerPadding),
-                                    onNavigateToHelp = {
-                                        showOnboardingOverlay = true
-                                    }
-                                )
+                                else -> {}
                             }
-                            // Handled outside pager
-                            AppDestinations.SAVE_RULES -> {}
-                            AppDestinations.CUSTOM_RULES -> {}
                         }
                     }
                 }

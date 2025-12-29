@@ -510,26 +510,38 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
 // HELPER COMPOSABLES
 // ############################################################################
 
+/**
+ * SettingsItemRow Composable:
+ * Optimized for accessibility and large font sizes.
+ * Prevents the Switch from being pushed off-screen by using weight on the text column.
+ */
 @Composable
 fun SettingsItemRow(
     title: String,
     description: String? = null,
     icon: ImageVector,
     checked: Boolean,
+    enabled: Boolean = true,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(enabled = enabled) { onCheckedChange(!checked) },
+        color = Color.Transparent
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Icon Section
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.background,
+                color = if (enabled) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
                 modifier = Modifier.size(40.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -537,30 +549,44 @@ fun SettingsItemRow(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(22.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
                     )
                 }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
+
+            // Text Section: The modifier.weight(1f) is critical for accessibility.
+            // It ensures the text wraps instead of pushing the Switch off-screen.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 2.dp)
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = titleColor
+                    color = if (enabled) titleColor else titleColor.copy(alpha = 0.38f),
+                    softWrap = true
                 )
-                if (description != null) {
+
+                // Safe check for nullable description
+                if (!description.isNullOrEmpty()) {
                     Text(
                         text = description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else 0.38f),
+                        softWrap = true
                     )
                 }
             }
+
+            // Switch Section: Stays on screen because the text column wraps
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+                modifier = Modifier.padding(start = 4.dp)
+            )
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
     }
 }
 
