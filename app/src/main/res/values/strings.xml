@@ -30,7 +30,6 @@
     <string name="blocked_apps_title">Block list</string>
     <string name="blocked_urls_title">Blocked URLs</string>
     <string name="annoyances_label">Annoyances</string>
-    <string name="ui_settings_title">UI Settings</string>
     <string name="pure_black_label">Pure Black</string>
     <string name="pure_black_text">Use pure black in dark mode</string>
     <string name="root_access_granted">Root access granted</string>
@@ -214,4 +213,12 @@
     <string name="status_engine_boot">Boot: %1$s</string>
     <string name="status_on">ON</string>
     <string name="status_off">OFF</string>
+    <string name="ui_settings_title">User Interface</string>
+    <string name="app_lock_label">Application Lock</string>
+    <string name="app_lock_desc">Require biometric authentication to access the app</string>
+    <string name="biometric_title">App Locked</string>
+    <string name="biometric_subtitle">Authenticate to access MyFirewall</string>
+
+
+
 </resources>

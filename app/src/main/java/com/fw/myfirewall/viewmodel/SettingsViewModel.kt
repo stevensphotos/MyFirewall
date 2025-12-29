@@ -47,6 +47,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isStartOnBootEnabled = MutableStateFlow(false)
     val isStartOnBootEnabled: StateFlow<Boolean> = _isStartOnBootEnabled.asStateFlow()
 
+    // NOUVEAU : État du verrouillage de l'application
+    private val _isAppLockEnabled = MutableStateFlow(false)
+    val isAppLockEnabled: StateFlow<Boolean> = _isAppLockEnabled.asStateFlow()
+
     private val _isPureBlackEnabled = MutableStateFlow(false)
     val isPureBlackEnabled: StateFlow<Boolean> = _isPureBlackEnabled.asStateFlow()
 
@@ -108,6 +112,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 "app_filter_enabled" -> _isAppFilterEnabled.value = prefs.getBoolean(key, false)
                 "root_enabled" -> _isRootEnabled.value = prefs.getBoolean(key, false)
                 "start_on_boot" -> _isStartOnBootEnabled.value = prefs.getBoolean(key, false)
+                "app_lock_enabled" -> _isAppLockEnabled.value = prefs.getBoolean(key, false)
                 "pure_black_enabled" -> _isPureBlackEnabled.value = prefs.getBoolean(key, false)
                 "dynamic_color_enabled" -> _isDynamicColorEnabled.value = prefs.getBoolean(key, true)
                 "theme_mode" -> _themeMode.value = prefs.getString(key, "system") ?: "system"
@@ -124,6 +129,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isAppFilterEnabled.value = sharedPrefs.getBoolean("app_filter_enabled", false)
         _isRootEnabled.value = sharedPrefs.getBoolean("root_enabled", false)
         _isStartOnBootEnabled.value = sharedPrefs.getBoolean("start_on_boot", false)
+        _isAppLockEnabled.value = sharedPrefs.getBoolean("app_lock_enabled", false)
         _isPureBlackEnabled.value = sharedPrefs.getBoolean("pure_black_enabled", false)
         _isDynamicColorEnabled.value = sharedPrefs.getBoolean("dynamic_color_enabled", true)
         _themeMode.value = sharedPrefs.getString("theme_mode", "system") ?: "system"
@@ -133,6 +139,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         if (_isRootEnabled.value) {
             checkRoot(manualToggle = false)
+        }
+    }
+
+    /**
+     * Toggles the biometric application lock.
+     */
+    fun toggleAppLock(enabled: Boolean) {
+        _isAppLockEnabled.value = enabled
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPrefs.edit().putBoolean("app_lock_enabled", enabled).apply()
         }
     }
 
@@ -156,7 +172,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         getApplication<Application>().startService(intent)
     }
 
-    private fun checkAndDisableStartOnBoot() {
+    fun checkAndDisableStartOnBoot() {
         if (!_isAppFilterEnabled.value && !_isUrlFilterEnabled.value) {
             if (_isStartOnBootEnabled.value) {
                 _isStartOnBootEnabled.value = false
@@ -270,7 +286,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (_isUrlFilterEnabled.value) {
                     _isUrlFilterEnabled.value = false
                     withContext(Dispatchers.IO) {
-                        sharedPrefs.edit().putBoolean("url_filter_enabled", false).commit()
+                        sharedPrefs.edit().putBoolean("url_filter_enabled", false).apply()
                     }
                     if (!_isAppFilterEnabled.value) stopVpnService() else notifyVpnRulesChanged()
                 }
@@ -278,7 +294,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _isRootEnabled.value = false
                 withContext(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("root_enabled", false).commit()
+                    sharedPrefs.edit().putBoolean("root_enabled", false).apply()
                     hostsGenerator.generateDefaultHostsFile()
                 }
             }
@@ -292,7 +308,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _isRootEnabled.value = hasRoot
             sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
             if (hasRoot) {
-                withContext(Dispatchers.IO) { hostsGenerator.generateHostsFile() }
+                withContext(Dispatchers.IO) { hostsGenerator.generateDefaultHostsFile() }
             }
         }
     }
@@ -307,7 +323,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             _isStartOnBootEnabled.value = enabled
             withContext(Dispatchers.IO) {
-                sharedPrefs.edit().putBoolean("start_on_boot", enabled).commit()
+                sharedPrefs.edit().putBoolean("start_on_boot", enabled).apply()
             }
         }
     }

@@ -382,23 +382,37 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.ui_settings_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.ui_settings_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(16.dp)
+                )
 
+                // APPLICATION LOCK TOGGLE
+                val isAppLockEnabled by viewModel.isAppLockEnabled.collectAsState()
+                SettingsItemRow(
+                    title = stringResource(R.string.app_lock_label),
+                    description = stringResource(R.string.app_lock_desc),
+                    icon = Icons.Rounded.Fingerprint,
+                    checked = isAppLockEnabled,
+                    onCheckedChange = { viewModel.toggleAppLock(it) }
+                )
+
+                SettingsDivider()
+
+                // THEME SELECTION
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { showThemeDialog.value = true }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.background,
@@ -420,7 +434,7 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                                 style = MaterialTheme.typography.bodyLarge
                             )
                             Text(
-                                text = getThemeLabel(themeMode),
+                                text = getThemeLabel(themeMode, context),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -433,6 +447,8 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        }
 
                 SettingsDivider()
 
@@ -503,8 +519,8 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                 }
             }
         }
-    }
-}
+
+
 
 // ############################################################################
 // HELPER COMPOSABLES
@@ -796,11 +812,19 @@ fun DnsDialog(
 }
 
 @Composable
-private fun getThemeLabel(key: String): String {
-    return when(key) {
-        "light" -> stringResource(R.string.theme_light)
-        "dark" -> stringResource(R.string.theme_dark)
-        else -> stringResource(R.string.theme_system)
+/**
+ * Helper to get the localized string for the current theme mode.
+ * Accepts Context to resolve R.string resources.
+ */
+/**
+ * Helper to get the localized string for the current theme mode.
+ * Accepts Context to resolve R.string resources.
+ */
+private fun getThemeLabel(mode: String, context: android.content.Context): String {
+    return when (mode) {
+        "light" -> context.getString(R.string.theme_light)
+        "dark" -> context.getString(R.string.theme_dark)
+        else -> context.getString(R.string.theme_system)
     }
 }
 
