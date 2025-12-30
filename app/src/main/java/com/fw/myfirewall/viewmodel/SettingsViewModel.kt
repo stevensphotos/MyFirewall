@@ -31,7 +31,8 @@ fun getRepoUrl(): String = REPO_URL
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val sharedPrefs = application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
+    private val sharedPrefs =
+        application.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val hostsGenerator: HostsGenerator
 
     // --- FILTERS STATES ---
@@ -66,7 +67,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     // --- PERMISSIONS STATES ---
     private val _isUsageStatsPermissionGranted = MutableStateFlow(false)
-    val isUsageStatsPermissionGranted: StateFlow<Boolean> = _isUsageStatsPermissionGranted.asStateFlow()
+    val isUsageStatsPermissionGranted: StateFlow<Boolean> =
+        _isUsageStatsPermissionGranted.asStateFlow()
     private val _hasNotificationPermission = MutableStateFlow(false)
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
 
@@ -115,7 +117,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 "start_on_boot" -> _isStartOnBootEnabled.value = prefs.getBoolean(key, false)
                 "app_lock_enabled" -> _isAppLockEnabled.value = prefs.getBoolean(key, false)
                 "pure_black_enabled" -> _isPureBlackEnabled.value = prefs.getBoolean(key, false)
-                "dynamic_color_enabled" -> _isDynamicColorEnabled.value = prefs.getBoolean(key, true)
+                "dynamic_color_enabled" -> _isDynamicColorEnabled.value =
+                    prefs.getBoolean(key, true)
+
                 "theme_mode" -> _themeMode.value = prefs.getString(key, "system") ?: "system"
                 "language_code" -> _languageCode.value = prefs.getString(key, "system") ?: "system"
             }
@@ -184,7 +188,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-        /**
+    /**
      * Toggles the VPN-based URL filter.
      * Forces a service restart if switching from Application Filter to ensure clean routing.
      */
@@ -281,7 +285,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-        /**
+    /**
      * Toggles the Root-based hosts filter.
      * Mutually exclusive with VPN filters to prevent routing conflicts.
      * Automatically disables "Start on Boot" if switching to Root mode.
@@ -328,9 +332,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
 
-
-
-        private fun checkRoot(manualToggle: Boolean) {
+    private fun checkRoot(manualToggle: Boolean) {
         viewModelScope.launch {
             val hasRoot = withContext(Dispatchers.IO) { RootUtils.isRootAvailable() }
 
@@ -364,7 +366,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             if (enabled && !_isUrlFilterEnabled.value && !_isAppFilterEnabled.value) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, context.getString(R.string.error_start_on_boot_disabled), Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.error_start_on_boot_disabled),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 return@launch
             }
@@ -396,7 +402,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         sharedPrefs.edit().putString("language_code", code).apply()
     }
 
-    fun resetRootCheckResult() { _rootCheckResult.value = null }
+    fun resetRootCheckResult() {
+        _rootCheckResult.value = null
+    }
 
     fun setDnsServer(primary: String, secondary: String) {
         sharedPrefs.edit().putString("dns_primary", primary).putString("dns_secondary", secondary).apply()
@@ -404,7 +412,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun getDnsPrimary(): String = sharedPrefs.getString("dns_primary", "8.8.8.8") ?: "8.8.8.8"
     fun getDnsSecondary(): String = sharedPrefs.getString("dns_secondary", "8.8.4.4") ?: "8.8.4.4"
-    fun refreshRootStatus() { _isRootPossible.value = RootUtils.isDeviceRooted() }
+    fun refreshRootStatus() {
+        _isRootPossible.value = RootUtils.isDeviceRooted()
+    }
 
     override fun onCleared() {
         super.onCleared()
