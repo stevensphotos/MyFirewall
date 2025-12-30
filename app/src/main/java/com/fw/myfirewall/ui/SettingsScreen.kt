@@ -79,6 +79,12 @@ fun SettingsScreen(
  * SettingsContent Composable:
  * Handles layout, category cards, and the new comprehensive tweaking section.
  */
+
+/**
+ * SettingsContent Composable:
+ * Handles layout, category cards, and the new comprehensive tweaking section.
+ * Optimized for accessibility and large font scaling.
+ */
 @Composable
 fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) {
     val context = LocalContext.current
@@ -114,6 +120,7 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     val isStartOnBootEnabled by viewModel.isStartOnBootEnabled.collectAsState()
     val isPureBlackEnabled by viewModel.isPureBlackEnabled.collectAsState()
     val isDynamicColorEnabled by viewModel.isDynamicColorEnabled.collectAsState()
+    val isAppLockEnabled by viewModel.isAppLockEnabled.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val languageCode by viewModel.languageCode.collectAsState()
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
@@ -137,11 +144,8 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     // Feedback for root check
     LaunchedEffect(rootCheckResult) {
         rootCheckResult?.let { hasRoot ->
-            if (hasRoot) {
-                Toast.makeText(context, rootGrantedMsg, Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(context, rootDeniedMsg, Toast.LENGTH_SHORT).show()
-            }
+            val msg = if (hasRoot) rootGrantedMsg else rootDeniedMsg
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             viewModel.resetRootCheckResult()
         }
     }
@@ -166,9 +170,6 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
             onConfirmation = { selection ->
                 viewModel.setLanguage(selection)
                 com.fw.myfirewall.util.LanguageManager.setLocale(context, selection)
-                if (context is Activity) {
-//                    context.recreate()
-                }
                 showLanguageDialog.value = false
             }
         )
@@ -206,37 +207,23 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
         // CARD: FIREWALL ENGINE
         // ----------------------------------------------------------------------------
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             shape = RoundedCornerShape(32.dp),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
-                // --- HEADER DE CARTE AVEC ICÔNE À GAUCHE ---
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween // Pousse les éléments aux extrémités
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     // L'ICÔNE D'AIDE À GAUCHE (Maintenant lance Onboarding)
                     Text(
                         text = stringResource(R.string.Function_type_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        style = MaterialTheme.typography.titleMedium
                     )
-
-                    // L'ICÔNE D'AIDE (LANCE L'ONBOARDING)
-                    IconButton(
-                        onClick = onNavigateToHelp,
-                        modifier = Modifier.size(32.dp)
-                    ) {
+                    IconButton(onClick = onNavigateToHelp, modifier = Modifier.size(32.dp)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.HelpOutline,
                             contentDescription = "Help",
@@ -252,11 +239,7 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                     description = stringResource(R.string.vpn_service_text),
                     icon = Icons.Rounded.VpnKey,
                     checked = isAppFilterEnabled,
-                    onCheckedChange = { checked ->
-                        performVpnAction(checked) {
-                            viewModel.toggleAppFilter(checked)
-                        }
-                    }
+                    onCheckedChange = { checked -> performVpnAction(checked) { viewModel.toggleAppFilter(checked) } }
                 )
 
                 SettingsDivider()
@@ -266,41 +249,24 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                 //**********************************
                 SettingsItemRow(
                     title = stringResource(R.string.url_filter_label),
-                    description=  stringResource (R.string.url_filter_desc),
+                    description = stringResource(R.string.url_filter_desc),
                     icon = Icons.Rounded.FilterAlt,
                     checked = isUrlFilterEnabled,
-                    onCheckedChange = { checked ->
-                        performVpnAction(checked) {
-                            viewModel.toggleUrlFilter(checked)
-                        }
-                    }
+                    onCheckedChange = { checked -> performVpnAction(checked) { viewModel.toggleUrlFilter(checked) } }
                 )
 
                 SettingsDivider()
-                //**********************************
-                //******* URL FILTER ROOT*******
-                //**********************************
 
-                // Determine label color based on root availability
-                val labelColor = if (isRootPossible)
-                    MaterialTheme.colorScheme.onSurface
-                else
-                    MaterialTheme.colorScheme.error
-
-
+                val labelColor = if (isRootPossible) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
                 SettingsItemRow(
-                    title = if (isRootPossible)
-                        stringResource(R.string.root_service_label)
-                    else
-                        "${stringResource(R.string.root_service_label)} (${stringResource(R.string.not_available)})",
+                    title = stringResource(R.string.root_service_label),
                     description = stringResource(R.string.root_service_text),
-                    icon = if (isRootPossible) Icons.Rounded.AdminPanelSettings else Icons.Rounded.Block,
+                    icon = Icons.Rounded.Security,
                     checked = isRootEnabled,
+                    onCheckedChange = { viewModel.toggleRoot(it) },
+                    enabled = isRootPossible,
                     titleColor = labelColor
-                ) { checked ->
-                    viewModel.toggleRoot(checked)
-                }
-
+                )
 
                 SettingsDivider()
 
@@ -312,84 +278,27 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                     description = stringResource(R.string.start_on_boot_text),
                     icon = Icons.Rounded.PowerSettingsNew,
                     checked = isStartOnBootEnabled,
-                    onCheckedChange = { checked ->
-                        // On passe le contexte pour le Toast d'erreur
-                        viewModel.toggleStartOnBoot(checked, context)
-                    }
+                    onCheckedChange = { viewModel.toggleStartOnBoot(it, context) }
                 )
-
-                SettingsDivider()
-
-                // DNS SETTINGS ROW
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDnsDialog.value = true }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.background,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Dns,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(22.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.dns_settings_label),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = stringResource(R.string.dns_settings_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
 
         // ----------------------------------------------------------------------------
-        // CARD: USER INTERFACE
+        // CARD: USER INTERFACE (RESTORED SECTION)
         // ----------------------------------------------------------------------------
         Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             shape = RoundedCornerShape(32.dp),
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.ui_settings_title),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(16.dp)
                 )
 
-                // APPLICATION LOCK TOGGLE
-                val isAppLockEnabled by viewModel.isAppLockEnabled.collectAsState()
                 SettingsItemRow(
                     title = stringResource(R.string.app_lock_label),
                     description = stringResource(R.string.app_lock_desc),
@@ -400,66 +309,13 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
 
                 SettingsDivider()
 
-                // THEME SELECTION
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showThemeDialog.value = true }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.background,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Palette,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(22.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.theme_settings_label),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = getThemeLabel(themeMode, context),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-
-                SettingsDivider()
-
                 SettingsItemRow(
                     title = stringResource(R.string.dynamic_color_label),
                     description = stringResource(R.string.dynamic_color_text),
                     icon = Icons.Rounded.AutoFixHigh,
-                    checked = isDynamicColorEnabled
-                ) { checked ->
-                    viewModel.toggleDynamicColor(checked)
-                }
+                    checked = isDynamicColorEnabled,
+                    onCheckedChange = { viewModel.toggleDynamicColor(it) }
+                )
 
                 SettingsDivider()
 
@@ -467,60 +323,59 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                     title = stringResource(R.string.pure_black_label),
                     description = stringResource(R.string.pure_black_text),
                     icon = Icons.Rounded.DarkMode,
-                    checked = isPureBlackEnabled
-                ) { checked ->
-                    viewModel.togglePureBlack(checked)
-                }
+                    checked = isPureBlackEnabled,
+                    onCheckedChange = { viewModel.togglePureBlack(it) }
+                )
 
                 SettingsDivider()
 
+                // Theme Selection Row
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showLanguageDialog.value = true }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().clickable { showThemeDialog.value = true }.padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.background,
-                            modifier = Modifier.size(40.dp)
-                        ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.background, modifier = Modifier.size(40.dp)) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Language,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(22.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                                Icon(Icons.Rounded.Palette, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text(
-                                text = stringResource(R.string.language_settings_label),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = getLanguageLabel(languageCode),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Text(stringResource(R.string.theme_settings_label), style = MaterialTheme.typography.bodyLarge)
+                            Text(getThemeLabel(themeMode, context), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                SettingsDivider()
+
+                // Language Selection Row
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable { showLanguageDialog.value = true }.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.background, modifier = Modifier.size(40.dp)) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(Icons.Rounded.Language, null, modifier = Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(stringResource(R.string.language_settings_label), style = MaterialTheme.typography.bodyLarge)
+                            Text(getLanguageLabel(languageCode, context), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
-
-
+    }
+}
 
 // ############################################################################
 // HELPER COMPOSABLES
@@ -529,7 +384,6 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
 /**
  * SettingsItemRow Composable:
  * Optimized for accessibility and large font sizes.
- * Prevents the Switch from being pushed off-screen by using weight on the text column.
  */
 @Composable
 fun SettingsItemRow(
@@ -542,19 +396,14 @@ fun SettingsItemRow(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!checked) },
+        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onCheckedChange(!checked) },
         color = Color.Transparent
     ) {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Icon Section
             Surface(
                 shape = CircleShape,
                 color = if (enabled) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.background.copy(alpha = 0.5f),
@@ -570,21 +419,13 @@ fun SettingsItemRow(
                 }
             }
 
-            // Text Section: The modifier.weight(1f) is critical for accessibility.
-            // It ensures the text wraps instead of pushing the Switch off-screen.
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(vertical = 2.dp)
-            ) {
+            Column(modifier = Modifier.weight(1f).padding(vertical = 2.dp)) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (enabled) titleColor else titleColor.copy(alpha = 0.38f),
                     softWrap = true
                 )
-
-                // Safe check for nullable description
                 if (!description.isNullOrEmpty()) {
                     Text(
                         text = description,
@@ -595,7 +436,6 @@ fun SettingsItemRow(
                 }
             }
 
-            // Switch Section: Stays on screen because the text column wraps
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
@@ -609,217 +449,70 @@ fun SettingsItemRow(
 @Composable
 fun SettingsDivider() {
     HorizontalDivider(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        thickness = 1.dp,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        thickness = 0.5.dp,
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     )
 }
 
 @Composable
-fun ThemeDialog(
-    currentSelection: String,
-    onDismissRequest: () -> Unit,
-    onConfirmation: (String) -> Unit
-) {
-    val options = listOf(
-        "system" to R.string.theme_system,
-        "light" to R.string.theme_light,
-        "dark" to R.string.theme_dark
-    )
-
-    AlertDialog(
-        onDismissRequest = { onDismissRequest() },
-        title = { Text(text = stringResource(R.string.theme_dialog_title)) },
-        text = {
-            Column {
-                options.forEach { (key, labelRes) ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { onConfirmation(key) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(labelRes),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.weight(1f)
-                        )
-                        RadioButton(
-                            selected = (key == currentSelection),
-                            onClick = { onConfirmation(key) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
-}
-
-@Composable
-fun LanguageDialog(
-    currentSelection: String,
-    onDismissRequest: () -> Unit,
-    onConfirmation: (String) -> Unit
-) {
-    val options = listOf(
-        "system" to R.string.language_system,
-        "en" to R.string.language_english,
-        "fr" to R.string.language_french
-    )
-
-    AlertDialog(
-        onDismissRequest = { onDismissRequest() },
-        title = { Text(text = stringResource(R.string.language_dialog_title)) },
-        text = {
-            Column {
-                options.forEach { (key, labelRes) ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { onConfirmation(key) }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(labelRes),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.weight(1f)
-                        )
-                        RadioButton(
-                            selected = (key == currentSelection),
-                            onClick = { onConfirmation(key) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
-    )
-}
-
-/**
- * DnsDialog: Custom DNS configuration.
- */
-@Composable
-fun DnsDialog(
-    currentPrimary: String,
-    currentSecondary: String,
-    onDismissRequest: () -> Unit,
-    onConfirmation: (String, String) -> Unit
-) {
-    val dnsPresets = listOf(
-        Triple("system", R.string.dns_preset_system, "" to ""),
-        Triple("google", R.string.dns_preset_google, "8.8.8.8" to "8.8.4.4"),
-        Triple("cloudflare", R.string.dns_preset_cloudflare, "1.1.1.1" to "1.0.0.1"),
-        Triple("quad9", R.string.dns_preset_quad9, "9.9.9.9" to "149.112.112.112"),
-        Triple("custom", R.string.dns_preset_custom, "" to "")
-    )
-
-    // Détecter le preset actuel
-    val initialPreset = dnsPresets.find {
-        it.third.first == currentPrimary && it.third.second == currentSecondary
-    }?.first ?: if (currentPrimary.isEmpty()) "system" else "custom"
-
-    var selectedPreset by remember { mutableStateOf(initialPreset) }
-    var primaryDns by remember { mutableStateOf(currentPrimary) }
-    var secondaryDns by remember { mutableStateOf(currentSecondary) }
-
+fun ThemeDialog(currentSelection: String, onDismissRequest: () -> Unit, onConfirmation: (String) -> Unit) {
+    val options = listOf("system" to R.string.theme_system, "light" to R.string.theme_light, "dark" to R.string.theme_dark)
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text(text = stringResource(R.string.dns_dialog_title)) },
+        title = { Text(stringResource(R.string.theme_dialog_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Preset options
-                dnsPresets.forEach { (key, labelRes, dnsValues) ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                selectedPreset = key
-                                val preset = dnsPresets.find { it.first == key }
-                                if (preset != null) {
-                                    primaryDns = preset.third.first
-                                    secondaryDns = preset.third.second
-                                }
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(labelRes),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.weight(1f)
-                        )
-                        RadioButton(
-                            selected = (key == selectedPreset),
-                            onClick = {
-                                selectedPreset = key
-                                val preset = dnsPresets.find { it.first == key }
-                                if (preset != null) {
-                                    primaryDns = preset.third.first
-                                    secondaryDns = preset.third.second
-                                }
-                            }
-                        )
+            Column {
+                options.forEach { (key, labelRes) ->
+                    Row(Modifier.fillMaxWidth().clickable { onConfirmation(key) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(labelRes), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        RadioButton(selected = (key == currentSelection), onClick = { onConfirmation(key) })
                     }
                 }
-
-                if (selectedPreset == "custom") {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = primaryDns,
-                        onValueChange = { primaryDns = it },
-                        label = { Text(stringResource(R.string.dns_primary_label)) },
-                        placeholder = { Text("8.8.8.8") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    OutlinedTextField(
-                        value = secondaryDns,
-                        onValueChange = { secondaryDns = it },
-                        label = { Text(stringResource(R.string.dns_secondary_label)) },
-                        placeholder = { Text("8.8.4.4") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                }
             }
         },
-        confirmButton = {
-            TextButton(onClick = { onConfirmation(primaryDns, secondaryDns) }) {
-                Text(stringResource(R.string.dns_apply))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text(stringResource(R.string.cancel))
-            }
-        }
+        confirmButton = { TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) } }
     )
 }
 
 @Composable
-/**
- * Helper to get the localized string for the current theme mode.
- * Accepts Context to resolve R.string resources.
- */
-/**
- * Helper to get the localized string for the current theme mode.
- * Accepts Context to resolve R.string resources.
- */
+fun LanguageDialog(currentSelection: String, onDismissRequest: () -> Unit, onConfirmation: (String) -> Unit) {
+    val options = listOf("system" to R.string.language_system, "en" to R.string.language_english, "fr" to R.string.language_french)
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.language_dialog_title)) },
+        text = {
+            Column {
+                options.forEach { (key, labelRes) ->
+                    Row(Modifier.fillMaxWidth().clickable { onConfirmation(key) }.padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(labelRes), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        RadioButton(selected = (key == currentSelection), onClick = { onConfirmation(key) })
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) } }
+    )
+}
+
+@Composable
+fun DnsDialog(currentPrimary: String, currentSecondary: String, onDismissRequest: () -> Unit, onConfirmation: (String, String) -> Unit) {
+    var primaryDns by remember { mutableStateOf(currentPrimary) }
+    var secondaryDns by remember { mutableStateOf(currentSecondary) }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(stringResource(R.string.dns_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = primaryDns, onValueChange = { primaryDns = it }, label = { Text(stringResource(R.string.dns_primary_label)) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = secondaryDns, onValueChange = { secondaryDns = it }, label = { Text(stringResource(R.string.dns_secondary_label)) }, modifier = Modifier.fillMaxWidth())
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirmation(primaryDns, secondaryDns) }) { Text(stringResource(R.string.dns_apply)) } },
+        dismissButton = { TextButton(onClick = onDismissRequest) { Text(stringResource(R.string.cancel)) } }
+    )
+}
+
 private fun getThemeLabel(mode: String, context: android.content.Context): String {
     return when (mode) {
         "light" -> context.getString(R.string.theme_light)
@@ -828,10 +521,10 @@ private fun getThemeLabel(mode: String, context: android.content.Context): Strin
     }
 }
 
-private fun getLanguageLabel(code: String): String {
+private fun getLanguageLabel(code: String, context: android.content.Context): String {
     return when (code) {
-        "en" -> "English"
-        "fr" -> "Français"
-        else -> "System Default"
+        "en" -> context.getString(R.string.language_english)
+        "fr" -> context.getString(R.string.language_french)
+        else -> context.getString(R.string.language_system)
     }
 }

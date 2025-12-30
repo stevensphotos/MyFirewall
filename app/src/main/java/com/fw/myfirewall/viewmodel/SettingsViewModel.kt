@@ -280,38 +280,75 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
 
+        /**
+     * Toggles the Root-based hosts filter.
+     * Mutually exclusive with VPN filters to prevent routing conflicts.
+     * Automatically disables "Start on Boot" if switching to Root mode.
+     */
     fun toggleRoot(enabled: Boolean) {
         viewModelScope.launch {
             if (enabled) {
-                if (_isUrlFilterEnabled.value) {
+                // 1. Handle exclusivity: If any VPN filter is active, shut it down
+                if (_isUrlFilterEnabled.value || _isAppFilterEnabled.value) {
                     _isUrlFilterEnabled.value = false
-                    withContext(Dispatchers.IO) {
-                        sharedPrefs.edit().putBoolean("url_filter_enabled", false).apply()
+                    _isAppFilterEnabled.value = false
+
+                    viewModelScope.launch(Dispatchers.IO) {
+                        sharedPrefs.edit()
+                            .putBoolean("url_filter_enabled", false)
+                            .putBoolean("app_filter_enabled", false)
+                            .apply()
                     }
-                    if (!_isAppFilterEnabled.value) stopVpnService() else notifyVpnRulesChanged()
+                    stopVpnService()
+                    delay(400)
                 }
+
+                // 2. Logic condition: Disable "Start on Boot" when switching to Root mode
+                // as the VPN service is no longer the primary engine.
+                if (_isStartOnBootEnabled.value) {
+                    _isStartOnBootEnabled.value = false
+                    viewModelScope.launch(Dispatchers.IO) {
+                        sharedPrefs.edit().putBoolean("start_on_boot", false).apply()
+                    }
+                }
+
+                // 3. checkRoot will call hostsGenerator.generateDefaultHostsFile() internally
                 checkRoot(manualToggle = true)
             } else {
+                // Disabling Root mode: restore default hosts file
                 _isRootEnabled.value = false
-                withContext(Dispatchers.IO) {
+                viewModelScope.launch(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("root_enabled", false).apply()
+                    // Re-generate a clean hosts file without blockages
                     hostsGenerator.generateDefaultHostsFile()
                 }
             }
         }
     }
 
-    private fun checkRoot(manualToggle: Boolean) {
+
+
+        private fun checkRoot(manualToggle: Boolean) {
         viewModelScope.launch {
             val hasRoot = withContext(Dispatchers.IO) { RootUtils.isRootAvailable() }
-            if (manualToggle) _rootCheckResult.value = hasRoot
+
+            // 1. Update the UI feedback flow
+            if (manualToggle) {
+                _rootCheckResult.value = hasRoot
+            }
+
+            // 2. Only enable logical state if physical root was actually obtained
             _isRootEnabled.value = hasRoot
-            sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
-            if (hasRoot) {
-                withContext(Dispatchers.IO) { hostsGenerator.generateDefaultHostsFile() }
+
+            // 3. Persist the state and apply the physical file change
+            withContext(Dispatchers.IO) {
+                sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
+                // Always call this to ensure physical file matches logical state
+                hostsGenerator.generateHostsFile()
             }
         }
     }
+
 
     fun toggleStartOnBoot(enabled: Boolean, context: Context) {
         viewModelScope.launch {
