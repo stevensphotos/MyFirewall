@@ -21,6 +21,7 @@ import android.Manifest
 import android.widget.Toast
 import com.fw.myfirewall.R
 import kotlinx.coroutines.delay
+import com.fw.myfirewall.service.HostsFilterService
 
 // APPLICATION LICENCE
 private const val APP_LICENSE = "GPLv3"
@@ -315,16 +316,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // 3. checkRoot will call hostsGenerator.generateDefaultHostsFile() internally
                 checkRoot(manualToggle = true)
             } else {
-                // Disabling Root mode: restore default hosts file
                 _isRootEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
                     sharedPrefs.edit().putBoolean("root_enabled", false).apply()
-                    // Re-generate a clean hosts file without blockages
                     hostsGenerator.generateDefaultHostsFile()
+                    // ARRÊT DE LA NOTIFICATION
+                    HostsFilterService.stop(getApplication())
                 }
             }
         }
     }
+
 
 
 
@@ -343,8 +345,16 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             // 3. Persist the state and apply the physical file change
             withContext(Dispatchers.IO) {
                 sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
-                // Always call this to ensure physical file matches logical state
-                hostsGenerator.generateHostsFile()
+
+                if (hasRoot) {
+                    hostsGenerator.generateHostsFile()
+                    // DÉMARRAGE DE LA NOTIFICATION
+                    HostsFilterService.start(getApplication())
+                } else {
+                    hostsGenerator.generateDefaultHostsFile()
+                    // ARRÊT DE LA NOTIFICATION
+                    HostsFilterService.stop(getApplication())
+                }
             }
         }
     }

@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Description
@@ -21,6 +20,8 @@ import com.fw.myfirewall.R
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.QuestionAnswer
@@ -124,7 +125,7 @@ fun InfoPage(
 // SECTION REPOSITORY (Lien Web)
             InfoSectionCard(
                 title = stringResource(R.string.info_support_title),
-                icon = Icons.Rounded.OpenInNew,
+                icon = Icons.AutoMirrored.Rounded.OpenInNew,
                 description = stringResource(R.string.info_support_desc)
             )
 

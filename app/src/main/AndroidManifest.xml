@@ -40,16 +40,25 @@
             </intent-filter>
         </activity>
 
+        <!-- VPN Service Declaration -->
         <service
             android:name=".service.MyVpnService"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="specialUse"            android:stopWithTask="false"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
         </service>
+
+        <!-- Hosts Filter Notification Service (Fixed: Moved outside MyVpnService) -->
+        <service
+            android:name=".service.HostsFilterService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
 
 
         <receiver

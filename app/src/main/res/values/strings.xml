@@ -218,6 +218,9 @@
     <string name="app_lock_desc">Require biometric authentication to access the app</string>
     <string name="biometric_title">App Locked</string>
     <string name="biometric_subtitle">Authenticate to access MyFirewall</string>
+    <string name="hosts_filter_active_title">Hosts Filter Active</string>
+    <string name="hosts_filter_active_desc">Root-based URL filtering is protecting your device.</string>
+    <string name="hosts_filter_channel_name">Hosts Filter Status</string>
 
 
 

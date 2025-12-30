@@ -1,11 +1,9 @@
 package com.fw.myfirewall
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,7 +22,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,7 +39,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.Density
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
@@ -46,15 +51,22 @@ import com.fw.myfirewall.data.AppDatabase
 import com.fw.myfirewall.data.AppRule
 import com.fw.myfirewall.data.UserPreferences
 import com.fw.myfirewall.model.AppInfo
-import com.fw.myfirewall.ui.*
+import com.fw.myfirewall.ui.AppDestinations
+import com.fw.myfirewall.ui.AppFilter
+import com.fw.myfirewall.ui.AppListScreen
+import com.fw.myfirewall.ui.CustomRulesScreen
+import com.fw.myfirewall.ui.InfoPage
+import com.fw.myfirewall.ui.OnboardingScreen
+import com.fw.myfirewall.ui.RulesScreen
+import com.fw.myfirewall.ui.SaveRulesScreen
+import com.fw.myfirewall.ui.SettingsScreen
+import com.fw.myfirewall.ui.StatusScreen
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
 import com.fw.myfirewall.viewmodel.StatusViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.fw.myfirewall.ui.OnboardingScreen
-import com.fw.myfirewall.ui.InfoPage
 
 
 // ############################################################################
@@ -222,7 +234,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         biometricPrompt.authenticate(promptInfo)
     }
 
-    @PreviewScreenSizes
+
     @Composable
     fun MyFirewallApp(settingsViewModel: SettingsViewModel) {
         // ############################################################################
