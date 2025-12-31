@@ -239,6 +239,9 @@
     <string name="step_permissions_title">Grant permissions</string>
     <string name="step_permissions_desc">To display app activity notifications, grant “Notifications” permission. For network stats on the status screen, grant optional “Usage Access”.
 If your device is rooted and you want advanced features (hosts-based URL filter, full protection with Firewall + URL filter), grant optional “Root permission”.</string>
+    <!-- Placer à l'endroit des notifications dans strings.xml -->
+    <string name="notification_revoked_title">Protection Disabled</string>
+    <string name="notification_revoked_content">Another VPN has taken priority. MyFirewall is no longer filtering traffic.</string>
 
 
 
