@@ -19,12 +19,25 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/**
+ * ############################################################################
+ * VIEWMODEL: RulesViewModel
+ * Rôle : Orchestre la gestion des listes de blocage DNS/Hosts.
+ * Fichiers connectés :
+ * - BlockListImporter.kt (Téléchargement et Parsing)
+ * - HostsGenerator.kt (Génération du fichier Root / Mise à jour VPN)
+ * - AppDatabase.kt (Stockage persistant des domaines)
+ * ############################################################################
+ */
 class RulesViewModel(application: Application) : AndroidViewModel(application) {
     private val context = application.applicationContext
     private val sharedPrefs = context.getSharedPreferences("MyFirewallPrefs", Context.MODE_PRIVATE)
     private val database = AppDatabase.getDatabase(context)
     private val hostsGenerator = HostsGenerator(database.blockRuleDao(), context)
 
+    // ----------------------------------------------------------------------------
+    // 1. [SORTIES STATEFLOW] : États observés par l'UI (SettingsScreen / StatusScreen)
+    // ----------------------------------------------------------------------------
     private val _isAdvertisingEnabled = MutableStateFlow(false)
     val isAdvertisingEnabled: StateFlow<Boolean> = _isAdvertisingEnabled.asStateFlow()
 
@@ -40,6 +53,11 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedSchedule = MutableStateFlow("schedule_24h")
     val selectedSchedule: StateFlow<String> = _selectedSchedule.asStateFlow()
 
+    /**
+     * ROUTINE : prefListener
+     * [ENTRÉE SYSTÈME] : Écoute les changements dans SharedPreferences.
+     * [SORTIE INTERNE] : Met à jour les StateFlows pour rafraîchir l'UI en temps réel.
+     */
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
         when (key) {
             "advertising_enabled" -> _isAdvertisingEnabled.value = prefs.getBoolean(key, false)
@@ -51,6 +69,7 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
+        // [ENTRÉE PERSISTANCE] : Chargement initial des préférences utilisateur
         _isAdvertisingEnabled.value = sharedPrefs.getBoolean("advertising_enabled", false)
         _isAnnoyancesEnabled.value = sharedPrefs.getBoolean("annoyances_enabled", false)
         _isSocialEnabled.value = sharedPrefs.getBoolean("social_enabled", false)
@@ -61,10 +80,15 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefListener)
     }
 
+    /**
+     * ROUTINE : clearAllCustomRules
+     * [SORTIE ROOM] : Supprime définitivement la catégorie CUSTOM de la DB.
+     * [SORTIE FILTRE] : Purge les fichiers hosts via HostsGenerator.
+     */
     fun clearAllCustomRules() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                //1. Supprime les règles de la base de données
+                // 1. Supprime les règles de la base de données
                 database.blockRuleDao().deleteByCategory(BlockRuleCategory.CUSTOM)
 
                 // 2. Met à jour les filtres avec une liste vide pour purger
@@ -86,6 +110,9 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     ) {
     }
 
+    // ----------------------------------------------------------------------------
+    // 2. [ENTRÉES UI] : Commandes de basculement des filtres DNS
+    // ----------------------------------------------------------------------------
 
     fun toggleAdvertising(enabled: Boolean) {
         _isAdvertisingEnabled.value = enabled
@@ -109,10 +136,16 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         _isCustomEnabled.value = enabled
         sharedPrefs.edit().putBoolean("custom_enabled", enabled).apply()
         viewModelScope.launch {
+            // [SORTIE SYSTÈME] : Déclenche la régénération du fichier hosts
             hostsGenerator.generateHostsFile()
         }
     }
 
+    /**
+     * ROUTINE : applyCustomRules
+     * [ENTRÉE UI] : Texte brut saisi par l'utilisateur.
+     * [SORTIE DB] : Importation via BlockListImporter.
+     */
     fun applyCustomRules(rulesText: String) {
         viewModelScope.launch {
             val count = withContext(Dispatchers.IO) {
@@ -131,6 +164,9 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * [SORTIE UI] : Récupère les règles actuelles pour affichage dans un champ d'édition.
+     */
     suspend fun getCurrentCustomRules(): String {
         return withContext(Dispatchers.IO) {
             val rules = database.blockRuleDao().getBlockRulesByCategory(BlockRuleCategory.CUSTOM).first()
@@ -143,6 +179,12 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
         sharedPrefs.edit().putString("ad_blocker_schedule", schedule).apply()
     }
 
+    /**
+     * ROUTINE : handleRuleToggle
+     * Logique de gestion de l'importation automatique.
+     * [ENTRÉE CONFIG] : URL de la liste définie dans BlockListConfig.
+     * [SORTIE RÉSEAU] : Téléchargement si la base de données est vide.
+     */
     private fun handleRuleToggle(enabled: Boolean, category: BlockRuleCategory, url: String) {
         viewModelScope.launch {
             if (enabled) {
@@ -162,6 +204,7 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
+            // [SORTIE FINALE] : Rafraîchissement du moteur de blocage
             hostsGenerator.generateHostsFile()
         }
     }

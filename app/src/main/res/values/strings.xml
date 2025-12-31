@@ -2,7 +2,7 @@
     <string name="app_name">MyFirewall</string>
     <string name="settings_title">Settings</string>
     <string name="rules_title">Rules</string>
-    <string name="status_title" translatable="false">Status</string>
+    <string name="status_title">Status</string>
     <string name="vpn_service_text">work with VPN Service</string>
     <string name="Function_type_title">Firewall and Url filtering</string>
     <string name="root_service_label">URL Filter</string>
@@ -221,6 +221,25 @@
     <string name="hosts_filter_active_title">Hosts Filter Active</string>
     <string name="hosts_filter_active_desc">Root-based URL filtering is protecting your device.</string>
     <string name="hosts_filter_channel_name">Hosts Filter Status</string>
+    <string name="onboarding_guide_label">Quick start guide</string>
+    <string name="onboarding_guide_desc">Setup Firewall and URL filters</string>
+    <string name="btn_got_it">Done</string>
+    <string name= "step_vpn_title">Setup Firewall</string>
+    <string name="step_vpn_desc">1 Go to Settings
+2 Enable Applications Filter ->
+3 Go to Applications screen ->
+4 Enable or disable application -> click on connectivity icon to enable/disable Wi-Fi, Data
+-> long click on application name enable/disable all connectivity
+-> Long click on application category enable/disable all applications -> Click on application icon, open application setting s</string>
+    <string name="step_rules_title">Setup URL Filter (Adblock)</string>
+    <string name="step_rules_desc">
+1 Go to Settings ->
+2 Enable URL Filter ->
+3 Grant VPN permission ->
+4 Go to Status screen->
+5 Long click on Advertising card download filter lists</string>
+
+
 
 
 

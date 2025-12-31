@@ -9,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,8 +17,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,6 +69,84 @@ fun OnboardingScreen(
             onInfoClick = onInfoClick,
             viewModel = settingsViewModel
         )
+    }
+}
+
+
+// ############################################################################
+// DIALOG: QUICKSTART GUIDE
+// ############################################################################
+@Composable
+fun QuickStartDialog(
+    onDismissRequest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        icon = {
+            Icon(
+                Icons.Default.Lightbulb,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = stringResource(R.string.info_quick_start_title),
+                style = MaterialTheme.typography.headlineMedium
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickStartStep(
+                    number = "1",
+                    title = stringResource(R.string.step_vpn_title),
+                    description = stringResource(R.string.step_vpn_desc)
+                )
+                QuickStartStep(
+                    number = "2",
+                    title = stringResource(R.string.step_rules_title),
+                    description = stringResource(R.string.step_rules_desc)
+                )
+                // Ajoutez d'autres étapes ici...
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text(stringResource(R.string.btn_got_it))
+            }
+        },
+        shape = RoundedCornerShape(28.dp)
+    )
+}
+
+@Composable
+private fun QuickStartStep(number: String, title: String, description: String) {
+    Row(verticalAlignment = Alignment.Top) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(24.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = number,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column {
+            Text(text = title, style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -181,7 +264,7 @@ fun OnboardingContent(
                         text = stringResource(R.string.welcome_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Start
+                        textAlign = TextAlign.Left
                     )
                 }
             }
@@ -193,7 +276,7 @@ fun OnboardingContent(
             // ############################################################################
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
                 ),
                 shape = RoundedCornerShape(25.dp)
             ) {
@@ -208,215 +291,238 @@ fun OnboardingContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // QUICK START GUIDE: Section informative dans une carte
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(25.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.info_quick_start_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
+            val showGuideDialog = remember { mutableStateOf(false) }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    val steps = listOf(
-                        R.string.info_step_1,
-                        R.string.info_step_2,
-                        R.string.info_step_3,
-                        R.string.info_step_4
-                    )
-
-                    steps.forEach { stepRes ->
-                        Text(
-                            text = stringResource(stepRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            textAlign = TextAlign.Start
-                        )
-                    }
-                }
+            if (showGuideDialog.value) {
+                QuickStartDialog(onDismissRequest = { showGuideDialog.value = false })
             }
+
+
+
+            // ############################################################################
+            // QUICK START GUIDE: Section informative dans une carte
+            // ############################################################################
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                        alpha = 0.4f
+                    )
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showGuideDialog.value = true }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.onboarding_guide_label),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.onboarding_guide_desc),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            } // Fin de la Card
+
             Spacer(modifier = Modifier.height(24.dp))
 
 
+                                Spacer(modifier = Modifier.height(24.dp))
 
 
+                                // ############################################################################
+                                // PERMISSIONS SECTION
+                                // ############################################################################
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        if (!hasNotificationPermission) {
+                                            Column {
+                                                Card(
+                                                    colors = CardDefaults.cardColors(
+                                                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                                            alpha = 0.5f
+                                                        )
+                                                    ),
+                                                    shape = RoundedCornerShape(25.dp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(bottom = 8.dp)
+                                                ) {
+                                                    Column(modifier = Modifier.padding(16.dp)) {
+                                                        // Titre inséré à l'intérieur de la carte pour la cohérence visuelle
+                                                        Text(
+                                                            text = stringResource(R.string.perm_notification_title),
+                                                            style = MaterialTheme.typography.titleMedium,
+                                                            color = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            textAlign = TextAlign.Center
+                                                        )
 
+                                                        Spacer(modifier = Modifier.height(8.dp))
 
+                                                        Text(
+                                                            text = stringResource(R.string.onboarding_perm_vpn_desc),
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            textAlign = TextAlign.Justify,
+                                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                        )
+                                                    }
+                                                }
+                                                OutlinedButton(
+                                                    onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Text(stringResource(R.string.permission_notification))
+                                                }
+                                            }
+                                        } else {
+                                            PermissionGrantedRow(text = stringResource(R.string.permission_notification))
+                                        }
+                                    }
 
-            // ############################################################################
-            // PERMISSIONS SECTION
-            // ############################################################################
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    if (!hasNotificationPermission) {
-                        Column {
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
-                                        alpha = 0.5f
-                                    )
-                                ),
-                                shape = RoundedCornerShape(25.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp)
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    // Titre inséré à l'intérieur de la carte pour la cohérence visuelle
-                                    Text(
-                                        text = stringResource(R.string.perm_notification_title),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center
-                                    )
+                                    // --- USAGE STATS PERMISSION ---
+                                    if (!isUsageStatsGranted) {
+                                        Column {
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                                        alpha = 0.5f
+                                                    )
+                                                ),
+                                                shape = RoundedCornerShape(25.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = 8.dp)
+                                            ) {
+                                                Column(modifier = Modifier.padding(16.dp)) {
+                                                    Text(
+                                                        text = stringResource(R.string.perm_usage_stats_title),
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = stringResource(R.string.permission_usage_stats_description),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        textAlign = TextAlign.Justify,
+                                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                    )
+                                                }
+                                            }
+                                            OutlinedButton(
+                                                onClick = { openUsageStatsSettings(context) },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(stringResource(R.string.permission_usage_stats))
+                                            }
+                                        }
+                                    } else {
+                                        PermissionGrantedRow(text = stringResource(R.string.permission_usage_stats))
+                                    }
 
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    // --- ROOT PERMISSION ---
+                                    if (isRootPossible && !isRootEnabled) {
+                                        Column {
+                                            Card(
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(
+                                                        alpha = 0.5f
+                                                    )
+                                                ),
+                                                shape = RoundedCornerShape(25.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = 8.dp)
+                                            ) {
+                                                Column(modifier = Modifier.padding(16.dp)) {
+                                                    Text(
+                                                        text = stringResource(R.string.perm_root_title),
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Text(
+                                                        text = stringResource(R.string.root_disclaimer_onboarding),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        textAlign = TextAlign.Justify,
+                                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                                    )
+                                                }
+                                            }
+                                            OutlinedButton(
+                                                onClick = { viewModel.toggleRoot(enabled = true) },
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Text(stringResource(R.string.permission_root))
+                                            }
+                                        }
+                                    } else if (isRootEnabled) {
+                                        PermissionGrantedRow(text = stringResource(R.string.root_access_granted))
+                                    }
+                                }
 
-                                    Text(
-                                        text = stringResource(R.string.onboarding_perm_vpn_desc),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        textAlign = TextAlign.Justify,
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
+                                // 4. FOOTER SECTION
+                                // Note: Weight(1f) is used to push buttons to the bottom
+                                Spacer(modifier = Modifier.weight(1f))
+                                Spacer(modifier = Modifier.height(32.dp))
+
+                                OutlinedButton(
+                                    onClick = onInfoClick,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(28.dp)
+                                ) {
+                                    Icon(Icons.Default.Info, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(stringResource(R.string.information_title))
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Button(
+                                    onClick = onOnboardingFinished,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(56.dp),
+                                    shape = RoundedCornerShape(28.dp)
+                                ) {
+                                    Text(stringResource(R.string.onboarding_done))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null)
                                 }
                             }
-                            OutlinedButton(
-                                onClick = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.permission_notification))
-                            }
-                        }
-                    } else {
-                        PermissionGrantedRow(text = stringResource(R.string.permission_notification))
-                    }
-                }
-
-                // --- USAGE STATS PERMISSION ---
-                if (!isUsageStatsGranted) {
-                    Column {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                            ),
-                            shape = RoundedCornerShape(25.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = stringResource(R.string.perm_usage_stats_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = stringResource(R.string.permission_usage_stats_description),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Justify,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
-                        }
-                        OutlinedButton(
-                            onClick = { openUsageStatsSettings(context) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.permission_usage_stats))
                         }
                     }
-                } else {
-                    PermissionGrantedRow(text = stringResource(R.string.permission_usage_stats))
-                }
-
-                // --- ROOT PERMISSION ---
-                if (isRootPossible && !isRootEnabled) {
-                    Column {
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                            ),
-                            shape = RoundedCornerShape(25.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = stringResource(R.string.perm_root_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = stringResource(R.string.root_disclaimer_onboarding),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    textAlign = TextAlign.Justify,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            }
-                        }
-                        OutlinedButton(
-                            onClick = { viewModel.toggleRoot(enabled = true) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.permission_root))
-                        }
-                    }
-                } else if (isRootEnabled) {
-                    PermissionGrantedRow(text = stringResource(R.string.root_access_granted))
-                }
-            }
-
-            // 4. FOOTER SECTION
-            // Note: Weight(1f) is used to push buttons to the bottom
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(32.dp))
-
-            OutlinedButton(
-                onClick = onInfoClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Icon(Icons.Default.Info, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.information_title))
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(
-                onClick = onOnboardingFinished,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp)
-            ) {
-                Text(stringResource(R.string.onboarding_done))
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.Default.CheckCircle, contentDescription = null)
-            }
-        }
-    }
-}

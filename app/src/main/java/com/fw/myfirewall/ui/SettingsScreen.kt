@@ -71,7 +71,8 @@ import com.fw.myfirewall.viewmodel.SettingsViewModel
 
 /**
  * SettingsScreen Composable:
- * Acts as the top-level container for the settings UI.
+ * Point d'entrée principal de l'écran des paramètres.
+ * Gère l'application du thème global en fonction de l'état du ViewModel.
  */
 @Composable
 fun SettingsScreen(
@@ -82,14 +83,16 @@ fun SettingsScreen(
     val settingsViewModel: SettingsViewModel = viewModel
 
     // ############################################################################
-    // 1. STATE OBSERVATION
+    // 1. OBSERVATION DE L'ÉTAT (UI THEME STATE)
+    // Récupère les préférences utilisateur stockées dans le ViewModel via StateFlow
     // ############################################################################
     val isPureBlackEnabled by settingsViewModel.isPureBlackEnabled.collectAsState()
     val themeMode by settingsViewModel.themeMode.collectAsState()
     val isDynamicColorEnabled by settingsViewModel.isDynamicColorEnabled.collectAsState()
 
     // ############################################################################
-    // 2. THEME CALCULATION
+    // 2. LOGIQUE DU THÈME
+    // Calcule dynamiquement le mode sombre/clair pour MyFirewallTheme
     // ############################################################################
     val darkTheme = when (themeMode) {
         "light" -> false
@@ -113,13 +116,8 @@ fun SettingsScreen(
 
 /**
  * SettingsContent Composable:
- * Handles layout, category cards, and the new comprehensive tweaking section.
- */
-
-/**
- * SettingsContent Composable:
- * Handles layout, category cards, and the new comprehensive tweaking section.
- * Optimized for accessibility and large font scaling.
+ * Gère la disposition graphique, les cartes de catégories et les interactions.
+ * Centralise les appels vers le ViewModel pour modifier les préférences.
  */
 @Composable
 fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) {
@@ -129,17 +127,18 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     val rootDeniedMsg = stringResource(R.string.root_access_not_available)
 
     // ############################################################################
-    // 3. UI LOCAL STATES
+    // 3. ÉTATS LOCAUX DE L'INTERFACE (UI VISIBILITY)
     // ############################################################################
     val showThemeDialog = remember { mutableStateOf(false) }
     val showLanguageDialog = remember { mutableStateOf(false) }
     val showDnsDialog = remember { mutableStateOf(false) }
 
-    // Store the pending action to execute after VPN permission is granted
+    // Stocke temporairement une action Lambda à exécuter après l'accord système VPN
     val pendingVpnAction = remember { mutableStateOf<(() -> Unit)?>(null) }
 
     // ############################################################################
-    // 4. PERMISSION HANDLERS
+    // 4. GESTIONNAIRES DE PERMISSIONS ET ÉTATS DU VIEWMODEL
+    // Liaison directe avec les préférences persistantes (DataStore/SharedPreferences)
     // ############################################################################
     val vpnLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -162,7 +161,15 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     val rootCheckResult by viewModel.rootCheckResult.collectAsState()
     val isRootPossible by viewModel.isRootPossible.collectAsState()
 
-    // Helper to trigger VPN actions with permission check
+    // ############################################################################
+    // 5. FONCTIONS UTILITAIRES ET EFFETS (SIDE EFFECTS)
+    // ############################################################################
+
+    /**
+     * performVpnAction:
+     * Vérifie si le système Android autorise le service VPN avant d'appeler
+     * les fonctions de changement d'état du ViewModel.
+     */
     fun performVpnAction(enable: Boolean, action: () -> Unit) {
         if (enable) {
             val intent = VpnService.prepare(context)
@@ -177,7 +184,10 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
         }
     }
 
-    // Feedback for root check
+    /**
+     * Observateur du résultat Root:
+     * Affiche un Toast suite à une demande de privilèges root via le ViewModel.
+     */
     LaunchedEffect(rootCheckResult) {
         rootCheckResult?.let { hasRoot ->
             val msg = if (hasRoot) rootGrantedMsg else rootDeniedMsg
@@ -187,8 +197,11 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     }
 
     // ############################################################################
-    // 5. DIALOG RENDERING
+    // 6. RENDU DES DIALOGUES (OVERLAYS)
+    // Permet la saisie utilisateur pour les paramètres complexes.
     // ############################################################################
+
+    // Sélecteur de Thème : Appelle viewModel.setThemeMode
     if (showThemeDialog.value) {
         ThemeDialog(
             currentSelection = themeMode,
@@ -199,6 +212,8 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
             }
         )
     }
+
+    // Sélecteur de Langue : Appelle viewModel.setLanguage et met à jour la Locale
     if (showLanguageDialog.value) {
         LanguageDialog(
             currentSelection = languageCode,
@@ -210,6 +225,8 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
             }
         )
     }
+
+    // Configuration DNS : Met à jour les serveurs dans le ViewModel et recharge le service VPN
     if (showDnsDialog.value) {
         DnsDialog(
             currentPrimary = viewModel.getDnsPrimary(),
@@ -230,7 +247,8 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
     }
 
     // ############################################################################
-    // 6. MAIN LAYOUT
+    // 7. DISPOSITION PRINCIPALE (UI LAYOUT)
+    // Structure les options par catégories visuelles (Cartes).
     // ############################################################################
     Column(
         modifier = Modifier
@@ -239,9 +257,7 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ----------------------------------------------------------------------------
-        // CARD: FIREWALL ENGINE
-        // ----------------------------------------------------------------------------
+        // --- SECTION: MOTEUR FIREWALL ---
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             modifier = Modifier.fillMaxWidth(),
@@ -254,7 +270,6 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // L'ICÔNE D'AIDE À GAUCHE (Maintenant lance Onboarding)
                     Text(
                         text = stringResource(R.string.Function_type_title),
                         style = MaterialTheme.typography.titleMedium
@@ -269,7 +284,7 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
                     }
                 }
 
-                // APPLICATION FILTER
+                // FILTRE D'APPLICATION : Bascule le mode VPN d'interception d'apps
                 SettingsItemRow(
                     title = stringResource(R.string.vpn_service_label),
                     description = stringResource(R.string.vpn_service_text),

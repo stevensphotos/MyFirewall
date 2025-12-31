@@ -32,6 +32,13 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * ############################################################################
+ * SERVICE: MyVpnService
+ * Rôle : Cœur du moteur de filtrage. Gère le tunnel VPN local (VpnService),
+ * l'interception des paquets DNS et le filtrage par application (UID).
+ * ############################################################################
+ */
 class MyVpnService : VpnService() {
 
     companion object {
@@ -44,6 +51,8 @@ class MyVpnService : VpnService() {
         private const val VPN_ADDRESS = "10.0.0.2"
         private const val VPN_PREFIX_LENGTH = 30
         private const val VPN_MTU = 1500
+
+        // [SORTIE ÉTAT] : État global de fonctionnement observé par l'UI
         var isServiceRunning = mutableStateOf(false)
     }
 
@@ -58,15 +67,21 @@ class MyVpnService : VpnService() {
     private var cachedRules: Map<String, AppRule> = emptyMap()
     private var isObserversRegistered = false
 
-    // Patch CPU : Variable atomique pour le contrôle de flux (plus léger que State)
+    // Contrôle atomique pour la boucle de traitement des paquets
     private val isRunningAtomic = AtomicBoolean(false)
     private var isUpdatingVpn = false
 
+    // [ENTRÉE PRÉFÉRENCES] : Récupère le serveur DNS configuré dans SettingsViewModel
     private fun getDnsServer(): String {
         val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
         return prefs.getString("dns_primary", DEFAULT_DNS) ?: DEFAULT_DNS
     }
 
+    /**
+     * ROUTINE : onStartCommand
+     * Point d'entrée des commandes envoyées par les ViewModels ou le système.
+     * [ENTRÉE INTENT] : Actions Connect, Disconnect ou ReloadRules.
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_CONNECT -> connect()
@@ -84,6 +99,12 @@ class MyVpnService : VpnService() {
         return START_STICKY
     }
 
+    /**
+     * ROUTINE : startPacketForwarding
+     * Gère la boucle de lecture/écriture du descripteur de fichier VPN.
+     * [ENTRÉE TUNNEL] : Flux de données brutes via ParcelFileDescriptor.
+     * [SORTIE TUNNEL] : Réinjection des réponses DNS forgées (NXDOMAIN).
+     */
     private fun startPacketForwarding(pfd: ParcelFileDescriptor) {
         vpnThread?.interrupt()
         vpnThread = Thread {
@@ -104,19 +125,24 @@ class MyVpnService : VpnService() {
                         val firstByte = packet.get(0).toInt()
                         val ipVersion = (firstByte shr 4) and 0x0F
 
+                        // Analyse du protocole IP (v4 uniquement ici)
                         if (ipVersion == 4) {
                             val protocol = packet.get(9).toInt()
                             // Extraction du port destination (DNS = 53)
                             val destPort = ((packet.get(22).toInt() and 0xFF) shl 8) or
                                     (packet.get(23).toInt() and 0xFF)
 
+                            // Interception DNS (Port 53, UDP 17)
                             if (protocol == 17 && destPort == 53) {
                                 val domain = DnsParser.extractDomain(packet)
                                 if (domain.isNotEmpty()) {
+                                    // [LOGIQUE FILTRAGE] : Vérification contre la ConcurrentHashMap
                                     if (blockedDomains.contains(domain)) {
+                                        // [SORTIE] : Forge d'une réponse de blocage (NXDOMAIN)
                                         val response = DnsParser.createNxDomainResponse(packet, readBytes)
                                         outputStream.write(response)
                                     } else {
+                                        // [SORTIE PROXY] : Transfert vers le résolveur réel
                                         val queryData = packet.array().copyOf(readBytes)
                                         dnsProxyExecutor.execute {
                                             proxyDnsQuery(queryData, outputStream)
@@ -126,8 +152,7 @@ class MyVpnService : VpnService() {
                             }
                         }
                     } else if (readBytes <= 0) {
-                        // PATCH CPU : Si aucune donnée ne circule, on met le thread au repos 10ms
-                        // Cela empêche le processeur de boucler à vide à 12% de charge.
+                        // PATCH CPU : Évite la boucle infinie à vide (consommation batterie)
                         Thread.sleep(10)
                     }
                     packet.clear()
@@ -150,6 +175,12 @@ class MyVpnService : VpnService() {
         }
     }
 
+    /**
+     * ROUTINE : proxyDnsQuery
+     * Relais DNS standard. Reçoit une requête du tunnel, la résout via Internet,
+     * et réinjecte la réponse dans le tunnel VPN.
+     * [ENTRÉE RÉSEAU] : Réponse UDP du serveur DNS externe.
+     */
     private fun proxyDnsQuery(queryPacket: ByteArray, tunnelOutput: FileOutputStream) {
         try {
             val queryBuffer = ByteBuffer.wrap(queryPacket)
@@ -171,15 +202,22 @@ class MyVpnService : VpnService() {
             val dnsResponsePayload = inPacket.data.copyOf(inPacket.length)
             val fullResponse = DnsParser.createResponsePacket(ByteBuffer.wrap(queryPacket), dnsResponsePayload)
 
+            // [SORTIE TUNNEL] : Injection sécurisée par verrou synchronisé
             synchronized(tunnelOutput) {
                 tunnelOutput.write(fullResponse)
             }
             socket.close()
         } catch (e: Exception) {
-            // Error logged silently to avoid CPU spikes
+            // Silence pour éviter les pics CPU sur timeout réseau
         }
     }
 
+    /**
+     * ROUTINE : reloadUrlFilterRules
+     * Synchronise la liste des domaines bloqués en mémoire.
+     * [ENTRÉE PRÉFÉRENCES] : État des switchs Advertising, Social, etc.
+     * [ENTRÉE ROOM DB] : Charge la liste de domaines depuis BlockRuleDao.
+     */
     private fun reloadUrlFilterRules() {
         val prefs = getSharedPreferences("MyFirewallPrefs", MODE_PRIVATE)
         isUrlFilterActive = prefs.getBoolean("url_filter_enabled", false)
@@ -211,6 +249,7 @@ class MyVpnService : VpnService() {
                 } else {
                     blockedDomains.clear()
                 }
+                // [SORTIE INTERNE] : Reconfiguration du moteur VPN
                 updateVpn()
             } catch (e: Exception) {
                 Log.e("MyVpnService", "Failed to reload rules", e)
@@ -218,6 +257,11 @@ class MyVpnService : VpnService() {
         }
     }
 
+    /**
+     * ROUTINE : connect
+     * Initialisation du service Foreground.
+     * [SORTIE NOTIFICATION] : Affiche la notification persistante de filtrage.
+     */
     private fun connect() {
         if (isServiceRunning.value) return
         createNotificationChannel()
@@ -241,6 +285,12 @@ class MyVpnService : VpnService() {
         startObservers()
     }
 
+    /**
+     * ROUTINE : startObservers
+     * Écoute les changements dynamiques du système et de la base de données.
+     * [ENTRÉE RÉSEAU] : Écoute les changements Wi-Fi/Mobile via ConnectivityManager.
+     * [ENTRÉE ROOM DB] : Flow dynamique sur les règles d'applications (AppRule).
+     */
     private fun startObservers() {
         if (isObserversRegistered) return
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -253,19 +303,26 @@ class MyVpnService : VpnService() {
             val db = AppDatabase.getDatabase(applicationContext)
             db.appRuleDao().getAllRules().collect { rules ->
                 cachedRules = rules.associateBy { it.packageName }
+                // [SORTIE INTERNE] : Rafraîchit les exclusions d'applications
                 updateVpn()
             }
         }
         isObserversRegistered = true
     }
 
+    /**
+     * ROUTINE : updateVpn
+     * Logique de construction et de reconstruction de l'interface TUN.
+     * [SORTIE SYSTÈME] : Établissement du tunnel via Builder.establish().
+     */
     private fun updateVpn() {
         if (!isServiceRunning.value || isUpdatingVpn) return
 
         serviceScope.launch(Dispatchers.IO) {
             isUpdatingVpn = true
             try {
-                delay(1000) // Patch PermissionMonitor
+                // Délai préventif pour la synchronisation système Android
+                delay(1000)
 
                 if (prepare(this@MyVpnService) != null) {
                     isUpdatingVpn = false
@@ -277,15 +334,18 @@ class MyVpnService : VpnService() {
                 builder.addAddress(VPN_ADDRESS, VPN_PREFIX_LENGTH)
                 builder.setMtu(VPN_MTU)
 
+                // CONFIGURATION MOTEUR URL (DNS REDIRECT)
                 if (isUrlFilterActive) {
                     builder.addDnsServer(DUMMY_DNS)
                     builder.addRoute(DUMMY_DNS, 32)
                 } else {
+                    // CONFIGURATION MOTEUR APP (PER-UID BLOCKING)
                     builder.addRoute("0.0.0.0", 0)
                     val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
                     val caps = cm.getNetworkCapabilities(cm.activeNetwork)
                     val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
+                    // [ENTRÉE SYSTÈME] : Parcours de toutes les applications installées
                     val installedApps = packageManager.getInstalledPackages(0)
                     for (app in installedApps) {
                         if (app.packageName == packageName) continue
@@ -294,6 +354,7 @@ class MyVpnService : VpnService() {
                             if (isWifi) rule.wifiAllowed else rule.mobileAllowed
                         } else true
 
+                        // [SORTIE CONFIG] : Autorise l'app à sortir du tunnel si elle n'est pas bloquée
                         if (allowed) {
                             try {
                                 builder.addDisallowedApplication(app.packageName)
@@ -309,6 +370,7 @@ class MyVpnService : VpnService() {
                         if (newInterface != null) {
                             oldInterface?.close()
                             vpnInterface = newInterface
+                            // [DÉMARRAGE ROUTINE] : Lance la boucle de forwarding paquets
                             startPacketForwarding(newInterface)
                         }
                     } catch (e: Exception) {
@@ -323,6 +385,11 @@ class MyVpnService : VpnService() {
         }
     }
 
+    /**
+     * ROUTINE : disconnect
+     * Nettoyage complet et arrêt des threads.
+     * [SORTIE SYSTÈME] : Fermeture du descripteur TUN et arrêt de la notification.
+     */
     private fun disconnect() {
         isRunningAtomic.set(false)
         isServiceRunning.value = false

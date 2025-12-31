@@ -49,10 +49,13 @@ fun StatusScreen(
     val engineUrlRootLabel = stringResource(R.string.status_engine_url_root)
     val engineBootLabel = stringResource(R.string.status_engine_boot)
 
-    // Lifecycle observer to refresh data when screen comes to foreground
+    // ############################################################################
+    // 1. CYCLE DE VIE ET SYNC [SORTIES -> ViewModel]
+    // ############################################################################
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
+                // Actions de rafraîchissement au premier plan
                 viewModel.refreshNetworkStats()
                 viewModel.getFilteredAppsCount()
                 viewModel.checkPrivateDnsSetting()
@@ -64,33 +67,43 @@ fun StatusScreen(
         }
     }
 
-    // Collect states from ViewModel
+    // ############################################################################
+    // 2. [ENTRÉES VIEWMODEL] : États de Filtrage et Statistiques
+    // ############################################################################
     val isPrivateDnsActive by viewModel.isPrivateDnsActive.collectAsState()
     val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
 
-
+    // Statistiques des règles de filtrage DNS/URL
     val userAppsCountState by viewModel.userAppsCount.collectAsState()
     val advertisingCount by viewModel.advertisingCount.collectAsState()
     val annoyancesCount by viewModel.annoyancesCount.collectAsState()
     val socialCount by viewModel.socialCount.collectAsState()
     val customCount by viewModel.customCount.collectAsState()
+
+    // Métriques réseau et vitesse
     val wifiUsage by viewModel.wifiUsage.collectAsState()
     val mobileUsage by viewModel.mobileUsage.collectAsState()
     val hasPermission by viewModel.hasUsagePermission.collectAsState()
     val downloadSpeed by viewModel.downloadSpeed.collectAsState()
     val uploadSpeed by viewModel.uploadSpeed.collectAsState()
     val speedMode by viewModel.speedMode.collectAsState()
+
+    // États d'activation des catégories DNS
     val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
     val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
 
-    // Data States for Device Info
+    // ############################################################################
+    // 3. [ENTRÉES VIEWMODEL] : Données Appareil et État Moteurs
+    // ############################################################################
     val wifiIp by viewModel.wifiIp.collectAsState()
     val mobileIp by viewModel.mobileIp.collectAsState()
     val systemDns by viewModel.systemDns.collectAsState()
     val vpnDns by viewModel.vpnDns.collectAsState()
     val userDns by viewModel.userDns.collectAsState()
+
+    // Status des services persistants
     val isAppFilterOn by viewModel.isAppFilterEnabled.collectAsState()
     val isUrlFilterOn by viewModel.isUrlFilterEnabled.collectAsState()
     val isBootOn by viewModel.isStartOnBootEnabled.collectAsState()
@@ -103,7 +116,9 @@ fun StatusScreen(
             .padding(top = 32.dp, bottom = 16.dp)
     ) {
         
-        // Alert: Private DNS conflict
+        // ----------------------------------------------------------------------------
+        // ALERTE SYSTÈME : Conflit DNS Privé Android
+        // ----------------------------------------------------------------------------
         if (isUrlFilterEnabled && isPrivateDnsActive) {
             Card(
                 colors = CardDefaults.cardColors(
@@ -158,17 +173,19 @@ fun StatusScreen(
             }
         }
 
-        // --- 1. APPLICATIONS CAROUSEL ---
+        // ############################################################################
+        // CARROUSEL 1 : STATISTIQUES DES APPLICATIONS
+        // ############################################################################
         val appItems = listOf(
-            // User Apps
+            // Carte : Total Applications Utilisateur
             Triple(stringResource(R.string.user_apps_title), userAppsCountState.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer),
-            // Blocked Apps (Modified to show real-time status)
+            // Carte : Applications Bloquées (État temps réel du Firewall App)
             Triple(
                 stringResource(R.string.blocked_apps_title), 
                 blockedApps.toString(), 
                 Icons.Default.Block to MaterialTheme.colorScheme.errorContainer
             ),
-            // Allowed Apps
+            // Carte : Applications Autorisées
             Triple(stringResource(R.string.allowed_apps_title), (totalApps - blockedApps).coerceAtLeast(0).toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
         )
 
@@ -194,11 +211,18 @@ fun StatusScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- 2. BLOCKED URLS CAROUSEL ---
+        // ############################################################################
+        // CARROUSEL 2 : FILTRAGE DNS / URLS BLOQUÉES
+        // Action : Long Click -> [SORTIES -> viewModel.toggle...]
+        // ############################################################################
         val blockedItems = listOf(
+            // Carte : Publicités (Advertising)
             R.string.advertising_label to Triple(advertisingCount.toString(), Icons.Default.AdsClick, if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            // Carte : Nuisances (Annoyances)
             R.string.annoyances_label to Triple(annoyancesCount.toString(), Icons.Default.VisibilityOff, if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            // Carte : Réseaux Sociaux (Social)
             R.string.social_label to Triple(socialCount.toString(), Icons.Default.Group, if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            // Carte : Règles Personnalisées (Custom)
             R.string.custom_label to Triple(customCount.toString(), Icons.Default.Edit, if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)
         )
 
@@ -216,6 +240,7 @@ fun StatusScreen(
                 icon = data.second,
                 color = data.third,
                 onLongClick = {
+                    // Déclencheurs de changement d'état DNS dans le ViewModel
                     when (resId) {
                         R.string.advertising_label -> viewModel.toggleAdvertising()
                         R.string.annoyances_label -> viewModel.toggleAnnoyances()
@@ -229,11 +254,17 @@ fun StatusScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- 3. NETWORK STATS CAROUSEL ---
+        // ############################################################################
+        // CARROUSEL 3 : MONITORING RÉSEAU ET DÉBITS
+        // Action : Click -> [SORTIE -> viewModel.toggleSpeedMode]
+        // ############################################################################
         val speedText = "↓ ${viewModel.formatSpeed(downloadSpeed)}\n↑ ${viewModel.formatSpeed(uploadSpeed)}"
         val networkItems = listOf(
+            // Carte : Vitesse (Mode Temps Réel / Total)
             Triple(stringResource(R.string.network_speed_label, speedMode), speedText, Icons.Default.Speed),
+            // Carte : Consommation Wi-Fi
             Triple(stringResource(R.string.network_wifi), if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A", Icons.Default.NetworkWifi),
+            // Carte : Consommation Mobile / Boot
             Triple(if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)", viewModel.formatDataSize(mobileUsage), Icons.Default.SignalCellularAlt)
         )
 
@@ -250,7 +281,10 @@ fun StatusScreen(
                 count = item.second,
                 icon = item.third,
                 color = MaterialTheme.colorScheme.surfaceVariant,
-                onClick = { if (index == 0) viewModel.toggleSpeedMode() },
+                onClick = {
+                    // Change l'unité de mesure ou le mode de monitoring
+                    if (index == 0) viewModel.toggleSpeedMode()
+                },
                 countFontSize = if (index == 0) 20.sp else 28.sp,
                 modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
@@ -258,11 +292,13 @@ fun StatusScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // --- 4. DEVICE INFO CAROUSEL (IP, DNS, STATUS) ---
+        // ############################################################################
+        // CARROUSEL 4 : INFOS SYSTÈME ET DIAGNOSTIC (IP, DNS, MOTEURS)
+        // ############################################################################
         val infoItems = listOf(
-            // IP Card
+            // Carte : Adresses IP (Wi-Fi et Mobile)
             Triple(stringResource(R.string.status_device_ips), "Wi-Fi: $wifiIp\nMobile: $mobileIp", Icons.Default.Dns),
-            // DNS Card
+            // Carte : Résolveurs DNS Actifs (System, VPN, User)
             Triple(
                 stringResource(R.string.status_dns_servers), 
                 "${stringResource(R.string.dns_label_system)}: $systemDns\n" +
@@ -270,20 +306,20 @@ fun StatusScreen(
                 "${stringResource(R.string.dns_label_user)}: $userDns", 
                 Icons.Default.Lan
             ),
-            // Status Card
+            // Carte : État des Moteurs (VPN, Root, Boot)
             Triple(
                 stringResource(R.string.status_engine_status), 
                 "${engineAppLabel.format(if (isAppFilterOn) statusOn else statusOff)}\n" +
                 "${engineUrlVpnLabel.format(if (isUrlFilterOn) statusOn else statusOff)}\n" +
                 "${engineUrlRootLabel.format(if (isRootOn) statusOn else statusOff)}\n" +
                 "${engineBootLabel.format(if (isBootOn) statusOn else statusOff)}",
-                Icons.Default.Info
+                Icons.Rounded.SettingsSuggest
             )
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { infoItems.size },
-            modifier = Modifier.fillMaxWidth().height(140.dp),
+            modifier = Modifier.fillMaxWidth().height(160.dp),
             preferredItemWidth = 240.dp,
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
