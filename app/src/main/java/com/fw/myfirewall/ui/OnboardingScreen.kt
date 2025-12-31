@@ -100,16 +100,25 @@ fun QuickStartDialog(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
                 QuickStartStep(
                     number = "1",
+                    title = stringResource(R.string.step_permissions_title),
+                    description = stringResource(R.string.step_permissions_desc)
+                )
+
+
+                QuickStartStep(
+                    number = "2",
                     title = stringResource(R.string.step_vpn_title),
                     description = stringResource(R.string.step_vpn_desc)
                 )
                 QuickStartStep(
-                    number = "2",
+                    number = "3",
                     title = stringResource(R.string.step_rules_title),
                     description = stringResource(R.string.step_rules_desc)
                 )
+
                 // Ajoutez d'autres étapes ici...
             }
         },

@@ -9,10 +9,10 @@
     <string name="url_filter_label">URL Filter</string>
     <string name="url_filter_desc">URL Filter VPN based</string>
     <string name="start_on_boot_label">Start on Boot</string>
-    <string name="advertising_label">Advertising</string>
-    <string name="advertising_title">Block lists</string>
+    <string name="advertising_label">Ads &amp; Trackers</string>
+    <string name="advertising_title">Blocklists</string>
     <string name="ad_blocker_label">Ad Blocker</string>
-    <string name="schedule_dialog_title">Schedule Updates</string>
+    <string name="schedule_dialog_title">Update Schedule</string>
     <string name="schedule_12h">Every 12 hours</string>
     <string name="schedule_24h">Every 24 hours</string>
     <string name="schedule_weekly">Every week</string>
@@ -20,106 +20,106 @@
     <string name="configure_button">Configure</string>
     <string name="cancel">Cancel</string>
     <string name="status_label">Status</string>
-    <string name="Annoyances_label">Annoyances"></string>
+    <string name="Annoyances_label">Harmful Content</string>
     <string name="social_label">Social Media</string>
-    <string name="custom_label">Custom Rules</string>
-    <string name="update_schedule_label">Update Schedule</string>
+    <string name="custom_label">User Rules</string>
+    <string name="update_schedule_label">Auto-update Frequency</string>
     <string name="applications_title">Applications</string>
     <string name="user_apps_title">User Apps</string>
     <string name="allowed_apps_title">Allowed</string>
-    <string name="blocked_apps_title">Block list</string>
+    <string name="blocked_apps_title">Blocked</string>
     <string name="blocked_urls_title">Blocked URLs</string>
-    <string name="annoyances_label">Annoyances</string>
-    <string name="pure_black_label">Pure Black</string>
-    <string name="pure_black_text">Use pure black in dark mode</string>
+    <string name="annoyances_label">Harmful Content</string>
+    <string name="pure_black_label">OLED Pure Black</string>
+    <string name="pure_black_text">OLED deep black background</string>
     <string name="root_access_granted">Root access granted</string>
-    <string name="root_access_not_available">Root access not available</string>
-    <string name="not_available">Not available</string>
-    <string name="dynamic_color_label">Dynamic Color</string>
-    <string name="wifi_content_description">Wi-Fi</string>
+    <string name="root_access_not_available">Root access unavailable</string>
+    <string name="not_available">N/A</string>
+    <string name="dynamic_color_label">Material You</string>
+    <string name="wifi_content_description">Wi-Fi Connection</string>
     <string name="mobile_data_content_description">Mobile Data</string>
-    <string name="roaming_content_description">Roaming</string>
-    <string name="filter_user">User</string>
-    <string name="notification_channel_name">MyFirewall VPN Service</string>
-    <string name="notification_title">MyFirewall is running</string>
-    <string name="notification_content">Traffic is being filtered</string>
-    <string name="vpn_session_name">MyFirewall</string>
-    <string name="theme_settings_label">Theme</string>
+    <string name="roaming_content_description">Data Roaming</string>
+    <string name="filter_user">User Apps</string>
+    <string name="notification_channel_name">Protection Service</string>
+    <string name="notification_title">MyFirewall Protection Active</string>
+    <string name="notification_content">Your traffic is being filtered locally</string>
+    <string name="vpn_session_name">MyFirewall Tunnel</string>
+    <string name="theme_settings_label">Appearance</string>
     <string name="theme_dialog_title">Select Theme</string>
-    <string name="theme_system">Follow system</string>
-    <string name="theme_light">Light</string>
-    <string name="theme_dark">Dark</string>
-    <string name="root_service_text">Use hosts file (requires Root)</string>
-    <string name="start_on_boot_text">Filter start on boot</string>
-    <string name="rules_management_title">Rules Management</string>
-    <string name="export_rules_label">Firewall blocking rules</string>
-    <string name="export_rules_desc">Export / Import Rules</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="root_service_text">System-level filtering (Requires Root)</string>
+    <string name="start_on_boot_text">Auto-start protection on device boot</string>
+    <string name="rules_management_title">Data Management</string>
+    <string name="export_rules_label">Backup Rules</string>
+    <string name="export_rules_desc">Import or Export your configurations</string>
     <string name="language_settings_label">Language</string>
     <string name="language_dialog_title">Select Language</string>
-    <string name="language_system">System</string>
+    <string name="language_system">System Default</string>
     <string name="language_english">English</string>
     <string name="language_french">Français</string>
-    <string name="network_title">Network</string>
-    <string name="network_wifi">Wi-Fi</string>
+    <string name="network_title">Network Usage</string>
+    <string name="network_wifi">Wi-Fi Data</string>
     <string name="network_mobile">Mobile Data</string>
-    <string name="permission_required">Permission needed</string>
+    <string name="permission_required">Permission Required</string>
     <string name="welcome_title">Welcome to MyFirewall</string>
-    <string name="permission_notification">Allow notifications (Required)</string>
-    <string name="onboarding_done">Done</string>
-    <string name="permission_usage_stats">Allow usage access (Optional)</string>
-    <string name="save_rules_back_desc">Back</string>
-    <string name="export_rules_title">Export Rules</string>
-    <string name="export_rules_description">Save your current rules to a JSON file. Useful for backup or transferring to another device.</string>
-    <string name="export_button">Export</string>
-    <string name="save_rules_title">Import / Export Rules</string>
-    <string name="import_rules_title">Import Rules</string>
-    <string name="import_rules_description">Restore rules from a JSON file. This will merge with existing rules, overwriting any duplicates.</string>
-    <string name="import_button">Import</string>
-    <string name="export_success">Rules exported successfully</string>
+    <string name="permission_notification">Notifications (Required)</string>
+    <string name="onboarding_done">Get Started</string>
+    <string name="permission_usage_stats">Usage Statistics (Recommended)</string>
+    <string name="save_rules_back_desc">Return</string>
+    <string name="export_rules_title">Export Configurations</string>
+    <string name="export_rules_description">Save your rules to a JSON file for backup or migration.</string>
+    <string name="export_button">Export Now</string>
+    <string name="save_rules_title">Import / Export</string>
+    <string name="import_rules_title">Restore Configurations</string>
+    <string name="import_rules_description">Restore rules from a JSON file. This will merge data with your current setup.</string>
+    <string name="import_button">Import Now</string>
+    <string name="export_success">Configurations successfully exported</string>
     <string name="export_failed">Export failed: %1$s</string>
-    <string name="import_success">Imported %1$d rules successfully</string>
+    <string name="import_success">%1$d rules successfully imported</string>
     <string name="import_failed">Import failed: %1$s</string>
-    <string name="dynamic_color_text">Use system colors (Android 12+)</string>
-    <string name="network_speed_label">Speed (%1$s)</string>
-    <string name="vpn_service_label">Applications filter</string>
-    <string name="permission_root">Grant Root Access (Optional)</string>
-    <string name="root_disclaimer_onboarding">Root access allows for more advanced URL filtering via the system hosts file. This is optional but recommended for better blocking.</string>
+    <string name="dynamic_color_text">Adapt UI colors to your wallpaper (Android 12+)</string>
+    <string name="network_speed_label">Traffic Speed (%1$s)</string>
+    <string name="vpn_service_label">App Firewall</string>
+    <string name="permission_root">Root Access (Optional)</string>
+    <string name="root_disclaimer_onboarding">Root access enables low-level system filtering via the hosts file. Zero battery impact, higher performance.</string>
     <string name="settings_about_title">About MyFirewall</string>
     <string name="settings_about_description">MyFirewall is a privacy-focused open-source application designed to give you full control over your device\'s network traffic. Using local VPN and hosts-based filtering, it ensures your data remains on your device while blocking unwanted connections.</string>
     <string name="ok">OK</string>
     <string name="advanced_tweaks_title">Advanced Tweaks</string>
     <string name="tweak_parameter_label">Buffer Size (KB)</string>
     <string name="tweak_parameter_hint">Enter value</string>
-    <string name="tweak_ui_scaling">UI Scaling Factor</string>
-    <string name="reset_button">Reset</string>
-    <string name="layout_density_label">Layout Density</string>
-    <string name="certificate_authenticity_title">Certificate of Authenticity</string>
-    <string name="SHA_256_Fingerprint">SHA-256 Fingerprint</string>
-    <string name="about_github">Source code</string>
-    <string name="about_help">Help</string>
-    <string name="about_bugs">Bugs</string>
-    <string name="about_licence">Licence</string>
-    <string name="custom_rules_title">Block list rules</string>
-    <string name="custom_rules_supporting_text">Add your own rules, by domain, or IP Address.</string>
-    <string name="custom_rules_error">Please enter valid letters, numbers or dots only.</string>
-    <string name="apply_button">Apply</string>
-    <string name="clear_button">Clear</string>
-    <string name="import_applied_rules_title">Load Applied Rules</string>
-    <string name="import_applied_rules_description">Import your currently active custom rules into the text field above for editing.</string>
+    <string name="tweak_ui_scaling">Interface Scale</string>
+    <string name="reset_button">Reset Defaults</string>
+    <string name="layout_density_label">UI Density</string>
+    <string name="certificate_authenticity_title">Security Fingerprint</string>
+    <string name="SHA_256_Fingerprint">SHA-256 Signature</string>
+    <string name="about_github">GitHub Repository</string>
+    <string name="about_help">Documentation</string>
+    <string name="about_bugs">Issue Tracker</string>
+    <string name="about_licence">GPLv3 License</string>
+    <string name="custom_rules_title">User Blocklist</string>
+    <string name="custom_rules_supporting_text">Manually block domains or IP addresses.</string>
+    <string name="custom_rules_error">Invalid format. Use alphanumeric characters and dots only.</string>
+    <string name="apply_button">Apply Rules</string>
+    <string name="clear_button">Clear All</string>
+    <string name="import_applied_rules_title">Fetch Active Rules</string>
+    <string name="import_applied_rules_description">Load your current custom rules into the editor below.</string>
     <string name="filter_conflict_xor_applied">Conflicting filters resolved (exclusive selection applied).</string>
-    <string name="filter_combination_invalid">This combination of filters is not possible.</string>
+    <string name="filter_combination_invalid">This filter combination is restricted.</string>
     <string name="dns_settings_label">DNS Server</string>
-    <string name="dns_settings_description">Configure custom DNS servers</string>
-    <string name="dns_dialog_title">DNS Server Settings</string>
+    <string name="dns_settings_description">Customize your upstream DNS servers</string>
+    <string name="dns_dialog_title">DNS Configuration</string>
     <string name="dns_primary_label">Primary DNS</string>
     <string name="dns_secondary_label">Secondary DNS</string>
     <string name="dns_preset_system">System Default</string>
-    <string name="dns_preset_google">Google DNS</string>
+    <string name="dns_preset_google">Google Public DNS</string>
     <string name="dns_preset_cloudflare">Cloudflare DNS</string>
     <string name="dns_preset_quad9">Quad9 DNS</string>
     <string name="dns_preset_custom">Custom</string>
     <string name="dns_apply">Apply</string>
-    <string name="about_package_label">Package</string>
+    <string name="about_package_label">Package ID</string>
     <string name="about_version_label">Version</string>
     <string name="about_build_label">Build</string>
     <string name="about_signature_unavailable">Signature unavailable</string>
@@ -128,13 +128,13 @@
     <string name="language_system_default">System Default</string>
     <string name="dns_placeholder_primary">8.8.8.8</string>
     <string name="dns_placeholder_secondary">8.8.4.4</string>
-    <string name="dns_alert_title">Private DNS Detected</string>
-    <string name="dns_alert_msg">URL filtering is inactive. This system setting has priority over the VPN.</string>
-    <string name="dns_alert_cta">Click here to disable it in settings.</string>
-    <string name="error_open_settings">Unable to open settings</string>
-    <string name="information_title">Informations</string>
+    <string name="dns_alert_title">Android Private DNS Active</string>
+    <string name="dns_alert_msg">System Private DNS is overriding the VPN. URL filtering will not work.</string>
+    <string name="dns_alert_cta">Tap to change Private DNS to "Off".</string>
+    <string name="error_open_settings">Could not access system settings</string>
+    <string name="information_title">Documentation</string>
     <string name="onboarding_continue">Continue</string>
-    <string name="info_version">Version 1.0.0</string>
+    <string name="info_version">v1.0.0 Stable</string>
     <string name="info_how_it_works_title">How it works?</string>
     <string name="info_how_it_hosts_title">Hosts File based filter</string>
    <string name="info_how_it_hosts_works_desc">Hosts filtering redirects blacklisted domains to 0.0.0.0 via system /etc/hosts, blocking ads globally with zero CPU or battery impact.</string>
@@ -157,10 +157,10 @@
     <string name="import_url_rules_label">URL Filter Rules</string>
     <string name="export_app_rules_title">Export Applications Rules</string>
     <string name="export_url_rules_title">Export URL Filter Rules</string>
-    <string name="rule_applied">Rules applied</string>
-    <string name="rule_not_applied">Rules not applied</string>
+    <string name="rule_applied">Protection active</string>
+    <string name="rule_not_applied">Protection inactive</string>
     <string name="onboarding_disclaimer">MyFirewall protects your privacy by filtering network
-        traffic locally. It allows you to: Block internet access for specific apps
+    <string name="permission_usage_stats_description">Permissions are required to associate network packets with specific apps, allowing real-time monitoring and per-app blocking rules.</string>
         (Wi-Fi/Mobile). Filter malicious URLs and ads via local DNS.
     </string>
     <string name="permission_usage_stats_description">This permission allows MyFirewall to identify
@@ -225,19 +225,20 @@
     <string name="onboarding_guide_desc">Setup Firewall and URL filters</string>
     <string name="btn_got_it">Done</string>
     <string name= "step_vpn_title">Setup Firewall</string>
-    <string name="step_vpn_desc">1 Go to Settings
-2 Enable Applications Filter ->
-3 Go to Applications screen ->
-4 Enable or disable application -> click on connectivity icon to enable/disable Wi-Fi, Data
--> long click on application name enable/disable all connectivity
--> Long click on application category enable/disable all applications -> Click on application icon, open application setting s</string>
+    <string name="step_vpn_desc">1. Go to Settings ->
+2. Enable Applications Filter ->
+3. Go to Applications screen ->
+4. Enable/disable app → tap connectivity icon to toggle Wi-Fi/Data -> Long-press app name to toggle all connectivity -> Long-press category to toggle all apps -> Long-press app icon to open its settings</string>
     <string name="step_rules_title">Setup URL Filter (Adblock)</string>
     <string name="step_rules_desc">
-1 Go to Settings ->
-2 Enable URL Filter ->
-3 Grant VPN permission ->
-4 Go to Status screen->
-5 Long click on Advertising card download filter lists</string>
+1 Go to the Status screen ->
+2 Long press on the Advertising card to download filter lists
+3 Go to Settings ->
+4 Enable URL Filter ->
+5 Grant VPN permission -></string>
+    <string name="step_permissions_title">Grant permissions</string>
+    <string name="step_permissions_desc">To display app activity notifications, grant “Notifications” permission. For network stats on the status screen, grant optional “Usage Access”.
+If your device is rooted and you want advanced features (hosts-based URL filter, full protection with Firewall + URL filter), grant optional “Root permission”.</string>
 
 
 

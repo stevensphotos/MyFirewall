@@ -232,6 +232,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     viewModelScope.launch(Dispatchers.IO) {
                         sharedPrefs.edit().putBoolean("root_enabled", false).apply()
                         hostsGenerator.generateDefaultHostsFile()
+
+                        // [SORTIE SYSTÈME] : Arrêt du service Hosts pour supprimer sa notification
+                        val stopHostsIntent = Intent(getApplication(), HostsFilterService::class.java)
+                        getApplication<Application>().stopService(stopHostsIntent)
                     }
                 }
 
