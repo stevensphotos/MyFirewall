@@ -1,48 +1,24 @@
 package com.fw.myfirewall.ui
 
-import android.content.Context
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.NetworkWifi
-import androidx.compose.material.icons.filled.SignalCellularAlt
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.SettingsSuggest
+import androidx.compose.material3.*
 import androidx.compose.material3.carousel.HorizontalMultiBrowseCarousel
 import androidx.compose.material3.carousel.rememberCarouselState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,7 +27,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.fw.myfirewall.R
 import com.fw.myfirewall.viewmodel.StatusViewModel
-import com.fw.myfirewall.viewmodel.openUsageStatsSettings
+import android.content.Intent
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,13 +39,26 @@ fun StatusScreen(
     viewModel: StatusViewModel
 ) {
     val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     
-    // Refresh stats when screen resumes
-    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+    val errorOpenSettingsMsg = stringResource(R.string.error_open_settings)
+    val statusOn = stringResource(R.string.status_on)
+    val statusOff = stringResource(R.string.status_off)
+    val engineAppLabel = stringResource(R.string.status_engine_app)
+    val engineUrlVpnLabel = stringResource(R.string.status_engine_url_vpn)
+    val engineUrlRootLabel = stringResource(R.string.status_engine_url_root)
+    val engineBootLabel = stringResource(R.string.status_engine_boot)
+
+    // ############################################################################
+    // 1. CYCLE DE VIE ET SYNC [SORTIES -> ViewModel]
+    // ############################################################################
+    DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
+                // Actions de rafraîchissement au premier plan
                 viewModel.refreshNetworkStats()
+                viewModel.getFilteredAppsCount()
+                viewModel.checkPrivateDnsSetting()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -77,228 +67,352 @@ fun StatusScreen(
         }
     }
 
-    val allowedApps = totalApps - blockedApps
-    
-    // Collecting state from ViewModel
+    // ############################################################################
+    // 2. [ENTRÉES VIEWMODEL] : États de Filtrage et Statistiques
+    // ############################################################################
+    val isPrivateDnsActive by viewModel.isPrivateDnsActive.collectAsState()
+    val isUrlFilterEnabled by viewModel.isUrlFilterEnabled.collectAsState()
+
+    // Statistiques des règles de filtrage DNS/URL
+    val userAppsCountState by viewModel.userAppsCount.collectAsState()
     val advertisingCount by viewModel.advertisingCount.collectAsState()
     val annoyancesCount by viewModel.annoyancesCount.collectAsState()
     val socialCount by viewModel.socialCount.collectAsState()
     val customCount by viewModel.customCount.collectAsState()
-    
+
+    // Métriques réseau et vitesse
     val wifiUsage by viewModel.wifiUsage.collectAsState()
     val mobileUsage by viewModel.mobileUsage.collectAsState()
     val hasPermission by viewModel.hasUsagePermission.collectAsState()
-    
-    // Speed stats
     val downloadSpeed by viewModel.downloadSpeed.collectAsState()
     val uploadSpeed by viewModel.uploadSpeed.collectAsState()
     val speedMode by viewModel.speedMode.collectAsState()
 
-    // Collecting toggle states
+    // États d'activation des catégories DNS
     val isAdvertisingEnabled by viewModel.isAdvertisingEnabled.collectAsState()
     val isAnnoyancesEnabled by viewModel.isAnnoyancesEnabled.collectAsState()
     val isSocialEnabled by viewModel.isSocialEnabled.collectAsState()
     val isCustomEnabled by viewModel.isCustomEnabled.collectAsState()
 
-    // Container principal scrollable verticalement pour accueillir plusieurs carousels
+    // ############################################################################
+    // 3. [ENTRÉES VIEWMODEL] : Données Appareil et État Moteurs
+    // ############################################################################
+    val wifiIp by viewModel.wifiIp.collectAsState()
+    val mobileIp by viewModel.mobileIp.collectAsState()
+    val systemDns by viewModel.systemDns.collectAsState()
+    val vpnDns by viewModel.vpnDns.collectAsState()
+    val userDns by viewModel.userDns.collectAsState()
+
+    // Status des services persistants
+    val isAppFilterOn by viewModel.isAppFilterEnabled.collectAsState()
+    val isUrlFilterOn by viewModel.isUrlFilterEnabled.collectAsState()
+    val isBootOn by viewModel.isStartOnBootEnabled.collectAsState()
+    val isRootOn by viewModel.isRootEnabled.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(vertical = 16.dp)
+            .padding(top = 32.dp, bottom = 16.dp)
     ) {
-
-        // ############################################################################
-        // DEBUT CAROUSEL "APPLICATIONS"
-        // ############################################################################
         
-        Text(
-            stringResource(R.string.applications_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
+        // ----------------------------------------------------------------------------
+        // ALERTE SYSTÈME : Conflit DNS Privé Android
+        // ----------------------------------------------------------------------------
+        if (isUrlFilterEnabled && isPrivateDnsActive) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                onClick = {
+                    try {
+                        val intent = Intent("android.settings.PRIVATE_DNS_SETTINGS")
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        try {
+                            val fallbackIntent = Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS)
+                            context.startActivity(fallbackIntent)
+                        } catch (e2: Exception) {
+                            Toast.makeText(context, errorOpenSettingsMsg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = stringResource(R.string.dns_alert_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            text = stringResource(R.string.dns_alert_msg),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.dns_alert_cta),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+        }
 
+        // ############################################################################
+        // CARROUSEL 1 : STATISTIQUES DES APPLICATIONS
+        // ############################################################################
         val appItems = listOf(
-            Triple(stringResource(R.string.blocked_apps_title), blockedApps.toString(), Icons.Default.Block to MaterialTheme.colorScheme.errorContainer),
-            Triple(stringResource(R.string.allowed_apps_title), allowedApps.toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer),
-            Triple(stringResource(R.string.total_apps_title), totalApps.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer)
+            // Carte : Total Applications Utilisateur
+            Triple(stringResource(R.string.user_apps_title), userAppsCountState.toString(), Icons.Default.Apps to MaterialTheme.colorScheme.primaryContainer),
+            // Carte : Applications Bloquées (État temps réel du Firewall App)
+            Triple(
+                stringResource(R.string.blocked_apps_title), 
+                blockedApps.toString(), 
+                Icons.Default.Block to MaterialTheme.colorScheme.errorContainer
+            ),
+            // Carte : Applications Autorisées
+            Triple(stringResource(R.string.allowed_apps_title), (totalApps - blockedApps).coerceAtLeast(0).toString(), Icons.Default.CheckCircle to MaterialTheme.colorScheme.secondaryContainer)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { appItems.size },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp),
-            preferredItemWidth = 180.dp,
-            itemSpacing = 16.dp,
+            modifier = Modifier.fillMaxWidth().height(140.dp),
+            preferredItemWidth = 186.dp,
+            itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
-        ) { i ->
-            val item = appItems[i]
+        ) { index ->
+            val item = appItems[index]
             StatusCard(
                 title = item.first,
                 count = item.second,
+                subtitle = if (index == 1) { // Apply only to Blocked Apps card
+                    if (isAppFilterOn) stringResource(R.string.rule_applied) else stringResource(R.string.rule_not_applied)
+                } else null,
                 icon = item.third.first,
                 color = item.third.second,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .maskClip(MaterialTheme.shapes.extraLarge)
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
-        // ############################################################################
-        // FIN CAROUSEL "APPLICATIONS"
-        // ############################################################################
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // ############################################################################
-        // DEBUT CAROUSEL "BLOCKED URLS"
+        // CARROUSEL 2 : FILTRAGE DNS / URLS BLOQUÉES
+        // Action : Long Click -> [SORTIES -> viewModel.toggle...]
         // ############################################################################
-        
-        Text(
-            stringResource(R.string.blocked_urls_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-
         val blockedItems = listOf(
-            Triple(stringResource(R.string.advertising_label), advertisingCount.toString(), Icons.Default.Block to (if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer)),
-            Triple(stringResource(R.string.annoyances_label), annoyancesCount.toString(), Icons.Default.VisibilityOff to (if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer)),
-            Triple(stringResource(R.string.social_label), socialCount.toString(), Icons.Default.Group to (if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer)),
-            Triple(stringResource(R.string.custom_label), customCount.toString(), Icons.Default.Edit to (if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer))
+            // Carte : Publicités (Advertising)
+            R.string.advertising_label to Triple(advertisingCount.toString(), Icons.Default.AdsClick, if (isAdvertisingEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            // Carte : Nuisances (Annoyances)
+            R.string.annoyances_label to Triple(annoyancesCount.toString(), Icons.Default.VisibilityOff, if (isAnnoyancesEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            // Carte : Réseaux Sociaux (Social)
+            R.string.social_label to Triple(socialCount.toString(), Icons.Default.Group, if (isSocialEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant),
+            // Carte : Règles Personnalisées (Custom)
+            R.string.custom_label to Triple(customCount.toString(), Icons.Default.Edit, if (isCustomEnabled) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceVariant)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { blockedItems.size },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp),
-            preferredItemWidth = 180.dp,
-            itemSpacing = 16.dp,
+            modifier = Modifier.fillMaxWidth().height(140.dp),
+            preferredItemWidth = 186.dp,
+            itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
-        ) { i ->
-            val item = blockedItems[i]
+        ) { index ->
+            val (resId, data) = blockedItems[index]
             StatusCard(
-                title = item.first,
-                count = item.second,
-                icon = item.third.first,
-                color = item.third.second,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .maskClip(MaterialTheme.shapes.extraLarge)
+                title = stringResource(resId),
+                count = data.first,
+                icon = data.second,
+                color = data.third,
+                onLongClick = {
+                    // Déclencheurs de changement d'état DNS dans le ViewModel
+                    when (resId) {
+                        R.string.advertising_label -> viewModel.toggleAdvertising()
+                        R.string.annoyances_label -> viewModel.toggleAnnoyances()
+                        R.string.social_label -> viewModel.toggleSocial()
+                        R.string.custom_label -> viewModel.toggleCustom()
+                    }
+                },
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
-        // ############################################################################
-        // FIN CAROUSEL "BLOCKED URLS"
-        // ############################################################################
 
         Spacer(modifier = Modifier.height(24.dp))
 
         // ############################################################################
-        // DEBUT CAROUSEL "NETWORK"
+        // CARROUSEL 3 : MONITORING RÉSEAU ET DÉBITS
+        // Action : Click -> [SORTIE -> viewModel.toggleSpeedMode]
         // ############################################################################
-        
-        Text(
-            stringResource(R.string.network_title),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        
-        val wifiText = if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A"
-        val mobileText = viewModel.formatDataSize(mobileUsage)
-        val mobileLabel = if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)"
-        val networkColor = if (hasPermission) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.tertiaryContainer
-
         val speedText = "↓ ${viewModel.formatSpeed(downloadSpeed)}\n↑ ${viewModel.formatSpeed(uploadSpeed)}"
-        val speedLabel = "Speed ($speedMode)"
-
         val networkItems = listOf(
-            Triple(speedLabel, speedText, Icons.Default.Speed),
-            Triple(stringResource(R.string.network_wifi), wifiText, Icons.Default.NetworkWifi),
-            Triple(mobileLabel, mobileText, Icons.Default.SignalCellularAlt)
+            // Carte : Vitesse (Mode Temps Réel / Total)
+            Triple(stringResource(R.string.network_speed_label, speedMode), speedText, Icons.Default.Speed),
+            // Carte : Consommation Wi-Fi
+            Triple(stringResource(R.string.network_wifi), if (hasPermission) viewModel.formatDataSize(wifiUsage) else "N/A", Icons.Default.NetworkWifi),
+            // Carte : Consommation Mobile / Boot
+            Triple(if (hasPermission) stringResource(R.string.network_mobile) else "Total (Boot)", viewModel.formatDataSize(mobileUsage), Icons.Default.SignalCellularAlt)
         )
 
         HorizontalMultiBrowseCarousel(
             state = rememberCarouselState { networkItems.size },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(160.dp),
-            preferredItemWidth = 180.dp,
-            itemSpacing = 16.dp,
+            modifier = Modifier.fillMaxWidth().height(140.dp),
+            preferredItemWidth = 186.dp,
+            itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
-        ) { i ->
-            val item = networkItems[i]
-            
-            // Adjust dynamic text size
-            val textSize = when {
-                i == 0 -> 20.sp // Speed card has 2 lines, needs smaller font
-                item.second.length > 8 -> 28.sp 
-                else -> MaterialTheme.typography.displayMedium.fontSize
-            }
-
+        ) { index ->
+            val item = networkItems[index]
             StatusCard(
                 title = item.first,
                 count = item.second,
                 icon = item.third,
-                color = networkColor,
-                onClick = { if (i == 0) { viewModel.toggleSpeedMode() } else if (!hasPermission) { openUsageStatsSettings(context) } },
-                countFontSize = textSize,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .maskClip(MaterialTheme.shapes.extraLarge)
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                onClick = {
+                    // Change l'unité de mesure ou le mode de monitoring
+                    if (index == 0) viewModel.toggleSpeedMode()
+                },
+                countFontSize = if (index == 0) 20.sp else 28.sp,
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
             )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // ############################################################################
-        // FIN CAROUSEL "NETWORK"
+        // CARROUSEL 4 : INFOS SYSTÈME ET DIAGNOSTIC (IP, DNS, MOTEURS)
         // ############################################################################
+        val infoItems = listOf(
+            // Carte : Adresses IP (Wi-Fi et Mobile)
+            Triple(stringResource(R.string.status_device_ips), "Wi-Fi: $wifiIp\nMobile: $mobileIp", Icons.Default.Dns),
+            // Carte : Résolveurs DNS Actifs (System, VPN, User)
+            Triple(
+                stringResource(R.string.status_dns_servers), 
+                "${stringResource(R.string.dns_label_system)}: $systemDns\n" +
+                "${stringResource(R.string.dns_label_vpn)}: $vpnDns\n" +
+                "${stringResource(R.string.dns_label_user)}: $userDns", 
+                Icons.Default.Lan
+            ),
+            // Carte : État des Moteurs (VPN, Root, Boot)
+            Triple(
+                stringResource(R.string.status_engine_status), 
+                "${engineAppLabel.format(if (isAppFilterOn) statusOn else statusOff)}\n" +
+                "${engineUrlVpnLabel.format(if (isUrlFilterOn) statusOn else statusOff)}\n" +
+                "${engineUrlRootLabel.format(if (isRootOn) statusOn else statusOff)}\n" +
+                "${engineBootLabel.format(if (isBootOn) statusOn else statusOff)}",
+                Icons.Rounded.SettingsSuggest
+            )
+        )
+
+        HorizontalMultiBrowseCarousel(
+            state = rememberCarouselState { infoItems.size },
+            modifier = Modifier.fillMaxWidth().height(160.dp),
+            preferredItemWidth = 240.dp,
+            itemSpacing = 8.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) { index ->
+            val item = infoItems[index]
+            StatusCard(
+                title = item.first,
+                count = item.second,
+                icon = item.third,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                countFontSize = 12.sp,
+                modifier = Modifier.height(140.dp).maskClip(MaterialTheme.shapes.extraLarge)
+            )
+        }
     }
 }
 
+// ############################################################################
+// REUSABLE STATUS CARD COMPONENT
+// ############################################################################
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun StatusCard(
     title: String,
     count: String,
+    subtitle: String? = null,
     icon: ImageVector,
     color: Color,
     onClick: (() -> Unit)? = null,
-    countFontSize: androidx.compose.ui.unit.TextUnit = MaterialTheme.typography.displayMedium.fontSize,
+    onLongClick: (() -> Unit)? = null,
+    countFontSize: androidx.compose.ui.unit.TextUnit = 32.sp,
     modifier: Modifier = Modifier
 ) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     Surface(
-        modifier = modifier.then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+        modifier = modifier.then(
+            if (onClick != null || onLongClick != null) {
+                Modifier.combinedClickable(
+                    onClick = { onClick?.invoke() },
+                    onLongClick = {
+                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        onLongClick?.invoke()
+                    }
+                )
+            } else Modifier
+        ),
         shape = RoundedCornerShape(25.dp),
         color = color,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = count,
-                fontSize = countFontSize,
-                lineHeight = if (count.contains("\n")) countFontSize * 1.2 else countFontSize,
-                style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (onLongClick != null) {
+                Icon(
+                    imageVector = Icons.Rounded.SettingsSuggest,
+                    contentDescription = null,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+            }
+            Column(
+                modifier = Modifier.padding(12.dp).fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = count, 
+                    fontSize = countFontSize, 
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = countFontSize,
+                        lineHeight = if (countFontSize < 20.sp) 16.sp else countFontSize
+                    ),
+                    maxLines = 4, 
+                    textAlign = TextAlign.Center
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                Text(
+                    text = title, 
+                    style = MaterialTheme.typography.labelSmall, 
+                    maxLines = 1, 
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }

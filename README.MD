@@ -1,49 +1,43 @@
 # MyFirewall
 
-MyFirewall is a robust, open-source Android firewall and ad-blocker application. It provides users with granular control over their device's network traffic without requiring root access (though it offers enhanced features for rooted devices).
+MyFirewall is a powerful, privacy-focused network security application for Android. It acts as a local gatekeeper, giving you total control over which applications can access the internet and blocking unwanted content at the source.
 
-The app combines a local VPN interface for non-root traffic filtering with optional Root/Magisk integration for system-level ad blocking via the hosts file.
+## 🛡️ Key Features
 
-## 📱 Features
+- **Application Firewall**: Selectively allow or block internet access for each app based on your connection type (Wi-Fi, Mobile Data, or Roaming).
+- **DNS/URL Filtering**: Block ads, trackers, and malicious domains using a high-performance local VPN tunnel.
+- **Root Mode (Hosts Filter)**: For advanced users, MyFirewall can modify the system hosts file for zero-battery impact and system-wide protection.
+- **Privacy First**: All filtering happens locally on your device. No traffic data ever leaves your phone or is sent to external servers.
+- **Material 3 Design**: A modern interface supporting Dark Mode, Dynamic Colors, and specialized "Pure Black" for AMOLED screens.
 
-### 🛡️ Core Security
-*   **No Root Required:** Uses Android's VpnService to intercept and filter traffic locally.
-*   **Per-App Firewall:** Block internet access for specific applications (Wi-Fi, Mobile Data, or Roaming).
-*   **DNS Filtering:** Block ads, trackers, and malware domains using blocklists.
+## 🚀 Quick Start Guide
 
-### 🚀 Performance & Modes
-*   **VPN Mode:** Filters traffic and DNS requests via a local VPN interface.
-*   **Root Mode (Optional):** Integrates with Magisk Systemless Hosts for battery-efficient, system-wide ad blocking.
-*   **Start on Boot:** Automatically enables protection when the device restarts.
+1. **Grant Permissions**: Upon first launch, allow the VPN Connection to enable local traffic filtering.
+2. **Configure Apps**: Navigate to the **Apps** tab to toggle internet access for your installed applications.
+3. **Monitor Traffic**: Use the **Status** tab to view real-time network speed and blocked request statistics.
+4. **Enable Advanced Protection**: Go to **Settings** to activate URL Filtering or the Hosts-based filter (Root required).
 
-### 🎨 User Interface
-*   **Modern Design:** Built entirely with **Jetpack Compose** and Material 3.
-*   **Theme Engine:** Supports Light Mode, Dark Mode, and a "Pure Black" OLED mode.
-*   **Live Statistics:** Real-time dashboard showing blocked apps and active rules.
-*   **Multi-Language Support:** Localized interface (English, French, Spanish, German, etc.).
+## 🔧 Technical Details
 
-### ⚙️ Advanced Tools
-*   **Import/Export Rules:** Backup your firewall configuration to JSON.
-*   **Scheduled Updates:** Automatically update blocklists via WorkManager (background tasks).
-*   **Custom Rules:** Add your own domains to block or allow.
+- **Local VPN Tunnel**: Uses Android's `VpnService` to create a virtual network interface.
+- **Isolated Network**: Implements a restricted `/30` subnet (`255.255.255.252`) to prevent IP conflicts with your local Wi-Fi.
+- **Packet Interception**: Only DNS requests (UDP 53) are intercepted for filtering, ensuring minimal impact on network latency.
+- **Battery Optimization**: The app is designed to avoid unnecessary CPU wake-ups. Root mode offers the most efficient filtering path.
 
-## 🛠️ Tech Stack
+## ❓ FAQ
 
-*   **Language:** [Kotlin](https://kotlinlang.org/)
-*   **UI Framework:** [Jetpack Compose](https://developer.android.com/jetpack/compose) (Material 3)
-*   **Architecture:** MVVM (Model-View-ViewModel)
-*   **Dependency Injection:** [Hilt](https://dagger.dev/hilt/)
-*   **Database:** [Room](https://developer.android.com/training/data-storage/room) (SQLite)
-*   **Background Tasks:** [WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)
-*   **Network:** Android VpnService API
-*   **Serialization:** Gson
+**Is my data safe?**  
+Yes. MyFirewall does not collect, store, or transmit your browsing history. All analysis is done on-device.
 
-## 📥 Installation
+**Why is there a VPN icon?**  
+Android requires a VPN interface to allow any non-root app to filter network traffic. It is a local "dummy" VPN, not a remote proxy.
 
-### Prerequisites
-*   Android 8.0 (Oreo) or higher.
-*   (Optional) Rooted device with Magisk for "Root Mode".
+**Does it drain the battery?**  
+The impact is minimal. For maximum efficiency, users with Root access can use the Hosts-based filter.
 
-### Building from Source
-1.  Clone the repository:
-    
+## 📜 License
+
+MyFirewall is released under the **GPLv3 License**. You are free to view, modify, and contribute to the source code to ensure the security and transparency of the project.
+
+---
+*Developed with rigor and stability in mind.*

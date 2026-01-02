@@ -19,3 +19,65 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Préserver les annotations de sérialisation pour GSON/Kotlin
+-keepattributes Signature,EnclosingMethod,InnerClasses,*Annotation*
+-keepclassmembers class ** {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Protéger les entités Room et les modèles de données
+-keep class com.fw.myfirewall.data.** { *; }
+
+# Préserver les ViewModels pour Compose
+-keep class * extends androidx.lifecycle.ViewModel { *; }
+
+
+# Garder les classes de données pour la désérialisation GSON
+-keep class com.fw.myfirewall.data.** { *; }
+-keepattributes Signature,EnclosingMethod,InnerClasses,*Annotation*
+
+# Empêcher la suppression des champs annotés par SerializedName
+-keepclassmembers class ** {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Conserver les énumérations (important pour BlockRuleCategory)
+-keepclassmembers enum com.fw.myfirewall.data.** { *; }
+
+# Règles spécifiques pour Room (utilisé lors de l'importation)
+-keep class * extends androidx.room.RoomDatabase
+-keep class androidx.room.RoomDatabase
+
+# Empêcher R8 de casser Room en mode Release
+-keep class * extends androidx.room.RoomDatabase
+-keep class androidx.room.RoomDatabase
+-keep class com.fw.myfirewall.data.** { *; }
+-keep @androidx.room.Entity class *
+-keep @androidx.room.Dao class *
+-keep @androidx.room.Database class *
+
+# Nécessaire si vous utilisez des Coroutines avec Room
+-keepattributes Signature, *Annotation*
+-keep class * extends kotlin.coroutines.CoroutineContext
+-keep class com.fw.myfirewall.model.AppInfo { *; }
+-keep class com.fw.myfirewall.data.AppRule { *; }
+
+
+# Préserver les signatures pour TypeToken
+-keepattributes Signature, EnclosingMethod, InnerClasses, *Annotation*
+-keep class com.google.gson.reflect.TypeToken
+-keep class * extends com.google.gson.reflect.TypeToken
+-keep class com.fw.myfirewall.data.** { *; }
+
+# Supprimer tous les logs de type Verbose et Debug dans la version finale
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+# Désactiver l'obscurcissement (Garder les noms de classes et méthodes lisibles)
+-dontobfuscate
+
+# Optionnel : Conserver les informations de débogage pour des stacktraces claires
+-keepattributes SourceFile,LineNumberTable

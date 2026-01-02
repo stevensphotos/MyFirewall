@@ -7,13 +7,11 @@ plugins {
 
 android {
     namespace = "com.fw.myfirewall"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.fw.myfirewall"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -22,8 +20,9 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
+        getByName("release") {
+            isMinifyEnabled = true // On garde l'optimisation
+            // On ajoute cette ligne pour garder les noms de classes originaux
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -59,6 +58,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.core.splashscreen)
     
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     
@@ -69,4 +69,13 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("androidx.biometric:biometric:1.4.0-alpha02")
+}
+
+
+dependencies {
+    implementation(libs.androidx.compose.foundation)// ... other existing dependencies
+
+    // Add this here instead
+    implementation("com.google.android.material:material:1.12.0")
 }

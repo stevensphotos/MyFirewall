@@ -2,8 +2,10 @@ package com.fw.myfirewall.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Settings
@@ -16,7 +18,8 @@ enum class AppDestinations(
 ) {
     STATUS(R.string.status_title, Icons.Default.Dashboard),
     APPLICATIONS(R.string.applications_title, Icons.Default.Apps),
-    RULES(R.string.rules_title, Icons.Default.List),
+    RULES(R.string.rules_title, Icons.AutoMirrored.Filled.List),
     SETTINGS(R.string.settings_title, Icons.Default.Settings),
-    SAVE_RULES(R.string.export_rules_label, Icons.Default.Save)
+    SAVE_RULES(R.string.export_rules_label, Icons.Default.Save),
+    CUSTOM_RULES(R.string.custom_rules_title, Icons.Default.EditNote)
 }

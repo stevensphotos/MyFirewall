@@ -17,11 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.AdsClick
 import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -43,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -58,7 +59,8 @@ import java.util.concurrent.TimeUnit
 fun RulesScreen(
     modifier: Modifier = Modifier, 
     viewModel: RulesViewModel = viewModel(),
-    onNavigateToSaveRules: () -> Unit = {}
+    onNavigateToSaveRules: () -> Unit = {},
+    onNavigateToCustomRules: () -> Unit = {}
 ) {
     val context = LocalContext.current
     
@@ -92,12 +94,14 @@ fun RulesScreen(
         // ############################################################################
         // TITLE SECTION
         // ############################################################################
-        Text(
-            text = stringResource(R.string.rules_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
+//        Text(
+//            text = stringResource(R.string.rules_title),
+//            style = MaterialTheme.typography.titleLarge,
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(horizontal = 4.dp) // Aligne le texte avec le bord des cartes
+//                .padding(top = 8.dp, bottom = 16.dp)
+//        )
 
         // ############################################################################
         // MAIN SETTINGS CARD
@@ -121,8 +125,9 @@ fun RulesScreen(
                     Text(
                         text = stringResource(R.string.advertising_title),
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+//                        color = MaterialTheme.colorScheme.primary, // <--- CHANGEZ LA COULEUR ICI
                         modifier = Modifier.padding(bottom = 4.dp)
+
                     )
                 }
 
@@ -131,7 +136,7 @@ fun RulesScreen(
                 // ############################################################################
                 RulesItemRow(
                     title = stringResource(R.string.advertising_label),
-                    icon = Icons.Default.Block,
+                    icon = Icons.Default.AdsClick,
                     checked = isAdvertisingEnabled,
                     onCheckedChange = { checked ->
                         viewModel.toggleAdvertising(checked)
@@ -210,7 +215,7 @@ fun RulesScreen(
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    imageVector = Icons.Default.Block, 
+                                    imageVector = Icons.Default.Update,
                                     contentDescription = null,
                                     modifier = Modifier.size(22.dp),
                                     tint = MaterialTheme.colorScheme.primary
@@ -231,7 +236,7 @@ fun RulesScreen(
                         }
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = "Configure",
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -241,80 +246,14 @@ fun RulesScreen(
         }
         
         // ############################################################################
-        // RULES MANAGEMENT CARD
+        // RULES MANAGEMENT CARD (Migrated UI)
         // ############################################################################
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            ),
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-            shape = RoundedCornerShape(32.dp),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(0.dp)
-            ) {
-                // ############################################################################
-                // TITLE
-                // ############################################################################
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = stringResource(R.string.rules_management_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-                
-                // ############################################################################
-                // EXPORT RULES ROW
-                // ############################################################################
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToSaveRules() }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.background,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Save, 
-                                    contentDescription = null,
-                                    modifier = Modifier.size(22.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = stringResource(R.string.export_rules_label),
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Text(
-                                text = stringResource(R.string.export_rules_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                    Icon(
-                        imageVector = Icons.Default.ArrowForwardIos,
-                        contentDescription = "Navigate",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
+        RulesManagementCard(
+            onNavigateToSaveRules = onNavigateToSaveRules,
+            onNavigateToCustomRules = onNavigateToCustomRules
+        )
+
+
     }
 }
 
@@ -387,7 +326,7 @@ fun RulesDivider() {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        thickness = 4.dp,
+        thickness = 1.dp,
         color = MaterialTheme.colorScheme.background
     )
 }

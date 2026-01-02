@@ -5,8 +5,13 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [AppRule::class, BlockRule::class], version = 2)
+@Database(
+    entities = [AppRule::class, BlockRule::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
+
     abstract fun appRuleDao(): AppRuleDao
     abstract fun blockRuleDao(): BlockRuleDao
 
@@ -21,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "app_database"
                 )
-                .fallbackToDestructiveMigration() // Since we are dev and changing schema
+                    .fallbackToDestructiveMigration(false) // Since we are dev and changing schema
                 .build()
                 INSTANCE = instance
                 instance
