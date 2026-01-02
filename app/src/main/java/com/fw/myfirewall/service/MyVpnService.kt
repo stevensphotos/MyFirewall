@@ -45,7 +45,10 @@ class MyVpnService : VpnService() {
         const val ACTION_CONNECT = "com.fw.myfirewall.service.CONNECT"
         const val ACTION_DISCONNECT = "com.fw.myfirewall.service.DISCONNECT"
         private const val CHANNEL_ID = "MyFirewallVpnChannel"
+        // Nouveau canal pour les alertes de déconnexion critique
+        private const val CHANNEL_ALERT_ID = "MyFirewallAlertChannel"
         private const val NOTIFICATION_ID = 1
+        private const val ALERT_NOTIFICATION_ID = 999
         private const val DUMMY_DNS = "10.0.0.1"
         private const val DEFAULT_DNS = "8.8.8.8"
         private const val VPN_ADDRESS = "10.0.0.2"
@@ -409,16 +412,68 @@ class MyVpnService : VpnService() {
         stopSelf()
     }
 
+        /**
+     * ROUTINE : onRevoke     * Appelée par Android quand un autre VPN démarre ou que la permission est retirée.
+     * [SORTIE NOTIFICATION] : Informe l'utilisateur que la protection est désactivée.
+     */
+    override fun onRevoke() {
+        // 1. Envoyer une notification d'alerte immédiate (le tunnel est déjà coupé par Android)
+        sendRevokeNotification()
+
+        // 2. Nettoyer les ressources et arrêter le service
+        disconnect()
+        super.onRevoke()
+    }
+
+    /**
+     * ROUTINE : sendRevokeNotification
+     * Crée une notification d'alerte haute priorité indiquant que MyFirewall n'est plus prioritaire.
+     */
+    private fun sendRevokeNotification() {
+        val manager = getSystemService(NotificationManager::class.java)
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(this, CHANNEL_ALERT_ID)
+            .setContentTitle(getString(R.string.notification_revoked_title))
+            .setContentText(getString(R.string.notification_revoked_content))
+            .setSmallIcon(R.drawable.notification_firewall)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        manager?.notify(ALERT_NOTIFICATION_ID, notification)
+    }
+
     private fun createNotificationChannel() {
-        val channel = NotificationChannel(
+        val manager = getSystemService(NotificationManager::class.java)
+
+        // Canal Standard (Protection Active - Importance Basse pour discrétion)
+        val serviceChannel = NotificationChannel(
             CHANNEL_ID,
             getString(R.string.notification_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
             description = getString(R.string.notification_channel_desc)
         }
-        val manager = getSystemService(NotificationManager::class.java)
-        manager?.createNotificationChannel(channel)
+
+        // Nouveau Canal d'Alerte (Désactivation forcée - Importance Haute)
+        val alertChannel = NotificationChannel(
+            CHANNEL_ALERT_ID,
+            getString(R.string.notification_revoked_title),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = getString(R.string.notification_content)
+            enableVibration(true)
+        }
+
+        manager?.createNotificationChannel(serviceChannel)
+        manager?.createNotificationChannel(alertChannel)
     }
 
     override fun onDestroy() {

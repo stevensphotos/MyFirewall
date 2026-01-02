@@ -27,7 +27,7 @@
     <string name="applications_title">Applications</string>
     <string name="user_apps_title">User Apps</string>
     <string name="allowed_apps_title">Allowed</string>
-    <string name="blocked_apps_title">Blocked</string>
+    <string name="blocked_apps_title">Blocked Apps</string>
     <string name="blocked_urls_title">Blocked URLs</string>
     <string name="annoyances_label">Harmful Content</string>
     <string name="pure_black_label">OLED Pure Black</string>
@@ -159,7 +159,7 @@
     <string name="export_url_rules_title">Export URL Filter Rules</string>
     <string name="rule_applied">Protection active</string>
     <string name="rule_not_applied">Protection inactive</string>
-    <string name="onboarding_disclaimer">MyFirewall protects your privacy by filtering network
+    <string name="onboarding_disclaimer">MyFirewall protects your privacy by filtering network.
     <string name="permission_usage_stats_description">Permissions are required to associate network packets with specific apps, allowing real-time monitoring and per-app blocking rules.</string>
         (Wi-Fi/Mobile). Filter malicious URLs and ads via local DNS.
     </string>
