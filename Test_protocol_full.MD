@@ -1,5 +1,3 @@
-Voici le texte reformatté en Markdown (.MD).
-J’ai ajouté des titres, des sous‑titres, des listes à puces et numérotées, ainsi que quelques blocs de code pour les chemins ou commandes afin d’obtenir un rendu clair dans un éditeur Markdown.
 
 Protocole de Test – MyFirewall (V1.0)
 Objectif
