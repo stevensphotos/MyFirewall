@@ -51,7 +51,8 @@ Configurez votre moteur de blocage DNS.
 ### 3.2 User Blocklist (Édition Manuelle)
 *   **Édition** : Ecrivez, Copiez/collez vos propres domaines à bloquer dans le champ texte (un par ligne).
 *   **Bouton Clear** :
-    *   *Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie. Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie. Le bouton Configurer recharge dans l'éditeur les règles présentes dans la base de données.
+    *   *Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie. Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie.
+    *   *Le bouton Configurer recharge dans l'éditeur les règles présentes dans la base de données.
     *   *Via menu déroulant* : Permet de supprimer définitivement toutes les règles personnalisées enregistrées dans la base de données.
 *   **Export local** : Utilisez le boutons dédiés pour exporter vos règles vers un fichier `.txt`
 
