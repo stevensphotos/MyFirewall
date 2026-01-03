@@ -134,6 +134,12 @@ Action : Dans Custom Rules, faire un appui long sur un domaine.
 Attendu : Mode sélection activé, permettant suppression/groupée ou modification.
 
 
+Action : Dans Settings régler la langue sur Français
+
+
+Attendu : toute l'interface est en Français. Menus, textes, dialogs, toasts
+
+
 
 2️⃣ Tests des moteurs de filtrage (VPN ↔ Hosts)
 2.1 Filtrage URL via VPN
