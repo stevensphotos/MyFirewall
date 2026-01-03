@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,12 +32,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fw.myfirewall.R
 import com.fw.myfirewall.ui.theme.MyFirewallTheme
 import com.fw.myfirewall.viewmodel.SettingsViewModel
 import com.fw.myfirewall.viewmodel.openUsageStatsSettings
+import androidx.compose.material3.ButtonDefaults
 
 private const val THEME_LIGHT = "light"
 private const val THEME_DARK = "dark"
@@ -512,7 +511,10 @@ fun OnboardingContent(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(56.dp),
-                                    shape = RoundedCornerShape(28.dp)
+                                    enabled = true,
+                                    shape = RoundedCornerShape(28.dp),
+                                    border = ButtonDefaults.outlinedButtonBorder(enabled = true),
+
                                 ) {
                                     Icon(Icons.Default.Info, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))

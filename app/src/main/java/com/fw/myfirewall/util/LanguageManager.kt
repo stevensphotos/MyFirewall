@@ -10,7 +10,7 @@ object LanguageManager {
             val systemLocales = android.content.res.Resources.getSystem().configuration.locales
             if (!systemLocales.isEmpty) systemLocales[0] else Locale.getDefault()
         } else {
-            Locale(languageCode)
+            Locale.forLanguageTag(languageCode)
         }
         
         Locale.setDefault(locale)

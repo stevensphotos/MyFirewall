@@ -171,6 +171,7 @@ fun CustomRulesScreen(
                         onClick = { rulesText = "" },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(topStart = 20.dp, bottomStart = 20.dp),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                         contentPadding = PaddingValues(horizontal = 8.dp)
                     ) {
                         Text(stringResource(R.string.clear_button))
@@ -183,6 +184,7 @@ fun CustomRulesScreen(
                             .width(48.dp)
                             .offset(x = (-1).dp),
                         shape = RoundedCornerShape(topEnd = 20.dp, bottomEnd = 20.dp),
+                        border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                         contentPadding = PaddingValues(0.dp)
                     ) {
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
@@ -191,7 +193,7 @@ fun CustomRulesScreen(
                             onDismissRequest = { expanded = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.clear_button)) },
+                                text = { Text(stringResource(R.string.clear_button_dropdown)) },
                                 onClick = {
                                     viewModel.clearAllCustomRules()
                                     expanded = false

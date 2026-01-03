@@ -2,7 +2,7 @@ package com.fw.myfirewall.viewmodel
 
 import android.app.usage.NetworkStatsManager
 import android.content.Context
-import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.RemoteException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,14 +15,22 @@ class NetworkStatsRepository(private val context: Context) {
 
     // Récupère la consommation Mobile depuis le début du mois (ou boot)
     suspend fun getMobileDataUsage(): Long = withContext(Dispatchers.IO) {
-        getUsage(ConnectivityManager.TYPE_MOBILE)
+        // NetworkCapabilities.TRANSPORT_CELLULAR correspond à l'ancien TYPE_MOBILE (0)
+        getUsage(NetworkCapabilities.TRANSPORT_CELLULAR)
     }
 
     // Récupère la consommation Wi-Fi depuis le début du mois (ou boot)
     suspend fun getWifiDataUsage(): Long = withContext(Dispatchers.IO) {
-        getUsage(ConnectivityManager.TYPE_WIFI)
+        // NetworkCapabilities.TRANSPORT_WIFI correspond à l'ancien TYPE_WIFI (1)
+        getUsage(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
+    /**
+     * ROUTINE : getUsage
+     * Interroge le NetworkStatsManager pour une plage de temps donnée.
+     * [ENTRÉE] networkType : Type de transport (Cellulaire ou Wi-Fi).
+     * [SORTIE] Long : Total d'octets consommés ou -1 en cas d'erreur de permission.
+     */
     private fun getUsage(networkType: Int): Long {
         var totalBytes = 0L
 

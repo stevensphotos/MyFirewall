@@ -188,24 +188,38 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         return "N/A"
     }
 
+//         * ROUTINE : updateDnsInfo
+//     * Récupère les serveurs DNS actifs (Système et VPN) via LinkProperties.
+//     * [ENTRÉE] ConnectivityManager : État du réseau Android.
+//     * [SORTIE] StateFlow : Mise à jour de _systemDns et _vpnDns.
+//     */
     private fun updateDnsInfo() {
         try {
             val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val allNetworks = connectivityManager.allNetworks
+
+            // ACTUALISATION : Utilisation de activeNetwork pour les versions récentes
+            // ou récupération sécurisée des réseaux via l'API moderne.
+            val activeNetwork = connectivityManager.activeNetwork
+            val networks = if (activeNetwork != null) arrayOf(activeNetwork) else emptyArray()
             
             var foundSystemDns = "N/A"
             var foundVpnDns = "N/A"
 
-            for (network in allNetworks) {
+            for (network in networks) {
                 val caps = connectivityManager.getNetworkCapabilities(network)
                 val lp = connectivityManager.getLinkProperties(network)
+
+                // Récupération du premier serveur DNS disponible
                 val dns = lp?.dnsServers?.firstOrNull()?.hostAddress ?: continue
 
-                if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
-                    foundVpnDns = dns
-                } else if (caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true || 
-                           caps?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
-                    foundSystemDns = dns
+                when {
+                    caps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true -> {
+                        foundVpnDns = dns
+                    }
+                    caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true ||
+                    caps?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> {
+                        foundSystemDns = dns
+                    }
                 }
             }
             

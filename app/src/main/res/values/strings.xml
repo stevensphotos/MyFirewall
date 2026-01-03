@@ -103,7 +103,8 @@
     <string name="custom_rules_supporting_text">Manually block domains or IP addresses.</string>
     <string name="custom_rules_error">Invalid format. Use alphanumeric characters and dots only.</string>
     <string name="apply_button">Apply Rules</string>
-    <string name="clear_button">Clear All</string>
+    <string name="clear_button">Clear</string>
+    <string name="clear_button_dropdown">Clear custom rules file</string>
     <string name="import_applied_rules_title">Fetch Active Rules</string>
     <string name="import_applied_rules_description">Load your current custom rules into the editor below.</string>
     <string name="filter_conflict_xor_applied">Conflicting filters resolved (exclusive selection applied).</string>
