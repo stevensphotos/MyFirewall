@@ -75,11 +75,15 @@ Sur ces appareils, le filtrage utilise le moteur VPN local.
 
 ### 4.3 Serveur DNS Custom
 *   **Non-Root** : Vous pouvez spécifier un serveur DNS personnalisé (ex: Cloudflare, Quad9) directement dans l'application.
-*   **Root** : Le DNS doit être réglé directement dans les paramètres système d'Android pour une meilleure intégration.
+*   **Root** : Le DNS doit être réglé directement dans les paramètres système d'Android pour utiliser un serveur DNS personnalisé.
 
 ### 4.4 Notification et filtrage Hosts
 *   **Filtrage URL Hosts** : Ce mode nécessite que l'autorisation "Utilisation en arrière-plan" soit active. Un service dédié s'occupe de l'écriture sécurisée du fichier système.
 *   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie au monde.
+
+### 5 MyFirewall pour utilisateurs avancés
+* Plusieurs fonctionnalités proposent des presets. Si vous ne souhaitez pas les utiliser, il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
+
 
 ---
 *MyFirewall - Votre vie privée, vos règles.*
