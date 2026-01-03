@@ -20,7 +20,6 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 **Résultats attendus :**
 - [ ] Le tableau de bord (Dashboard) s'affiche correctement.
 - [ ] Le statut indique que la protection est prête à être activée.
-- [ ] Faire une copie d'écran
 
 ---
 
@@ -29,16 +28,12 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 
 1.  Allez dans l'onglet **Applications**.
 2.  Choisissez une application qui utilise internet (ex: **YouTube** ou **Chrome**).
-3.  Appuyez sur les icônes **Wi-Fi** et **Données Mobiles** pour qu'elles deviennent **grises** (bloquées).
+3.  Appuyez sur les icônes **Wi-Fi** et **Données Mobiles** pour qu'elles deviennent **rouges** (bloquées).
 4.  Ouvrez l'application choisie et essayez de charger une vidéo ou une page web.
-5.  Utilisation des filtres, 5 icones en haut de l'écran. Par défaut, les filtres Applictions utilisateur et accès Internet sont actifs. Appui long sur le filtre
-    utilsateur.
 
 **Résultats attendus :**
 - [ ] L'application doit afficher un message d'erreur ("Hors ligne" ou "Pas de connexion").
 - [ ] Revenez dans MyFirewall, débloquez-la (icônes redevenues grises/bleues) : l'application doit refonctionner immédiatement.
-- [ ] L'action du filtre désactive l'accèes à Interet à toutes les applicazions utilisateur
-- [ ] Faire une copie de la page Applications
 
 ---
 
@@ -47,7 +42,7 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 
 1.  Allez dans l'onglet **Règles**.
 2.  Activez l'option **Publicités et Traceurs**.
-3.  Ouvrez votre navigateur et rendez-vous sur un site connu pour ses publicités (ex: `ads.doubleclick.net` ou un site de météo gratuit).
+3.  Ouvrez votre navigateur et rendez-vous sur un site connu pour ses publicités (ex: `journalduuik.com` ou un site de météo gratuit).
 4.  Observez le chargement de la page.
 
 **Résultats attendus :**
