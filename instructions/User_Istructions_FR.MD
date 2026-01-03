@@ -75,34 +75,11 @@ Sur ces appareils, le filtrage utilise le moteur VPN local.
 
 ### 4.3 Serveur DNS Custom
 *   **Non-Root** : Vous pouvez spécifier un serveur DNS personnalisé (ex: Cloudflare, Quad9) directement dans l'application.
-*   **Root** : Le DNS doit être réglé directement dans les paramètres système d'Android pour utiliser un serveur DNS personnalisé.
+*   **Root** : Le DNS doit être réglé directement dans les paramètres système d'Android pour une meilleure intégration.
 
 ### 4.4 Notification et filtrage Hosts
-*   **Filtrage URL Hosts** : Un service dédié s'occupe de l'écriture sécurisée du fichier hosts système, ou le systemless hosts de Magisk.
-*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, ou même désinstallée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie.
-* Pour éviter de se retrouver avec un fichier hosts modifé, et par exemple l'application desinstallée, une notification est pévue pour avertir l'utilisateur que la protction reposant sur le fichier hosts est active. Pour permettre l'affichage de celle-ci, il est nécesaire d'autoriser l'utilisation en arrière-plan sans restrictions de l'application, afin de ne pas tuer le service d'affichage de la notification.
-
-### 5 MyFirewall pour utilisateurs avancés
-
-### 5.1 Utilisation avec un VPN tiers (ex: NordVPN, ProtonVPN)
-Android possède une limitation logicielle : **un seul service VPN peut être actif à la fois** sur l'ensemble du système. Comme MyFirewall utilise un VPN local pour le filtrage d'applications et d'URLs (sur appareils non-rootés), le lancement d'un VPN commercial désactivera automatiquement la protection de MyFirewall.
-
-*   **Appareils Non-Rootés :** Vous devez choisir entre la protection MyFirewall ou votre VPN. Ils ne peuvent pas fonctionner simultanément.
-*   **Appareils Rootés :** C'est le mode recommandé pour les utilisateurs de VPN tiers. En utilisant le moteur **Hosts** pour le filtrage d'URLs, MyFirewall n'utilise pas le service VPN d'Android. Vous pouvez donc bénéficier du blocage des publicités de MyFirewall **ET** de la connexion sécurisée de votre VPN habituel en même temps.
-
-### 5.1 A propos des presets
-
-* Plusieurs fonctionnalités proposent des presets (regles de filtrage et serveur DNS). Si vous ne souhaitez pas les utiliser, Ωzzz
-* il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
-
-
-### ⚠️ Note importante pour les utilisateurs Root. Si vous décidez de désinstaller MyFirewall, il est **impératif** de suivre ces étapes pour restaurer votre système à son état d'origine :
-
-1.  **Désactivez toutes les listes de blocage** (Presets et User Blocklist) dans l'onglet "Rules".
-2.  **Désactivez le "Filtrage d'URL (Hosts)"** dans l'écran "Paramètres".
-3.  Cette action déclenche la routine de nettoyage qui **restaure le fichier `hosts` original** de votre appareil.
-
-*Note : Si vous désinstallez l'application sans effectuer ces étapes, les domaines publicitaires resteront bloqués indéfiniment sur votre appareil, car la modification du fichier système est permanente.*
+*   **Filtrage URL Hosts** : Ce mode nécessite que l'autorisation "Utilisation en arrière-plan" soit active. Un service dédié s'occupe de l'écriture sécurisée du fichier système.
+*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie au monde.
 
 ---
 *MyFirewall - Votre vie privée, vos règles.*

@@ -63,7 +63,7 @@
     <string name="network_wifi">Wi-Fi Data</string>
     <string name="network_mobile">Mobile Data</string>
     <string name="permission_required">Permission Required</string>
-    <string name="welcome_title">Welcome to MyFirewall</string>
+    <string name="welcome_title">MyFirewall</string>
     <string name="permission_notification">Notifications (Required)</string>
     <string name="onboarding_done">Get Started</string>
     <string name="permission_usage_stats">Usage Statistics (Recommended)</string>
@@ -243,9 +243,4 @@ If your device is rooted and you want advanced features (hosts-based URL filter,
     <!-- Placer à l'endroit des notifications dans strings.xml -->
     <string name="notification_revoked_title">Protection Disabled</string>
     <string name="notification_revoked_content">Another VPN has taken priority. MyFirewall is no longer filtering traffic.</string>
-
-
-
-
-
 </resources>
