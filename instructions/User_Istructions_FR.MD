@@ -91,7 +91,8 @@ Android possède une limitation logicielle : **un seul service VPN peut être ac
 
 ### 5.1 A propos des presets
 
-* Plusieurs fonctionnalités proposent des presets (regles de filtrage et serveur DNS). Si vous ne souhaitez pas les utiliser, il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
+* Plusieurs fonctionnalités proposent des presets (regles de filtrage et serveur DNS). Si vous ne souhaitez pas les utiliser, Ωzzz
+* il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
 
 ---
 *MyFirewall - Votre vie privée, vos règles.*
