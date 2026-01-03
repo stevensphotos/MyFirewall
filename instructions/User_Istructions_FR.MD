@@ -82,8 +82,16 @@ Sur ces appareils, le filtrage utilise le moteur VPN local.
 *   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie au monde.
 
 ### 5 MyFirewall pour utilisateurs avancés
-* Plusieurs fonctionnalités proposent des presets. Si vous ne souhaitez pas les utiliser, il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
 
+### 5.1 Utilisation avec un VPN tiers (ex: NordVPN, ProtonVPN)
+Android possède une limitation logicielle : **un seul service VPN peut être actif à la fois** sur l'ensemble du système. Comme MyFirewall utilise un VPN local pour le filtrage d'applications et d'URLs (sur appareils non-rootés), le lancement d'un VPN commercial désactivera automatiquement la protection de MyFirewall.
+
+*   **Appareils Non-Rootés :** Vous devez choisir entre la protection MyFirewall ou votre VPN. Ils ne peuvent pas fonctionner simultanément.
+*   **Appareils Rootés :** C'est le mode recommandé pour les utilisateurs de VPN tiers. En utilisant le moteur **Hosts** pour le filtrage d'URLs, MyFirewall n'utilise pas le service VPN d'Android. Vous pouvez donc bénéficier du blocage des publicités de MyFirewall **ET** de la connexion sécurisée de votre VPN habituel en même temps.
+
+### 5.1 A propos des presets
+
+* Plusieurs fonctionnalités proposent des presets (regles de filtrage et serveur DNS). Si vous ne souhaitez pas les utiliser, il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
 
 ---
 *MyFirewall - Votre vie privée, vos règles.*
