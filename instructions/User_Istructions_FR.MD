@@ -9,7 +9,7 @@ MyFirewall est une solution de protection de la vie privée et de contrôle rés
 Lors du premier démarrage, MyFirewall nécessite plusieurs autorisations critiques pour fonctionner :
 
 *   **Service VPN (Local)** : Utilisé pour intercepter le trafic sans envoyer vos données à un serveur externe.
-*   **Statistiques d'utilisation** : Permet d'identifier quelle application consomme des données en temps réel.
+*   **Statistiques d'utilisation (optionnel)** : Permet d'identifier quelle application consomme des données en temps réel.
 *   **Notifications** : Indispensable pour maintenir le service actif en arrière-plan et vous alerter en cas de déconnexion.
 *   **Accès Root (Optionnel)** : Permet un filtrage de bas niveau via le fichier `hosts` système, offrant de meilleures performances et une consommation de batterie nulle.
 
@@ -20,7 +20,6 @@ Cet écran centralise l'état de votre protection.
 
 *   **Surveillance** : Visualisez le nombre d'applications bloquées et la vitesse actuelle du trafic (Upload/Download).
 *   **Cartes des règles (Filtres URL)** :
-    *   **Appui simple** : Affiche les statistiques de blocage pour cette catégorie.
     *   **Appui prolongé** : Permet d'activer ou de désactiver instantanément une catégorie de filtrage (Publicités, Réseaux Sociaux, etc.) directement depuis le tableau de bord sans passer par les réglages.
 
 ---
@@ -29,7 +28,7 @@ Cet écran centralise l'état de votre protection.
 Gérez les droits d'accès réseau de chaque application individuellement.
 
 ### 2.1 Catégories et Filtres rapides
-*   **Icônes de filtrage** : En haut de la liste, des icônes permettent d'isoler les applications (Système, Utilisateur, Bloquées, etc.).
+*   **Icônes de filtrage** : En haut de la liste, des icônes permettent d'isoler les applications (Toutes, Système, Utilisateur, Accès Internet, Pas d'accès Internet).
 *   **Appui prolongé sur une icône de filtre** : Sélectionne ou désélectionne rapidement toutes les applications correspondant à ce filtre pour une gestion groupée.
 
 ### 2.2 Contrôle par application
@@ -42,19 +41,19 @@ Gérez les droits d'accès réseau de chaque application individuellement.
 
 ---
 
-## 3. Écran Rules (Règles)
-Configurez ici la puissance de votre moteur de blocage DNS.
+## 3. Écran Rules (Règles de filtrages par nom de domaines)
+Configurez votre moteur de blocage DNS.
 
 ### 3.1 Sélections des listes (Presets)
-*   **Provenance** : Les listes proviennent de sources reconnues (StevenBlack, AdAway, etc.).
+*   **Provenance** : Les listes proviennent de sources reconnues (StevenBlack, AdAway,).
 *   **Mises à jour** : MyFirewall vérifie périodiquement la fraîcheur des listes. Vous pouvez forcer une mise à jour manuelle pour obtenir les derniers domaines malveillants répertoriés.
 
 ### 3.2 User Blocklist (Édition Manuelle)
-*   **Édition** : Copiez/collez vos propres domaines à bloquer dans le champ texte (un par ligne).
+*   **Édition** : Ecrivez, Copiez/collez vos propres domaines à bloquer dans le champ texte (un par ligne).
 *   **Bouton Clear** :
-    *   *Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie.
+    *   *Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie. Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie. Le bouton Configurer recharge dans l'éditeur les règles présentes dans la base de données.
     *   *Via menu déroulant* : Permet de supprimer définitivement toutes les règles personnalisées enregistrées dans la base de données.
-*   **Export/Import local** : Utilisez les boutons dédiés pour exporter vos règles vers un fichier `.txt` ou réimporter vos anciennes règles dans l'éditeur pour les modifier.
+*   **Export local** : Utilisez le boutons dédiés pour exporter vos règles vers un fichier `.txt`
 
 ### 3.3 Écran Import / Export (Global)
 *   **Bouton Exporter** : Sauvegarde votre configuration complète.
