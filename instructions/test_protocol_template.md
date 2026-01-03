@@ -28,8 +28,9 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 
 1.  Allez dans l'onglet **Applications**.
 2.  Choisissez une application qui utilise internet (ex: **YouTube** ou **Chrome**).
-3.  Appuyez sur les icônes **Wi-Fi** et **Données Mobiles** pour qu'elles deviennent **rouges** (bloquées).
-4.  Ouvrez l'application choisie et essayez de charger une vidéo ou une page web.
+3.  Appuyez sur les icônes **Wi-Fi** et **Données Mobiles** pour qu'elles deviennent **grises** (bloquées).
+4.  Allez dans Parametres et activez Pare-feu Applications, acceptez la demande de connexion pour configurer une connexion VPN
+5.  Ouvrez l'application choisie et essayez de charger une vidéo ou une page web.
 
 **Résultats attendus :**
 - [ ] L'application doit afficher un message d'erreur ("Hors ligne" ou "Pas de connexion").
@@ -42,12 +43,14 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 
 1.  Allez dans l'onglet **Règles**.
 2.  Activez l'option **Publicités et Traceurs**.
-3.  Ouvrez votre navigateur et rendez-vous sur un site connu pour ses publicités (ex: `journalduuik.com` ou un site de météo gratuit).
-4.  Observez le chargement de la page.
-
+3.  Vous pouvez vérifier sur l'écran Statut, le téléchargement des règles 
+4.  Allez dans l'écran Parametres et activezFiltres d'URL basé sur VPN
+5.  Ouvrez votre navigateur et rendez-vous sur le site suivant: https://adblock.turtlecute.org 
+6.  Observez le score de blocage
+7.  
 **Résultats attendus :**
-- [ ] Les bannières publicitaires habituelles ont disparu ou sont remplacées par des cadres vides.
-- [ ] La navigation semble plus fluide.
+- [ ] Le scored de blocage doit dépasser 60% avec la liste de blocage Pubs et traceurs
+- [ ] Sur d'autres sites, la navigation semble plus fluide.
 
 ---
 
@@ -80,7 +83,7 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 ## 🛠 Que faire si un test échoue ?
 
 Si vous remarquez un comportement anormal, vérifiez les points suivants avant de signaler un bug :
-1.  **Notification :** Vérifiez qu'une petite icône de clé ou de bouclier est bien présente dans la barre de notifications en haut de votre téléphone.
+1.  **Notification :** Vérifiez qu'une petite icône de clé ou de l'application est bien présente dans la barre de notifications en haut de votre téléphone.
 2.  **DNS Privé :** Dans les réglages de votre téléphone (Connexions > Plus de paramètres), assurez-vous que le "DNS Privé" est réglé sur **"Désactivé"**.
 3.  **Mode Économie d'énergie :** Parfois, Android ferme les applications de sécurité pour économiser la batterie. Désactivez l'optimisation de batterie pour MyFirewall si nécessaire.
 
