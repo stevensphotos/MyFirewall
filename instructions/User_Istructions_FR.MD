@@ -78,8 +78,9 @@ Sur ces appareils, le filtrage utilise le moteur VPN local.
 *   **Root** : Le DNS doit être réglé directement dans les paramètres système d'Android pour utiliser un serveur DNS personnalisé.
 
 ### 4.4 Notification et filtrage Hosts
-*   **Filtrage URL Hosts** : Ce mode nécessite que l'autorisation "Utilisation en arrière-plan" soit active. Un service dédié s'occupe de l'écriture sécurisée du fichier système.
-*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie au monde.
+*   **Filtrage URL Hosts** : Un service dédié s'occupe de l'écriture sécurisée du fichier hosts système, ou le systemless hosts de Magisk.
+*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, ou même désinstallée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie.
+* Pour éviter de se retrouver avec un fichier hosts modifé, et par exemple l'application desinstallée, une notification est pévue pour avertir l'utilisateur que la protction reposant sur le fichier hosts est active. Pour permettre l'affichage de celle-ci, il est nécesaire d'autoriser l'utilisation en arrière-plan sans restrictions de l'application, afin de ne pas tuer le service d'affichage de la notification.
 
 ### 5 MyFirewall pour utilisateurs avancés
 
@@ -93,6 +94,15 @@ Android possède une limitation logicielle : **un seul service VPN peut être ac
 
 * Plusieurs fonctionnalités proposent des presets (regles de filtrage et serveur DNS). Si vous ne souhaitez pas les utiliser, Ωzzz
 * il suffit de les désactiver, et d'utilser vos préférences à leur place. Ainsi la seule activité de l'application sur le réseau sera de filtrer les URLs et bloquer le traffic des applications.
+
+
+### ⚠️ Note importante pour les utilisateurs Root. Si vous décidez de désinstaller MyFirewall, il est **impératif** de suivre ces étapes pour restaurer votre système à son état d'origine :
+
+1.  **Désactivez toutes les listes de blocage** (Presets et User Blocklist) dans l'onglet "Rules".
+2.  **Désactivez le "Filtrage d'URL (Hosts)"** dans l'écran "Paramètres".
+3.  Cette action déclenche la routine de nettoyage qui **restaure le fichier `hosts` original** de votre appareil.
+
+*Note : Si vous désinstallez l'application sans effectuer ces étapes, les domaines publicitaires resteront bloqués indéfiniment sur votre appareil, car la modification du fichier système est permanente.*
 
 ---
 *MyFirewall - Votre vie privée, vos règles.*
