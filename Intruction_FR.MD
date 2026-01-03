@@ -1,0 +1,85 @@
+# 🛡️ Mode d'emploi : MyFirewall
+
+## Introduction
+MyFirewall est une solution de protection de la vie privée et de contrôle réseau pour Android. Elle permet de bloquer les publicités, les traceurs et de contrôler précisément l'accès Internet de chaque application installée, que votre appareil soit rooté ou non.
+
+---
+
+## 🔑 Les Permissions (Écran Onboarding)
+Lors du premier démarrage, MyFirewall nécessite plusieurs autorisations critiques pour fonctionner :
+
+*   **Service VPN (Local)** : Utilisé pour intercepter le trafic sans envoyer vos données à un serveur externe.
+*   **Statistiques d'utilisation** : Permet d'identifier quelle application consomme des données en temps réel.
+*   **Notifications** : Indispensable pour maintenir le service actif en arrière-plan et vous alerter en cas de déconnexion.
+*   **Accès Root (Optionnel)** : Permet un filtrage de bas niveau via le fichier `hosts` système, offrant de meilleures performances et une consommation de batterie nulle.
+
+---
+
+## 1. Écran Dashboard (Status)
+Cet écran centralise l'état de votre protection.
+
+*   **Surveillance** : Visualisez le nombre d'applications bloquées et la vitesse actuelle du trafic (Upload/Download).
+*   **Cartes des règles (Filtres URL)** :
+    *   **Appui simple** : Affiche les statistiques de blocage pour cette catégorie.
+    *   **Appui prolongé** : Permet d'activer ou de désactiver instantanément une catégorie de filtrage (Publicités, Réseaux Sociaux, etc.) directement depuis le tableau de bord sans passer par les réglages.
+
+---
+
+## 2. Écran Applications
+Gérez les droits d'accès réseau de chaque application individuellement.
+
+### 2.1 Catégories et Filtres rapides
+*   **Icônes de filtrage** : En haut de la liste, des icônes permettent d'isoler les applications (Système, Utilisateur, Bloquées, etc.).
+*   **Appui prolongé sur une icône de filtre** : Sélectionne ou désélectionne rapidement toutes les applications correspondant à ce filtre pour une gestion groupée.
+
+### 2.2 Contrôle par application
+*   **Clic sur l'icône de l'application** : Ouvre les propriétés système de l'application (pour vider le cache ou forcer l'arrêt).
+*   **Appui prolongé sur le nom de l'application** : Bascule instantanément toute la connectivité (ON/OFF). Si l'application était autorisée, elle devient totalement bloquée, et inversement.
+*   **Fonctionnement des icônes de flux** :
+    *   🌐 **Wi-Fi** : Autorise/Bloque l'accès lorsque vous êtes sur un réseau sans fil.
+    *   📶 **Mobile Data** : Autorise/Bloque l'accès sur les réseaux 4G/5G.
+    *   ✈️ **Roaming** : Bloque spécifiquement l'accès lorsque vous êtes à l'étranger pour éviter les frais de hors-forfait.
+
+---
+
+## 3. Écran Rules (Règles)
+Configurez ici la puissance de votre moteur de blocage DNS.
+
+### 3.1 Sélections des listes (Presets)
+*   **Provenance** : Les listes proviennent de sources reconnues (StevenBlack, AdAway, etc.).
+*   **Mises à jour** : MyFirewall vérifie périodiquement la fraîcheur des listes. Vous pouvez forcer une mise à jour manuelle pour obtenir les derniers domaines malveillants répertoriés.
+
+### 3.2 User Blocklist (Édition Manuelle)
+*   **Édition** : Copiez/collez vos propres domaines à bloquer dans le champ texte (un par ligne).
+*   **Bouton Clear** :
+    *   *Appui simple* : Vide le champ de texte actuel pour une nouvelle saisie.
+    *   *Via menu déroulant* : Permet de supprimer définitivement toutes les règles personnalisées enregistrées dans la base de données.
+*   **Export/Import local** : Utilisez les boutons dédiés pour exporter vos règles vers un fichier `.txt` ou réimporter vos anciennes règles dans l'éditeur pour les modifier.
+
+### 3.3 Écran Import / Export (Global)
+*   **Bouton Exporter** : Sauvegarde votre configuration complète.
+    *   **Menu déroulant** : Permet d'exporter sélectivement soit les règles d'applications (Pare-feu), soit les listes de filtrage URL.
+*   **Bouton Importer** : Applique la même logique pour restaurer sélectivement vos réglages à partir d'une sauvegarde précédente.
+
+---
+
+## 4. Écran Settings (Paramètres)
+Le cœur de la configuration technique.
+
+### 4.1 Appareils non-rootés
+Sur ces appareils, le filtrage utilise le moteur VPN local.
+*   **Exclusivité** : Le filtrage d'URL et le filtrage d'applications sont exclusifs. Vous devez choisir quel moteur est prioritaire pour la gestion du tunnel VPN.
+
+### 4.2 Appareils rootés
+*   **Cumul** : Les règles sont cumulatives. Vous pouvez utiliser le moteur **Hosts** pour le filtrage d'URL (DNS) et le moteur **VPN** uniquement pour le filtrage d'applications, offrant une protection double couche ultra-performante.
+
+### 4.3 Serveur DNS Custom
+*   **Non-Root** : Vous pouvez spécifier un serveur DNS personnalisé (ex: Cloudflare, Quad9) directement dans l'application.
+*   **Root** : Le DNS doit être réglé directement dans les paramètres système d'Android pour une meilleure intégration.
+
+### 4.4 Notification et filtrage Hosts
+*   **Filtrage URL Hosts** : Ce mode nécessite que l'autorisation "Utilisation en arrière-plan" soit active. Un service dédié s'occupe de l'écriture sécurisée du fichier système.
+*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie au monde.
+
+---
+*MyFirewall - Votre vie privée, vos règles.*
