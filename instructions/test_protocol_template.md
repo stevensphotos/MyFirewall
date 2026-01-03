@@ -80,6 +80,16 @@ Ce document contient une série de tests simples pour vérifier que **MyFirewall
 
 ---
 
+## 🟢 Étape 6 : Interface utilisateur
+**Objectif :** Vérifier que l'affichage fonctionne correctement.
+
+1.  Parcourrez les écrans, vérifiez que les pages de l'application s'affichent correctement, basculez votre appareil pour forcer l'affichage horizontal.
+2.  Dans les parametres selectionnez une langue différente de l'Anglais, comme le Français, vérifiez les menus, les toasts, les dialogues
+
+**Résultats attendus :**
+- [ ] L'affichage ne doit pas présenter d'anomalies, (menus coupés, switches coupés) lors de la rotation de l'écran l'affichage doit réagir immédiatement.
+- [ ] Lorsque la langue selectionnée est le Français, tous les textes, menu ou toasts doivent etre affichés en Français.
+
 ## 🛠 Que faire si un test échoue ?
 
 Si vous remarquez un comportement anormal, vérifiez les points suivants avant de signaler un bug :
