@@ -23,6 +23,9 @@ import com.fw.myfirewall.R
 import kotlinx.coroutines.delay
 import com.fw.myfirewall.service.HostsFilterService
 
+
+
+
 // ############################################################################
 // INFORMATION SUR LA LICENCE ET LE DÉPÔT
 // ############################################################################
@@ -110,6 +113,52 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _hasNotificationPermission.value = true
         }
     }
+
+    // ############################################################################
+    // 4.1. [ENTRÉES UI] : GESTION DE LA LANGUE ET DU THÈME
+    // ############################################################################
+
+    /**
+     * Met à jour la langue de l'application.
+     * [SORTIE] : Notifie tous les observateurs (Pager, Titres) via languageCode StateFlow.
+     */
+    fun setLanguage(languageCode: String) {
+        _languageCode.value = languageCode
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPrefs.edit().putString("language_code", languageCode).apply()
+        }
+    }
+
+    /**
+     * Met à jour le mode de thème.
+     */
+    fun setThemeMode(mode: String) {
+        _themeMode.value = mode
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPrefs.edit().putString("theme_mode", mode).apply()
+        }
+    }
+
+    /**
+     * Bascule l'état du mode Noir Pur (OLED).
+     */
+    fun togglePureBlack(enabled: Boolean) {
+        _isPureBlackEnabled.value = enabled
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPrefs.edit().putBoolean("pure_black_enabled", enabled).apply()
+        }
+    }
+
+    /**
+     * Bascule l'état des couleurs dynamiques (Material You).
+     */
+    fun toggleDynamicColor(enabled: Boolean) {
+        _isDynamicColorEnabled.value = enabled
+        viewModelScope.launch(Dispatchers.IO) {
+            sharedPrefs.edit().putBoolean("dynamic_color_enabled", enabled).apply()
+        }
+    }
+
 
     // ############################################################################
     // 5. [SORTIES STATEFLOW] : ÉTATS ROOT
