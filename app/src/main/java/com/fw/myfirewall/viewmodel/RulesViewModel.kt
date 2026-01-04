@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.fw.myfirewall.R
+
 
 /**
  * ############################################################################
@@ -151,18 +153,25 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
             val count = withContext(Dispatchers.IO) {
                 BlockListImporter.importFromText(context, rulesText, BlockRuleCategory.CUSTOM)
             }
+
+            // ############################################################################
+            // FIX : Utilisation des ressources mises à jour pour la localisation
+            // ############################################################################
             if (count > 0) {
-                Toast.makeText(context, "Applied $count custom rules", Toast.LENGTH_SHORT).show()
+                val msg = context.resources.getString(R.string.import_success, count)
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                 if (!_isCustomEnabled.value) {
                     toggleCustom(true)
                 } else {
                     hostsGenerator.generateHostsFile()
                 }
             } else {
-                Toast.makeText(context, "No valid rules found to apply", Toast.LENGTH_SHORT).show()
+                val errorMsg = context.resources.getString(R.string.custom_rules_error)
+                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
             }
         }
     }
+
 
     /**
      * [SORTIE UI] : Récupère les règles actuelles pour affichage dans un champ d'édition.
@@ -193,14 +202,19 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (count == 0) {
-                    Toast.makeText(context, "Downloading block list...", Toast.LENGTH_SHORT).show()
+                    val loadingMsg = context.getString(R.string.advertising_title)
+                    Toast.makeText(context, loadingMsg, Toast.LENGTH_SHORT).show()
+
                     val imported = withContext(Dispatchers.IO) {
                          BlockListImporter.importFromUrl(context, url, category)
                     }
+
                     if (imported > 0) {
-                        Toast.makeText(context, "Imported $imported rules", Toast.LENGTH_SHORT).show()
+                        val successMsg = context.getString(R.string.import_success, imported)
+                        Toast.makeText(context, successMsg, Toast.LENGTH_SHORT).show()
                     } else {
-                        Toast.makeText(context, "Failed to import rules", Toast.LENGTH_SHORT).show()
+                        val failMsg = context.getString(R.string.import_failed, "Network error")
+                        Toast.makeText(context, failMsg, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
