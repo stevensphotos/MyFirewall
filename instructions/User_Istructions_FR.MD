@@ -71,7 +71,7 @@ Sur ces appareils, le filtrage utilise le moteur VPN local.
 *   **Exclusivité** : Le filtrage d'URL et le filtrage d'applications sont exclusifs. Vous devez choisir quel moteur est prioritaire pour la gestion du tunnel VPN.
 
 ### 4.2 Appareils rootés
-*   **Cumul** : Les règles sont cumulatives. Vous pouvez utiliser le moteur **Hosts** pour le filtrage d'URL (DNS) et le moteur **VPN** uniquement pour le filtrage d'applications, offrant une protection double couche ultra-performante.
+*   **Cumul** : Les règles sont cumulatives. Vous pouvez utiliser le moteur **Hosts** pour le filtrage d'URL (DNS) et le moteur **VPN** pour le filtrage d'applications, offrant une protection double couche ultra-performante.
 
 ### 4.3 Serveur DNS Custom
 *   **Non-Root** : Vous pouvez spécifier un serveur DNS personnalisé (ex: Cloudflare, Quad9) directement dans l'application.
@@ -79,8 +79,8 @@ Sur ces appareils, le filtrage utilise le moteur VPN local.
 
 ### 4.4 Notification et filtrage Hosts
 *   **Filtrage URL Hosts** : Un service dédié s'occupe de l'écriture sécurisée du fichier hosts système, ou le systemless hosts de Magisk.
-*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, ou même désinstallée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie.
-* Pour éviter de se retrouver avec un fichier hosts modifé, et par exemple l'application desinstallée, une notification est pévue pour avertir l'utilisateur que la protction reposant sur le fichier hosts est active. Pour permettre l'affichage de celle-ci, il est nécesaire d'autoriser l'utilisation en arrière-plan sans restrictions de l'application, afin de ne pas tuer le service d'affichage de la notification.
+*   **Indépendance** : Une fois que le fichier `hosts` est écrit par MyFirewall, le blocage devient natif. Même si l'application est fermée, ou désinstallée, le système Android continuera de bloquer les domaines, ce qui est la méthode la plus économe en batterie.
+* Pour éviter de se retrouver avec un fichier hosts modifé, et par exemple l'application desinstallée, une notification est pévue pour avertir l'utilisateur que la protction reposant sur le fichier hosts est active. Pour permettre l'affichage de celle-ci, il est nécesaire de désactiver l'optimisation de la batterie pour autoriser l'utilisation en arrière-plan sans restrictions de l'application, afin de ne pas tuer le service d'affichage de la notification.
 
 ### 5 MyFirewall pour utilisateurs avancés
 
