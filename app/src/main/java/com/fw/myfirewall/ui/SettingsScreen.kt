@@ -219,9 +219,17 @@ fun SettingsContent(viewModel: SettingsViewModel, onNavigateToHelp: () -> Unit) 
             currentSelection = languageCode,
             onDismissRequest = { showLanguageDialog.value = false },
             onConfirmation = { selection ->
+                // 1. Mettre à jour l'état dans le ViewModel et SharedPreferences
                 viewModel.setLanguage(selection)
+
+                // 2. Appliquer la nouvelle locale au contexte système
                 com.fw.myfirewall.util.LanguageManager.setLocale(context, selection)
+
+                // 3. Fermer le dialogue
                 showLanguageDialog.value = false
+
+                // 4. CORRECTION : Forcer la recréation de l'activité pour rafraîchir les ressources
+                (context as? android.app.Activity)?.recreate()
             }
         )
     }
