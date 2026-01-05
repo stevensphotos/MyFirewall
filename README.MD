@@ -12,10 +12,16 @@ MyFirewall is a powerful, privacy-focused network security application for Andro
 
 ## 🚀 Quick Start Guide
 
-1. **Grant Permissions**: Upon first launch, allow the VPN Connection to enable local traffic filtering.
-2. **Configure Apps**: Navigate to the **Apps** tab to toggle internet access for your installed applications.
-3. **Monitor Traffic**: Use the **Status** tab to view real-time network speed and blocked request statistics.
-4. **Enable Advanced Protection**: Go to **Settings** to activate URL Filtering or the Hosts-based filter (Root required).
+1. **Installation**: Install the APK on your Android device (Android 8.0+).
+2. **Setup**: Follow the onboarding guide to grant necessary permissions (VPN and Notifications).
+3. **Protection**:
+    - Navigate to the **Apps** tab to configure your firewall rules.
+    - Go to the **Rules** tab to enable ad-blocking presets.
+4. **Monitor**: Check the **Dashboard** for real-time traffic statistics and blocked requests.
+
+> [!IMPORTANT]
+> For a complete guide on features, DNS configuration, and specific instructions for Root users, please refer to our **[Detailed User Instructions](instructions/User_Instructions_EN.MD)**.
+
 
 ## 🔧 Technical Details
 
