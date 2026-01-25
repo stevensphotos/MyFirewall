@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    //alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
@@ -33,49 +33,57 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    // Add Kotlin source directories to AndroidSourceSet.kotlin
+    android.sourceSets.named("main") {
+        kotlin.directories += "additionalSourceDirectory/kotlin"
     }
-    buildFeatures {
-        compose = true
+
+    // Add Kotlin source directories to AndroidSourceSet.kotlin
+        android.sourceSets.named("main") {
+            kotlin.directories += "additionalSourceDirectory/kotlin"
+        }
+
+    kotlin {
+        compilerOptions {
+            languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
+            // Optional: Set jvmTarget
+            // jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
+        }
+
+        buildFeatures {
+            compose = true
+        }
     }
-}
 
-dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
-    implementation(libs.androidx.compose.material.icons.extended)
-    implementation("com.google.code.gson:gson:2.13.2")
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
-    implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.core.splashscreen)
-    
-    implementation("androidx.work:work-runtime-ktx:2.11.0")
-    
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation("androidx.biometric:biometric-compose:1.4.0-alpha05")
-}
+    dependencies {
+        implementation(libs.androidx.core.ktx)
+        implementation(libs.androidx.lifecycle.runtime.ktx)
+        implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+        implementation(libs.androidx.activity.compose)
+        implementation(platform(libs.androidx.compose.bom))
+        implementation(libs.androidx.compose.ui)
+        implementation(libs.androidx.compose.ui.graphics)
+        implementation(libs.androidx.compose.ui.tooling.preview)
+        implementation(libs.androidx.compose.material3)
+        implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
+        implementation(libs.androidx.compose.material.icons.extended)
+        implementation("com.google.code.gson:gson:2.13.2")
+        implementation(libs.androidx.room.runtime)
+        implementation(libs.androidx.room.ktx)
+        ksp(libs.androidx.room.compiler)
+        implementation(libs.androidx.datastore.preferences)
+        implementation(libs.androidx.core.splashscreen)
 
+        implementation("androidx.work:work-runtime-ktx:2.11.0")
 
-dependencies {
-    implementation(libs.androidx.compose.foundation)// ... other existing dependencies
-
-    // Add this here instead
-    implementation("com.google.android.material:material:1.12.0")
+        testImplementation(libs.junit)
+        androidTestImplementation(libs.androidx.junit)
+        androidTestImplementation(libs.androidx.espresso.core)
+        androidTestImplementation(platform(libs.androidx.compose.bom))
+        androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+        debugImplementation(libs.androidx.compose.ui.tooling)
+        debugImplementation(libs.androidx.compose.ui.test.manifest)
+        implementation("androidx.biometric:biometric-compose:1.4.0-alpha05")
+        implementation("com.google.android.material:material:1.13.0")
+    }
 }
