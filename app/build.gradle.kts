@@ -14,7 +14,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.9.1"
+        versionName = "0.9.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -39,21 +39,23 @@ android {
     }
 
     // Add Kotlin source directories to AndroidSourceSet.kotlin
-        android.sourceSets.named("main") {
-            kotlin.directories += "additionalSourceDirectory/kotlin"
-        }
+    android.sourceSets.named("main") {
+        kotlin.directories += "additionalSourceDirectory/kotlin"
+    }
 
-    kotlin {
-        compilerOptions {
-            languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
-            // Optional: Set jvmTarget
-            // jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
-        }
-
-        buildFeatures {
-            compose = true
+    buildFeatures {
+        compose = true
+    }
+}
+kotlin {
+    compilerOptions {
+        languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
+        // Optional: Set jvmTarget
+        // jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
         }
     }
+
+
 
     dependencies {
         implementation(libs.androidx.core.ktx)
@@ -86,4 +88,4 @@ android {
         implementation("androidx.biometric:biometric-compose:1.4.0-alpha05")
         implementation("com.google.android.material:material:1.13.0")
     }
-}
+
