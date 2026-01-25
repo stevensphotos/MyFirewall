@@ -240,7 +240,7 @@ fun OnboardingContent(
                 colors = CardDefaults.outlinedCardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
-                border = ButtonDefaults.outlinedButtonBorder,
+                border = ButtonDefaults.outlinedButtonBorder(enabled=true),
                 shape = RoundedCornerShape(36.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
