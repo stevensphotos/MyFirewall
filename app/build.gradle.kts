@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+base {
+    archivesName.set("MyFirewall")
+}
+
 android {
     namespace = "com.fw.myfirewall"
     compileSdk = 36

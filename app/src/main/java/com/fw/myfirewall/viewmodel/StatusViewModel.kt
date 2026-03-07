@@ -1,5 +1,6 @@
 package com.fw.myfirewall.viewmodel
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -34,10 +35,12 @@ import java.net.NetworkInterface
 import java.util.*
 import kotlin.math.log
 import kotlin.math.pow
+import androidx.core.content.edit
 
 
 class StatusViewModel(application: Application) : AndroidViewModel(application) {
 
+    @SuppressLint("StaticFieldLeak")
     private val context = application.applicationContext
 
     private val database = AppDatabase.getDatabase(application)
@@ -236,7 +239,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         val newState = !_isAdvertisingEnabled.value
         Log.d("StatusViewModel", "Toggling Advertising to $newState")
         _isAdvertisingEnabled.value = newState
-        sharedPrefs.edit().putBoolean("advertising_enabled", newState).apply()
+        sharedPrefs.edit { putBoolean("advertising_enabled", newState) }
         handleRuleToggle(newState, BlockRuleCategory.ADVERTISING, BlockListConfig.URL_ADVERTISING)
     }
 
@@ -244,7 +247,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         val newState = !_isAnnoyancesEnabled.value
         Log.d("StatusViewModel", "Toggling Annoyances to $newState")
         _isAnnoyancesEnabled.value = newState
-        sharedPrefs.edit().putBoolean("annoyances_enabled", newState).apply()
+        sharedPrefs.edit { putBoolean("annoyances_enabled", newState) }
         handleRuleToggle(newState, BlockRuleCategory.ANNOYANCES, BlockListConfig.URL_ANNOYANCES)
     }
 
@@ -252,7 +255,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         val newState = !_isSocialEnabled.value
         Log.d("StatusViewModel", "Toggling Social to $newState")
         _isSocialEnabled.value = newState
-        sharedPrefs.edit().putBoolean("social_enabled", newState).apply()
+        sharedPrefs.edit { putBoolean("social_enabled", newState) }
         handleRuleToggle(newState, BlockRuleCategory.SOCIAL_MEDIA, BlockListConfig.URL_SOCIAL)
     }
 
@@ -260,7 +263,7 @@ class StatusViewModel(application: Application) : AndroidViewModel(application) 
         val newState = !_isCustomEnabled.value
         Log.d("StatusViewModel", "Toggling Custom to $newState")
         _isCustomEnabled.value = newState
-        sharedPrefs.edit().putBoolean("custom_enabled", newState).apply()
+        sharedPrefs.edit { putBoolean("custom_enabled", newState) }
         viewModelScope.launch {
             hostsGenerator.generateHostsFile()
             notifyVpnRulesChanged()

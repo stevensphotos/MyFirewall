@@ -85,7 +85,7 @@ fun AppListScreen(
 ) {
 
     val lastToastTime = remember { mutableStateMapOf<AppFilter, Long>() }
-    val toastCooldown = 2000L // 2 secondes entre chaque Toast
+    val toastCooldown = 2000L // 2 between each Toast
 
     val filterAllLabel = stringResource(R.string.filter_all)
     val filterSystemLabel = stringResource(R.string.filter_system)

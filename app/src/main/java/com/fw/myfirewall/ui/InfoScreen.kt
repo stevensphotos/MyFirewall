@@ -26,8 +26,7 @@ import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.QuestionAnswer
 import androidx.compose.ui.platform.LocalContext
-
-
+import androidx.core.net.toUri
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,7 +133,7 @@ fun InfoPage(
             OutlinedButton(
                 onClick = {
                     val intent =
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/votre_repo"))
+                        Intent(Intent.ACTION_VIEW, "https://github.com/votre_repo".toUri())
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth(),

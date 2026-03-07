@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.fw.myfirewall.R
+import androidx.core.content.edit
 
 
 /**
@@ -102,7 +103,7 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
             }
             // Optionnel : On peut notifier l'UI si nécessaire
             _isCustomEnabled.value = false
-            sharedPrefs.edit().putBoolean("custom_enabled", false).apply()
+            sharedPrefs.edit { putBoolean("custom_enabled", false) }
         }
     }
 
@@ -118,25 +119,25 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleAdvertising(enabled: Boolean) {
         _isAdvertisingEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("advertising_enabled", enabled).apply()
+        sharedPrefs.edit { putBoolean("advertising_enabled", enabled) }
         handleRuleToggle(enabled, BlockRuleCategory.ADVERTISING, BlockListConfig.URL_ADVERTISING)
     }
 
     fun toggleAnnoyances(enabled: Boolean) {
         _isAnnoyancesEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("annoyances_enabled", enabled).apply()
+        sharedPrefs.edit { putBoolean("annoyances_enabled", enabled) }
         handleRuleToggle(enabled, BlockRuleCategory.ANNOYANCES, BlockListConfig.URL_ANNOYANCES)
     }
 
     fun toggleSocial(enabled: Boolean) {
         _isSocialEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("social_enabled", enabled).apply()
+        sharedPrefs.edit { putBoolean("social_enabled", enabled) }
         handleRuleToggle(enabled, BlockRuleCategory.SOCIAL_MEDIA, BlockListConfig.URL_SOCIAL)
     }
     
     fun toggleCustom(enabled: Boolean) {
         _isCustomEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("custom_enabled", enabled).apply()
+        sharedPrefs.edit { putBoolean("custom_enabled", enabled) }
         viewModelScope.launch {
             // [SORTIE SYSTÈME] : Déclenche la régénération du fichier hosts
             hostsGenerator.generateHostsFile()
@@ -185,7 +186,7 @@ class RulesViewModel(application: Application) : AndroidViewModel(application) {
     
     fun updateSchedule(schedule: String) {
         _selectedSchedule.value = schedule
-        sharedPrefs.edit().putString("ad_blocker_schedule", schedule).apply()
+        sharedPrefs.edit { putString("ad_blocker_schedule", schedule) }
     }
 
     /**

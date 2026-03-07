@@ -312,7 +312,7 @@ fun StatusScreen(
                 "${engineAppLabel.format(if (isAppFilterOn) statusOn else statusOff)}\n" +
                 "${engineUrlVpnLabel.format(if (isUrlFilterOn) statusOn else statusOff)}\n" +
                 "${engineUrlRootLabel.format(if (isRootOn) statusOn else statusOff)}\n" +
-                "${engineBootLabel.format(if (isBootOn) statusOn else statusOff)}",
+                        engineBootLabel.format(if (isBootOn) statusOn else statusOff),
                 Icons.Rounded.SettingsSuggest
             )
         )

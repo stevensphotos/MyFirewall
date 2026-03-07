@@ -22,9 +22,10 @@ import android.widget.Toast
 import com.fw.myfirewall.R
 import kotlinx.coroutines.delay
 import com.fw.myfirewall.service.HostsFilterService
+import androidx.core.content.edit
 
 // ############################################################################
-// INFORMATION SUR LA LICENCE ET LE DÉPÔT
+// LICENSE AND REPOSITORY INFORMATION
 // ############################################################################
 private const val APP_LICENSE = "GPLv3"
 private const val REPO_URL = "https://github.com/votre_pseudo/MyFirewall"
@@ -38,7 +39,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val hostsGenerator: HostsGenerator
 
     // ############################################################################
-    // 1. [SORTIES STATEFLOW] : ÉTATS DES FILTRES (Observés par SettingsScreen)
+    // 1. [STATEFLOW OUTPUTS]: FILTER STATES (Observed by SettingsScreen)
     // ############################################################################
     private val _isUrlFilterEnabled = MutableStateFlow(false)
     val isUrlFilterEnabled: StateFlow<Boolean> = _isUrlFilterEnabled.asStateFlow()
@@ -50,12 +51,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isRootEnabled: StateFlow<Boolean> = _isRootEnabled.asStateFlow()
 
     // ############################################################################
-    // 2. [SORTIES STATEFLOW] : ÉTATS SYSTÈME ET UI (Observés par SettingsScreen)
+    // 2. [STATEFLOW OUTPUTS]: SYSTEM AND UI STATES (Observed by SettingsScreen)
     // ############################################################################
     private val _isStartOnBootEnabled = MutableStateFlow(false)
     val isStartOnBootEnabled: StateFlow<Boolean> = _isStartOnBootEnabled.asStateFlow()
 
-    // État du verrouillage de l'application
+    // Application lock state
     private val _isAppLockEnabled = MutableStateFlow(false)
     val isAppLockEnabled: StateFlow<Boolean> = _isAppLockEnabled.asStateFlow()
 
@@ -72,7 +73,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val languageCode: StateFlow<String> = _languageCode.asStateFlow()
 
     // ############################################################################
-    // 3. [SORTIES STATEFLOW] : ÉTATS DES PERMISSIONS
+    // 3. [STATEFLOW OUTPUTS]: PERMISSION STATES
     // ############################################################################
     private val _isUsageStatsPermissionGranted = MutableStateFlow(false)
     val isUsageStatsPermissionGranted: StateFlow<Boolean> =
@@ -81,7 +82,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val hasNotificationPermission: StateFlow<Boolean> = _hasNotificationPermission.asStateFlow()
 
     // ############################################################################
-    // 4. [ENTRÉES/SORTIES] : GESTION DES PERMISSIONS
+    // 4. [INPUTS/OUTPUTS]: PERMISSION MANAGEMENT
     // ############################################################################
     fun updateUsageStatsStatus(context: Context) {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
@@ -112,7 +113,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ############################################################################
-    // 5. [SORTIES STATEFLOW] : ÉTATS ROOT
+    // 5. [STATEFLOW OUTPUTS]: ROOT STATES
     // ############################################################################
     private val _rootCheckResult = MutableStateFlow<Boolean?>(null)
     val rootCheckResult: StateFlow<Boolean?> = _rootCheckResult.asStateFlow()
@@ -121,7 +122,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isRootPossible: StateFlow<Boolean> = _isRootPossible.asStateFlow()
 
     // ############################################################################
-    // 6. [ÉCOUTEUR DE PERSISTANCE] : Synchronisation SharedPreferences -> UI
+    // 6. [PERSISTENCE LISTENER]: SharedPreferences -> UI Synchronization
     // ############################################################################
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
         viewModelScope.launch {
@@ -142,7 +143,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ############################################################################
-    // 7. INITIALISATION DU VIEWMODEL
+    // 7. VIEWMODEL INITIALIZATION
     // ############################################################################
     init {
         val db = AppDatabase.getDatabase(application)
@@ -166,22 +167,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ############################################################################
-    // 8. [ENTRÉES UI] : COMMANDES DE MODIFICATION
+    // 8. [UI INPUTS]: MODIFICATION COMMANDS
     // ############################################################################
 
     /**
-     * ENTRÉE UI : Bascule le verrouillage biométrique.
-     * SORTIE PERSISTANCE : Met à jour sharedPrefs.
+     * UI INPUT: Toggles biometric lock.
+     * PERSISTENCE OUTPUT: Updates sharedPrefs.
      */
     fun toggleAppLock(enabled: Boolean) {
         _isAppLockEnabled.value = enabled
         viewModelScope.launch(Dispatchers.IO) {
-            sharedPrefs.edit().putBoolean("app_lock_enabled", enabled).apply()
+            sharedPrefs.edit { putBoolean("app_lock_enabled", enabled) }
         }
     }
 
     // ############################################################################
-    // 9. [SORTIES SYSTÈME] : DÉCLENCHEURS DE SERVICE VPN
+    // 9. [SYSTEM OUTPUTS]: VPN SERVICE TRIGGERS
     // ############################################################################
 
     private fun notifyVpnRulesChanged() {
@@ -205,7 +206,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     // ############################################################################
-    // 10. [ENTRÉES UI / LOGIQUE] : GESTION DU FIREWALL
+    // 10. [UI INPUTS / LOGIC]: FIREWALL MANAGEMENT
     // ############################################################################
 
     fun checkAndDisableStartOnBoot() {
@@ -213,47 +214,47 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             if (_isStartOnBootEnabled.value) {
                 _isStartOnBootEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("start_on_boot", false).apply()
+                    sharedPrefs.edit { putBoolean("start_on_boot", false) }
                 }
             }
         }
     }
 
     /**
-     * ENTRÉE UI : Bascule le filtrage d'URL (DNS).
-     * SORTIE : Gère l'exclusivité, met à jour SharedPreferences et redémarre les services.
+     * UI INPUT: Toggles URL (DNS) filtering.
+     * OUTPUT: Manages exclusivity, updates SharedPreferences, and restarts services.
      */
     fun toggleUrlFilter(enabled: Boolean) {
         viewModelScope.launch {
             if (enabled) {
-                // 1. Gérer l'exclusivité avec le filtrage Root (Hosts)
+                // 1. Manage exclusivity with Root (Hosts) filtering
                 if (_isRootEnabled.value) {
                     _isRootEnabled.value = false
                     viewModelScope.launch(Dispatchers.IO) {
-                        sharedPrefs.edit().putBoolean("root_enabled", false).apply()
+                        sharedPrefs.edit { putBoolean("root_enabled", false) }
                         hostsGenerator.generateDefaultHostsFile()
 
-                        // [SORTIE SYSTÈME] : Arrêt du service Hosts pour supprimer sa notification
+                        // [SYSTEM OUTPUT]: Stop the Hosts service to remove its notification
                         val stopHostsIntent = Intent(getApplication(), HostsFilterService::class.java)
                         getApplication<Application>().stopService(stopHostsIntent)
                     }
                 }
 
-                // 2. Gérer l'exclusivité avec le filtrage d'Applications (UID)
+                // 2. Manage exclusivity with Application (UID) filtering
                 val wasAppEnabled = _isAppFilterEnabled.value
                 if (wasAppEnabled) {
                     _isAppFilterEnabled.value = false
                     viewModelScope.launch(Dispatchers.IO) {
-                        sharedPrefs.edit().putBoolean("app_filter_enabled", false).apply()
+                        sharedPrefs.edit { putBoolean("app_filter_enabled", false) }
                     }
-                    // Arrêt pour nettoyer le routage par UID avant le mode DNS
+                    // Stop to clean up UI routing
                     stopVpnService()
                     delay(400)
                 }
 
                 _isUrlFilterEnabled.value = true
                 viewModelScope.launch(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("url_filter_enabled", true).apply()
+                    sharedPrefs.edit { putBoolean("url_filter_enabled", true) }
                 }
 
                 // Safety delay for system settings propagation
@@ -262,7 +263,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _isUrlFilterEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("url_filter_enabled", false).apply()
+                    sharedPrefs.edit { putBoolean("url_filter_enabled", false) }
                 }
                 checkAndDisableStartOnBoot()
                 // Stop service if no other VPN filter is active
@@ -287,7 +288,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // Handle exclusivity: disable URL filter state
                 _isUrlFilterEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("url_filter_enabled", false).apply()
+                    sharedPrefs.edit { putBoolean("url_filter_enabled", false) }
                 }
                 // Arrêt pour nettoyer le routage DNS avant le mode UID
                 stopVpnService()
@@ -299,7 +300,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
             // 3. SAUVEGARDE ASYNCHRONE (apply au lieu de commit)
             viewModelScope.launch(Dispatchers.IO) {
-                sharedPrefs.edit().putBoolean("app_filter_enabled", enabled).apply()
+                sharedPrefs.edit { putBoolean("app_filter_enabled", enabled) }
             }
 
             // 4. DÉCLENCHEMENT DU SERVICE AVEC UN LÉGER DÉLAI DE SÉCURITÉ
@@ -334,10 +335,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     _isAppFilterEnabled.value = false
 
                     viewModelScope.launch(Dispatchers.IO) {
-                        sharedPrefs.edit()
-                            .putBoolean("url_filter_enabled", false)
-                            .putBoolean("app_filter_enabled", false)
-                            .apply()
+                        sharedPrefs.edit {
+                            putBoolean("url_filter_enabled", false)
+                                .putBoolean("app_filter_enabled", false)
+                        }
                     }
                     stopVpnService()
                     delay(400)
@@ -348,7 +349,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (_isStartOnBootEnabled.value) {
                     _isStartOnBootEnabled.value = false
                     viewModelScope.launch(Dispatchers.IO) {
-                        sharedPrefs.edit().putBoolean("start_on_boot", false).apply()
+                        sharedPrefs.edit { putBoolean("start_on_boot", false) }
                     }
                 }
 
@@ -357,7 +358,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _isRootEnabled.value = false
                 viewModelScope.launch(Dispatchers.IO) {
-                    sharedPrefs.edit().putBoolean("root_enabled", false).apply()
+                    sharedPrefs.edit { putBoolean("root_enabled", false) }
                     hostsGenerator.generateDefaultHostsFile()
                     // ARRÊT DE LA NOTIFICATION
                     HostsFilterService.stop(getApplication())
@@ -381,7 +382,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
             // 3. Persist the state and apply the physical file change
             withContext(Dispatchers.IO) {
-                sharedPrefs.edit().putBoolean("root_enabled", hasRoot).apply()
+                sharedPrefs.edit { putBoolean("root_enabled", hasRoot) }
 
                 if (hasRoot) {
                     hostsGenerator.generateHostsFile()
@@ -411,7 +412,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             _isStartOnBootEnabled.value = enabled
             withContext(Dispatchers.IO) {
-                sharedPrefs.edit().putBoolean("start_on_boot", enabled).apply()
+                sharedPrefs.edit { putBoolean("start_on_boot", enabled) }
             }
         }
     }
@@ -419,22 +420,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     // --- OTHER UI SETTINGS ---
     fun togglePureBlack(enabled: Boolean) {
         _isPureBlackEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("pure_black_enabled", enabled).apply()
+        sharedPrefs.edit { putBoolean("pure_black_enabled", enabled) }
     }
 
     fun toggleDynamicColor(enabled: Boolean) {
         _isDynamicColorEnabled.value = enabled
-        sharedPrefs.edit().putBoolean("dynamic_color_enabled", enabled).apply()
+        sharedPrefs.edit { putBoolean("dynamic_color_enabled", enabled) }
     }
 
     fun setThemeMode(mode: String) {
         _themeMode.value = mode
-        sharedPrefs.edit().putString("theme_mode", mode).apply()
+        sharedPrefs.edit { putString("theme_mode", mode) }
     }
 
     fun setLanguage(code: String) {
         _languageCode.value = code
-        sharedPrefs.edit().putString("language_code", code).apply()
+        sharedPrefs.edit { putString("language_code", code) }
     }
 
     fun resetRootCheckResult() {
@@ -442,7 +443,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setDnsServer(primary: String, secondary: String) {
-        sharedPrefs.edit().putString("dns_primary", primary).putString("dns_secondary", secondary).apply()
+        sharedPrefs.edit { putString("dns_primary", primary).putString("dns_secondary", secondary) }
     }
 
     fun getDnsPrimary(): String = sharedPrefs.getString("dns_primary", "8.8.8.8") ?: "8.8.8.8"
