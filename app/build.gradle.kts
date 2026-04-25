@@ -42,10 +42,11 @@ android {
         kotlin.directories += "additionalSourceDirectory/kotlin"
     }
 
-    // Add Kotlin source directories to AndroidSourceSet.kotlin
-    android.sourceSets.named("main") {
-        kotlin.directories += "additionalSourceDirectory/kotlin"
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
+
 
     buildFeatures {
         compose = true
