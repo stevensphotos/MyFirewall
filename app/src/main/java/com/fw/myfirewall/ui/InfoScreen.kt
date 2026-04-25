@@ -93,6 +93,20 @@ fun InfoPage(
                 description = stringResource(R.string.info_how_it_hosts_works_desc)
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, "https://adblock.turtlecute.org".toUri())
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(32.dp)
+            ) {
+                Icon(Icons.Rounded.Public, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(R.string.test_url_filter))
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
 
