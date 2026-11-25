@@ -18,14 +18,15 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.9.2"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = true // On garde l'optimisation
+            isMinifyEnabled = true
+            isShrinkResources = true // On garde l'optimisation
             // On ajoute cette ligne pour garder les noms de classes originaux
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
