@@ -50,3 +50,7 @@ MyFirewall is released under the **GPLv3 License**. You are free to view, modify
 
 
 ![Status screen](Screenshot_20261125-085939_MyFirewall.png)
+![Applications firewall screen](Screenshot_20261125-090831_MyFirewall.png)
+![Ads blocker lists management screen](Screenshot_20261125-090009_MyFirewall.png)
+![Application Settings screen](Screenshot_20261125-090035_MyFirewall.png)
+
