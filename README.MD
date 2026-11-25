@@ -47,3 +47,6 @@ MyFirewall is released under the **GPLv3 License**. You are free to view, modify
 
 ---
 *Developed with rigor and stability in mind.*
+
+
+![Status screen](Screenshot_20261125-085939_MyFirewall.png)
